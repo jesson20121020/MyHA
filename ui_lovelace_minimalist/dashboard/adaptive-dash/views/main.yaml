@@ -1,0 +1,153 @@
+---
+type: "custom:layout-card"
+layout_type: "custom:grid-layout"
+layout:
+  # Tablet portrait
+  grid-template-columns: "1fr 1fr 1fr 1fr 1fr 1fr"
+  grid-template-areas: |
+    "text text text weather weather weather"
+    "welcome welcome welcome welcome welcome welcome"
+    "title1 title1 title1 title1 title1 title1"
+    "card1 card1 card2 card2 card3 card3"
+    "title2 title2 title2 title2 title2 title2"
+    "card4 card4 card5 card5 card6 card6"
+  mediaquery:
+    # Mobile
+    "(max-width: 800px)":
+      grid-template-columns: "1fr 1fr"
+      grid-template-areas: |
+        "welcome welcome"
+        "person person"
+        "title1 title1"
+        "card1 card2"
+        "card3 card4"
+        "title2 title2"
+        "card5 card6"
+        "card7 card8"
+view_layout:
+  grid-area: "main"
+cards:
+  - view_layout:
+      grid-area: "text"
+    type: "custom:button-card"
+    template: "card_title"
+    name: "This is the adaptive <br>dashboard provided by <br> UI Minimalist"
+    label: "Find instructions to add <br> cards on the wiki"
+
+  - view_layout:
+      grid-area: "weather"
+    type: "custom:button-card"
+    template: "card_title"
+    name: "This could be your <br> weather card"
+    label: "grid-area: weather"
+
+  - view_layout:
+      grid-area: "welcome"
+    type: "custom:button-card"
+    template: "card_scenes_welcome"
+    variables:
+      entity_1:
+        entity_id: "<YOUR_ENTITY>"
+        icon: "mdi:YOUR_ICON" #OPTIONAL
+        name: "YOUR_NAME" #OPTIONAL
+        color: "blue"
+      entity_2:
+        entity_id: "<YOUR_ENTITY>"
+        icon: "mdi:YOUR_ICON" #OPTIONAL
+        name: "YOUR_NAME" #OPTIONAL
+        color: "red"
+      entity_3:
+        entity_id: "<YOUR_ENTITY>"
+        icon: "mdi:YOUR_ICON" #OPTIONAL
+        name: "YOUR_NAME" #OPTIONAL
+        color: "green"
+      entity_4:
+        entity_id: "<YOUR_ENTITY>"
+        icon: "mdi:YOUR_ICON" #OPTIONAL
+        name: "YOUR_NAME" #OPTIONAL
+        color: "purple"
+      entity_5:
+        entity_id: "<YOUR_ENTITY>"
+        icon: "mdi:YOUR_ICON" #OPTIONAL
+        name: "YOUR_NAME" #OPTIONAL
+        color: "yellow"
+      entity_6:
+        entity_id: "<YOUR_ENTITY>"
+        icon: "mdi:YOUR_ICON" #OPTIONAL
+        name: "YOUR_NAME" #OPTIONAL
+        color: "pink"
+      entity_7:
+        entity_id: "<YOUR_ENTITY>"
+        icon: "mdi:YOUR_ICON" #OPTIONAL
+        name: "YOUR_NAME" #OPTIONAL
+        color: "yellow"
+
+
+  - view_layout:
+      grid-area: "title1"
+    type: "custom:button-card"
+    template: "card_title"
+    name: "设备控制"
+
+
+  - view_layout:
+      grid-area: "title2"
+    type: "custom:button-card"
+    template: "card_title"
+    name: "设备控制"
+
+  - view_layout:
+      grid-area: "card1"
+    type: "custom:button-card"
+    template: card_light
+    entity: light.dikair_wy0a01_30ce_light
+    variables:
+      ulm_card_light_enable_popup_tap: true
+      ulm_card_light_enable_popup: true
+      ulm_card_light_enable_slider: true
+      ulm_card_light_enable_color: false
+      ulm_card_light_force_background_color: false
+      ulm_input_select_option: light 1
+      ulm_input_select: input_select.minimalist_ui_switch
+
+  - view_layout:
+      grid-area: "card2"
+    type: "custom:button-card"
+    template: card_thermostat
+    entity: climate.zhimi_ma2_7c5e_heater
+    variables:
+      ulm_card_thermostat_enable_collapse: true
+      ulm_card_thermostat_enable_controls: true
+      ulm_card_thermostat_enable_hvac_modes: false
+      ulm_card_thermostat_enable_popup: true
+
+  - view_layout:
+      grid-area: "card3"
+    type: "custom:button-card"
+    template: "card_title"
+    template: card_media_player
+    entity: media_player.xiaomi_lx06_d022_play_control
+    variables:
+      ulm_card_media_player_name : 客厅小爱音响
+      ulm_card_media_player_enable_controls: true
+
+  - view_layout:
+      grid-area: "card4"
+    type: "custom:button-card"
+    template: "card_title"
+    name: "Put here your <br> fourth card"
+    label: "grid-area: card4"
+
+  - view_layout:
+      grid-area: "card5"
+    type: "custom:button-card"
+    template: "card_title"
+    name: "Put here your <br> fifth card"
+    label: "grid-area: card5"
+
+  - view_layout:
+      grid-area: "card6"
+    type: "custom:button-card"
+    template: "card_title"
+    name: "Put here your <br> sixth card"
+    label: "grid-area: card6"

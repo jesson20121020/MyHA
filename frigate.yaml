@@ -1,0 +1,21 @@
+mqtt:
+  enabled: true
+  host: 192.168.31.104
+  user: mqtt-user
+  password: mqtt-password
+
+cameras:
+  TpLink_Camera: # <------ Name the camera
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://admin:Xx20121020@192.168.31.167:554/stream1 # <----- The stream you want to use for detection
+          roles:
+            - detect
+    detect:
+      enabled: false # <---- disable detection until you have a working camera feed
+      width: 2880
+      height: 1620
+version: 0.14
+environment_vars:
+  LIBVA_DRIVER_NAME: i965

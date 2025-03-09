@@ -1,0 +1,149 @@
+---
+card_layout_navibar:
+  show_icon: false
+  show_name: false
+  show_label: false
+  variables:
+    entity_1:
+      entity_id: "input_select.yi_dong_ping_tai_shou_ye_cai_dan_xuan_ze"
+      icon: "mdi:home-outline" #OPTIONAL
+      name: "首页" #OPTIONAL
+      state: "首页"
+      navi_path: "/ui-lovelace-minimalist/home"
+    entity_2:
+      entity_id: "input_select.yi_dong_ping_tai_shou_ye_cai_dan_xuan_ze"
+      icon: "mdi:devices" #OPTIONAL
+      name: "设备" #OPTIONAL
+      state: "设备"
+      navi_path: "/ui-lovelace-minimalist/devices"
+    entity_3:
+      entity_id: "input_select.yi_dong_ping_tai_shou_ye_cai_dan_xuan_ze"
+      icon: "mdi:music-circle-outline" #OPTIONAL
+      name: "音乐" #OPTIONAL
+      state: "音乐"
+      navi_path: "/ui-lovelace-minimalist/music"
+    entity_4:
+      entity_id: "input_select.yi_dong_ping_tai_shou_ye_cai_dan_xuan_ze"
+      icon: "mdi:chart-bar" #OPTIONAL
+      name: "统计" #OPTIONAL
+      state: "统计"
+      navi_path: "/ui-lovelace-minimalist/statistic"
+    entity_5:
+      entity_id: "input_select.yi_dong_ping_tai_shou_ye_cai_dan_xuan_ze"
+      icon: "mdi:account" #OPTIONAL
+      name: "设置" #OPTIONAL
+      state: "设置"
+      navi_path: "/ui-lovelace-minimalist/account"
+  styles:
+    grid:
+      - grid-template-areas: "'item1 item2 item3 item4 item5'"
+      - grid-template-columns: "1fr 1fr 1fr 1fr 1fr"
+      - grid-template-rows: "min-content"
+      - justify-items: "center"
+      - column-gap: "auto"
+    card:
+      - height: 9vh
+      - border-radius: "0%"
+      - box-shadow: "none"
+      - padding: "0px"
+      - background-color: transparent
+      - cursor: none
+      - --mdc-ripple-press-opacity: 0
+  custom_fields:
+    item1:
+      card:
+        type: "custom:button-card"
+        template: "card_scenes_pill"
+        entity: "[[[ return variables.entity_1.entity_id ]]]"
+        icon: "[[[ return variables.entity_1.icon ]]]"
+        name: "[[[ return variables.entity_1.name ]]]"
+        variables:
+          select_state: "[[[ return variables.entity_1.state ]]]"
+          navi_path: "[[[ return variables.entity_1.navi_path ]]]"
+    item2:
+      card:
+        type: "custom:button-card"
+        template: "card_scenes_pill"
+        entity: "[[[ return variables.entity_2.entity_id ]]]"
+        icon: "[[[ return variables.entity_2.icon ]]]"
+        name: "[[[ return variables.entity_2.name ]]]"
+        variables:
+          select_state: "[[[ return variables.entity_2.state ]]]"
+          navi_path: "[[[ return variables.entity_2.navi_path ]]]"
+    item3:
+      card:
+        type: "custom:button-card"
+        template: "card_scenes_pill"
+        entity: "[[[ return variables.entity_3.entity_id ]]]"
+        icon: "[[[ return variables.entity_3.icon ]]]"
+        name: "[[[ return variables.entity_3.name ]]]"
+        variables:
+          select_state: "[[[ return variables.entity_3.state ]]]"
+          navi_path: "[[[ return variables.entity_3.navi_path ]]]"
+    item4:
+      card:
+        type: "custom:button-card"
+        template: "card_scenes_pill"
+        entity: "[[[ return variables.entity_4.entity_id ]]]"
+        icon: "[[[ return variables.entity_4.icon ]]]"
+        name: "[[[ return variables.entity_4.name ]]]"
+        variables:
+          select_state: "[[[ return variables.entity_4.state ]]]"
+          navi_path: "[[[ return variables.entity_4.navi_path ]]]"
+    item5:
+      card:
+        type: "custom:button-card"
+        template: "card_scenes_pill"
+        entity: "[[[ return variables.entity_5.entity_id ]]]"
+        icon: "[[[ return variables.entity_5.icon ]]]"
+        name: "[[[ return variables.entity_5.name ]]]"
+        variables:
+          select_state: "[[[ return variables.entity_5.state ]]]"
+          navi_path: "[[[ return variables.entity_5.navi_path ]]]"
+
+card_scenes_pill:
+  variables:
+    select_state: ""
+    navi_path: ""
+  tap_action:
+    action: navigate
+    navigation_path: |
+      [[[
+        hass.callService("input_select", "select_option", { entity_id: entity?.entity_id, option: variables.select_state })
+        return variables.navi_path;
+      ]]]
+    # action: call-service
+    # service: "input_select.select_option"
+    # service_data: "[[[ return { entity_id: entity?.entity_id, option: variables.select_state }]]]"
+  styles:
+    card:
+      - background-color: transparent
+      - box-shadow: "none"
+      - padding: "0px"
+      - border-radius: "5%"
+      - cursor: none
+      - --mdc-ripple-press-opacity: 0
+    icon:
+      - width: "30px"
+      - height: "30px"
+      - color: >
+          [[[
+            var color = "rgba(var(--color-theme),1)";
+            if (entity.state == variables.select_state){
+              var color = "rgba(var(--color-green),1)";
+            }
+            return color;
+          ]]]
+    name:
+      - font-weight: "bold"
+      - font-size: "9.5px"
+      - width: "33px"
+      - padding-bottom: "7px"
+      - color: >
+          [[[
+            var color = "rgba(var(--color-theme),1)";
+            if (entity.state == variables.select_state){
+              var color = "rgba(var(--color-green),1)";
+            }
+            return color;
+          ]]]

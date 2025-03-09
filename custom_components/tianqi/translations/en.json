@@ -1,0 +1,51 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "天气",
+        "description": "{tip}",
+        "data": {
+          "domain": "服务器域",
+          "search": "搜索地点",
+          "area_id": "选择地点",
+          "caiyun": "兼容彩云卡片"
+        }
+      }
+    },
+    "error": {},
+    "abort": {
+      "already_configured": "该区域已经配置过了"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "天气",
+        "description": "{tip}",
+        "data": {
+          "domain": "服务器域",
+          "caiyun": "兼容彩云卡片"
+        }
+      }
+    },
+    "error": {}
+  },
+  "entity": {
+    "sensor": {
+      "precipitation_24h": {
+        "name": "降水量24h"
+      },
+      "visibility": {
+        "name": "能见度"
+      },
+      "limit_number": {
+        "name": "限行"
+      }
+    },
+    "binary_sensor": {
+      "warning": {
+        "name": "预警"
+      }
+    }
+  }
+}

@@ -1,0 +1,78 @@
+title: "我的"
+path: "account"
+type: custom:grid-layout
+layout:
+  margin: -0.5vh 0vh 0vh
+  grid-template-columns: auto
+  grid-template-rows: 6vh 85vh 9vh
+  grid-template-areas: |
+    "header"
+    "main"
+    "menu"
+cards:
+  - type: custom:button-card # HEADER
+    view_layout:
+      grid-area: header
+    template: card_layout_header
+    variables:
+      view_name: 我的
+  - type: custom:layout-card # MAIN
+    view_layout:
+      grid-area: main
+    layout_type: custom:vertical-layout
+    layout:
+      height: 100vh
+      margin: 0vh 0vh 0vh
+      padding: 0vh 0.4vh
+    cards:
+      # 设备限制
+      - type: 'custom:button-card'
+        template: card_title
+        name: 设备限制
+        styles:
+          name:
+            - font-size: "1.0rem"
+      - type: 'custom:button-card'
+        template: card_check_box2
+        entity: input_boolean.xiao_mi_dian_shi_shi_chang_xian_zhi_kai_guan
+        variables:
+          ulm_card_check_box_name: 电视使用限制
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: input_boolean.xiao_mi_dian_shi_shi_chang_xian_zhi_kai_guan
+            state: 'on'
+        card:
+          type: 'custom:button-card'
+          template: card_generic_info
+          entity: sensor.dian_shi_lian_xu_guan_kan_shi_chang
+          variables:
+            ulm_card_generic_name: 连续观看时长
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: input_boolean.xiao_mi_dian_shi_shi_chang_xian_zhi_kai_guan
+            state: 'on'
+        card:
+          type: 'custom:button-card'
+          template: card_generic_info
+          entity: sensor.jin_ri_dian_shi_zai_xian_shi_chang
+          variables:
+            ulm_card_generic_name: 当日使用时长
+        
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: input_boolean.xiao_mi_dian_shi_shi_chang_xian_zhi_kai_guan
+            state: 'on'
+        card:
+          type: "custom:button-card"
+          template: card_input_number
+          entity: input_number.xiao_mi_dian_shi_mei_ri_shi_yong_shi_chang_shang_xian
+          variables:
+            ulm_card_input_number_name: "每日时长限制"
+
+  - type: "custom:button-card"
+    view_layout:
+      grid-area: menu
+    template: "card_layout_navibar"

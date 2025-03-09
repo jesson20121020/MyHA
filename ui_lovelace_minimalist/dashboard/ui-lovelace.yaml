@@ -1,0 +1,33 @@
+---
+button_card_templates: !include_dir_merge_named "../../custom_components/ui_lovelace_minimalist/__ui_minimalist__/ulm_templates/"
+
+resources:
+  - type: js
+    url: /local/community/custom-brand-icons/custom-brand-icons.js
+
+swipe_nav:
+  wrap: false
+  enable_mouse_swipe: false
+  animate: swipe
+  skip_tabs: 0,1,2,3,4,5,6,7,8,9,10,11,12,13
+  prevent_default: true
+  swipe_amount: 0
+
+title: "Minimalist"
+background: "var(--background-image)"
+views:
+  # 移动平台页
+  - !include views/主页.yaml
+  - !include views/设备.yaml
+  - !include views/音乐.yaml
+  - !include views/统计.yaml
+  - !include views/我的.yaml
+
+  # 房间页
+  - !include views/主卧.yaml
+  - !include views/次卧.yaml
+  - !include views/书房.yaml
+  - !include views/儿童房.yaml
+  - !include views/客厅.yaml
+  - !include views/厨房.yaml
+  - !include views/阳台.yaml

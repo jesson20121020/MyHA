@@ -1,0 +1,62 @@
+---
+### Card Generic Info ###
+card_generic_info:
+  variables:
+    ulm_card_check_box_name: "[[[ return entity.attributes.friendly_name ]]]"
+  triggers_update: "all"
+  show_icon: false
+  show_label: false
+  show_name: false
+  styles:
+    grid:
+      - grid-template-areas: "'item1 item2'"
+      - grid-template-columns: "1fr"
+      - grid-template-rows: "min-content  min-content"
+      - row-gap: "0px"
+    card:
+      - border-radius: "var(--border-radius)"
+      - box-shadow: "var(--box-shadow)"
+      - padding: "8px"
+  custom_fields:
+    item1:
+      card:
+        type: "custom:button-card"
+        template:
+          - "icon_info"
+          - "ulm_translation_engine"
+          - "input_number"
+        tap_action:
+          action: ""
+        styles:
+          name:
+            - align-self: "center"
+            - font-size: "16px"
+          grid:
+            - grid-template-areas: "'i n'"
+            - grid-template-columns: "min-content auto"
+        entity: "[[[ return entity.entity_id ]]]"
+        name: "[[[ return variables.ulm_card_generic_name ]]]"
+        show_last_changed: false
+        show_state: false
+        show_label: false
+        layout: icon_name
+    item2:
+      card:
+        type: "custom:button-card"
+        template:
+          - "icon_info"
+          - "ulm_translation_engine"
+        tap_action:
+          action: ""
+        styles:
+          card:
+            - padding: "8px"
+          state:
+            - align-self: "center"
+            - font-size: "16px"
+        entity: "[[[ return entity.entity_id ]]]"
+        show_last_changed: false
+        show_state: true
+        show_label: false
+        show_name: false
+        show_icon: false

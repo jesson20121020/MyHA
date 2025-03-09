@@ -1,0 +1,43 @@
+---
+## Chips Icon Label ###
+chip_washer_counter:
+  template: "chip_icon_label"
+  variables:
+    ulm_custom_chip_washer_couter_entity: null
+  triggers_update: all
+  label: |
+    [[[
+      var count = 0;
+      if (variables.ulm_custom_chip_washer_couter_entity) {
+        count = variables.ulm_custom_chip_washer_couter_entity.filter(entity => states[entity].state in ['run', 'Wash', 'Rinse', 'Spin', 'Prog2']).length;
+      }
+      return count + "";
+    ]]]
+  icon: >
+    [[[
+      var count = 0;
+      if (variables.ulm_custom_chip_washer_couter_entity) {
+        count = variables.ulm_custom_chip_washer_couter_entity.filter(entity => states[entity].state == in ['run', 'Wash', 'Rinse', 'Spin', 'Prog2']).length;
+      }
+      if (count > 0)
+        return "mdi:lightbulb-group"
+      return "mdi:lightbulb-group-off"
+    ]]]
+  hold_action:
+    action: ""
+  tap_action:
+    action: ""
+  double_tap_action:
+    action: ""
+  styles:
+    icon:
+      - color: >
+          [[[
+            var count = 0;
+            if (variables.ulm_custom_chip_washer_couter_entity) {
+              count = variables.ulm_custom_chip_washer_couter_entity.filter(entity => states[entity].state in ['run', 'Wash', 'Rinse', 'Spin', 'Prog2']).length;
+            }
+            if (count > 0)
+              return 'rgba(var(--color-yellow),1)'
+            return 'rgba(var(--color-white),1)'
+          ]]]

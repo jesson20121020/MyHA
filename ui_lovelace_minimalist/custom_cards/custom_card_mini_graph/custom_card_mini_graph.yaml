@@ -1,0 +1,182 @@
+---
+### Card Mini Graph ###
+mini_graph_card:
+  template:
+    - "extended_card"
+  variables:
+    ulm_card_graph_color: "var(--info-color)"
+    ulm_card_graph_name: "[[[ return entity.attributes.friendly_name; ]]]"
+    ulm_card_graph_icon: "[[[ return entity.attributes.icon ]]]"
+    ulm_card_graph_color2: "var(--info-color)"
+    ulm_card_graph_entity2: ""
+    ulm_card_graph_hours: 24
+    ulm_card_graph_type: "fill"
+    ulm_card_graph_points: "0.5"
+    ulm_card_graph_group_by: "interval"
+    ulm_card_graph_line_width: 5
+    ulm_card_graph_icon_color: ""
+  triggers_update:
+    - "[[[ return variables.ulm_card_graph_entity2 ]]]"
+  custom_fields:
+    item1:
+      card:
+        type: "custom:button-card"
+        styles:
+          grid:
+            - grid-template-areas: >
+                [[[
+                    if (variables.ulm_card_graph_entity2){
+                      return '"item_entity1 item_entity2"';
+                    }
+                    return '"item_entity1"';
+                ]]]
+            - grid-template-columns: 1fr
+            - grid-template-rows: min-content
+        show_name: false
+        show_icon: false
+        custom_fields:
+          item_entity1:
+            card:
+              type: "custom:button-card"
+              template:
+                - "card_generic"
+              entity: "[[[ return entity.entity_id;]]]"
+              variables:
+                ulm_card_generic_icon: "[[[ return variables.ulm_card_graph_icon; ]]]"
+                ulm_card_generic_name: "[[[ return variables.ulm_card_graph_name; ]]]"
+              styles:
+                card:
+                  - padding: 0px 0px 0px 0px
+                  - box-shadow: 0px 0px 0px 0px var(--button-card-light-color)
+              custom_fields:
+                item1:
+                  card:
+                    type: "custom:button-card"
+                    custom_fields:
+                      item1:
+                        card:
+                          type: "custom:button-card"
+                          styles:
+                            icon:
+                              - color: >
+                                  [[[
+                                    var color = variables.ulm_card_graph_icon_color;
+                                    if (variables.ulm_card_graph_icon_color){
+                                      return 'rgba(var(--color-' + color + '),1)';
+                                    }
+                                    return 'rgba(var(--color-theme),0.2)';
+                                  ]]]
+                            img_cell:
+                              - width: 100%
+                              - height: 100%
+                              - background-color: >
+                                  [[[
+                                    var color = variables.ulm_card_graph_icon_color;
+                                    if (variables.ulm_card_graph_icon_color){
+                                      return 'rgba(var(--color-' + color + '),0.2)';
+                                    }
+                                    return 'rgba(var(--color-theme),0.05)';
+                                  ]]]
+                      item2:
+                        card:
+                          type: "custom:button-card"
+                          styles:
+                            name:
+                              - font-size: 13px
+                            label:
+                              - font-size: 10px
+          item_entity2:
+            card:
+              type: "custom:button-card"
+              template:
+                - "card_generic"
+              entity: "[[[ return variables.ulm_card_graph_entity2; ]]]"
+              variables:
+                ulm_card_generic_icon: "[[[ return variables.ulm_card_graph_icon; ]]]"
+                ulm_card_generic_name: "[[[ return variables.ulm_card_graph_name; ]]]"
+              styles:
+                card:
+                  - border-radius: 0%
+                  - padding: 0px 0px 0px 0px
+                  - box-shadow: 0px 0px 0px 0px var(--button-card-light-color)
+              custom_fields:
+                item1:
+                  card:
+                    type: "custom:button-card"
+                    styles:
+                      grid:
+                        - grid-template-areas: '"item2 item1"'
+                        - grid-template-columns: 1fr min-content
+                        - grid-template-rows: min-content
+                    custom_fields:
+                      item1:
+                        card:
+                          type: "custom:button-card"
+                          styles:
+                            icon:
+                              - color: >
+                                  [[[
+                                    var color = variables.ulm_card_graph_icon_color;
+                                    if (variables.ulm_card_graph_icon_color){
+                                      return 'rgba(var(--color-' + color + '),1)';
+                                    }
+                                    return 'rgba(var(--color-theme),0.2)';
+                                  ]]]
+                            img_cell:
+                              - width: 100%
+                              - height: 100%
+                              - background-color: >
+                                  [[[
+                                    var color = variables.ulm_card_graph_icon_color;
+                                    if (variables.ulm_card_graph_icon_color){
+                                      return 'rgba(var(--color-' + color + '),0.2)';
+                                    }
+                                    return 'rgba(var(--color-theme),0.05)';
+                                  ]]]
+                      item2:
+                        card:
+                          type: "custom:button-card"
+                          styles:
+                            name:
+                              - font-size: 13px
+                              - justify-self: end
+                            label:
+                              - font-size: 10px
+                              - justify-self: end
+
+              
+    item2:
+      card:
+        type: "custom:mini-graph-card"
+        entities: >
+          [[[
+            var ent = [];
+            ent.push(variables.ulm_card_graph_entity);
+            if(variables.ulm_card_graph_entity2 != "")
+              ent.push(variables.ulm_card_graph_entity2);
+            return ent;
+          ]]]
+        line_color: >
+          [[[
+            var col = [];
+            col.push(variables.ulm_card_graph_color);
+            if(variables.ulm_card_graph_color2 != "")
+              col.push(variables.ulm_card_graph_color2);
+            return col;
+          ]]]
+        show:
+          name: false
+          icon: false
+          legend: false
+          state: false
+          graph: "[[[ return variables.ulm_card_graph_type=='fill'?'line':variables.ulm_card_graph_type; ]]]"
+          fill: "[[[ return variables.ulm_card_graph_type=='fill'?true:false; ]]]"
+        hours_to_show: "[[[ return variables.ulm_card_graph_hours; ]]]"
+        points_per_hour: "[[[ return variables.ulm_card_graph_points; ]]]"
+        group_by: "[[[ return variables.ulm_card_graph_group_by; ]]]"
+        line_width: "[[[ return variables.ulm_card_graph_line_width; ]]]"
+        style: |
+          ha-card {
+            box-shadow: none;
+            border-radius: var(--border-radius);
+          }

@@ -1,0 +1,31 @@
+title: "音乐"
+path: "music"
+type: custom:grid-layout
+layout:
+  margin: -0.5vh 0vh 0vh
+  grid-template-columns: auto
+  grid-template-rows: 6vh 85vh 9vh
+  grid-template-areas: |
+    "header"
+    "main"
+    "menu"
+cards:
+  - type: custom:button-card # HEADER
+    view_layout:
+      grid-area: header
+    template: card_layout_header
+    variables:
+      view_name: 音乐
+  - type: custom:layout-card # MAIN
+    view_layout:
+      grid-area: main
+    layout_type: custom:vertical-layout
+    layout:
+      height: 100vh
+      margin: 0vh 0vh 0vh
+      padding: 0vh 0.4vh
+
+  - type: "custom:button-card"
+    view_layout:
+      grid-area: menu
+    template: "card_layout_navibar"

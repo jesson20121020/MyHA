@@ -1,0 +1,28 @@
+---
+### Chip Mdi Icon State ###
+chip_common_icon_state:
+  template: "chip_icon_label"
+  variables:
+    ulm_chip_mdi_icon_state_icon_color: "rgba(var(--color-yellow),1)"
+  tap_action:
+    action: "none"
+  entity: "[[[ return variables.ulm_chip_mdi_icon_state_entity ]]]"
+  triggers_update:
+    - "[[[ return variables.ulm_chip_mdi_icon_state_entity ]]]"
+  show_icon: true
+  icon: "[[[ return variables.ulm_chip_mdi_icon_state_icon ]]]"
+  label: |
+    [[[
+      var state = "";
+      if (states[variables.ulm_chip_mdi_icon_state_entity].state){
+        var state = helpers.localize(entity)
+      }
+      return state;
+    ]]]
+  styles:
+    grid:
+      - grid-template-areas: "'i l'"
+    icon:
+      - color: "[[[ return variables.ulm_chip_mdi_icon_state_icon_color; ]]]"
+    label:
+      - color: "[[[ return variables.ulm_chip_mdi_icon_state_label_color; ]]]"

@@ -1,0 +1,150 @@
+title: "客厅"
+path: "客厅"
+type: custom:grid-layout
+layout:
+  margin: -0.5vh 0vh 0vh
+  grid-template-columns: auto
+  grid-template-rows: 6vh 94vh
+  grid-template-areas: |
+    "header"
+    "main"
+cards:
+  - type: custom:button-card # HEADER
+    view_layout:
+      grid-area: header
+    template: card_layout_header
+    variables:
+      view_name: "客厅"
+      back_path: "/ui-lovelace-minimalist/home"
+  - type: custom:layout-card # MAIN
+    view_layout:
+      grid-area: main
+    layout_type: custom:vertical-layout
+    layout:
+      height: 100vh
+      margin: 0vh 0vh 0vh
+      padding: 0vh 0.4vh
+    cards:
+      - type: custom:mod-card
+        style:
+          hui-horizontal-stack-card$: |
+            hui-conditional-card {
+              flex: 0 0 auto;
+              max-width: fit-content;
+            }
+        card:
+          type: horizontal-stack
+          cards:
+          # 显示房间当前开灯总数量
+          - type: conditional
+            conditions:
+              - condition: numeric_state
+                entity: sensor.ke_ting_kai_deng_shu_liang
+                above: 0
+            card:
+              type: 'custom:button-card'
+              template: chip_common_icon_state
+              variables:
+                ulm_chip_mdi_icon_state_entity: sensor.ke_ting_kai_deng_shu_liang
+                ulm_chip_mdi_icon_state_icon: mdi:lightbulb-group
+
+      # 灯光卡片
+      - type: 'custom:button-card'
+        template: card_title
+        name: Lights
+
+      - type: horizontal-stack
+        cards:
+        - type: "custom:button-card"
+          template: card_light
+          entity: switch.switch_2efe_switch_1
+          variables:
+            ulm_card_light_name: "餐厅灯"
+            ulm_card_light_enable_slider: false
+            ulm_card_light_enable_color: false
+            ulm_card_light_force_background_color: false
+        - type: "custom:button-card"
+          template: card_light
+          entity: switch.switch_2efe_switch_2
+          variables:
+            ulm_card_light_name: "吸顶灯"
+            ulm_card_light_enable_slider: false
+            ulm_card_light_enable_color: false
+            ulm_card_light_force_background_color: false
+      
+      - type: horizontal-stack
+        cards:
+        - type: "custom:button-card"
+          template: card_light
+          entity: switch.switch_2efe_switch_3
+          variables:
+            ulm_card_light_name: "灯带"
+            ulm_card_light_enable_slider: false
+            ulm_card_light_enable_color: false
+            ulm_card_light_force_background_color: false
+        - type: "custom:button-card"
+          template: card_light
+          entity: switch.switch_58d9_switch_2
+          variables:
+            ulm_card_light_name: "筒灯"
+            ulm_card_light_enable_slider: false
+            ulm_card_light_enable_color: false
+            ulm_card_light_force_background_color: false
+      - type: horizontal-stack
+        cards:
+        - type: "custom:button-card"
+          template: card_light
+          entity: switch.switch_58d9_switch_1
+          variables:
+            ulm_card_light_name: "走廊灯"
+            ulm_card_light_enable_slider: false
+            ulm_card_light_enable_color: false
+            ulm_card_light_force_background_color: false
+        - type: "custom:button-card"
+          template: card_light
+          entity: switch.dwdz_sw0a01_fc1b_switch
+          variables:
+            ulm_card_light_name: "电视柜灯"
+            ulm_card_light_enable_slider: false
+            ulm_card_light_enable_color: false
+            ulm_card_light_force_background_color: false
+      - type: "custom:button-card"
+        template: card_light
+        entity: light.cuco_sl4_1ad9_light
+        variables:
+          ulm_card_light_name: "电视背景灯带"
+          ulm_card_light_enable_slider: true
+          ulm_card_light_enable_color: true
+          ulm_card_light_force_background_color: true
+          ulm_card_light_enable_horizontal_wide: true
+          ulm_card_light_enable_horizontal: true
+
+      # 音响/电视
+      - type: 'custom:button-card'
+        template: card_title
+        name: Sound/TV
+      
+      - type: "custom:button-card"
+        template: card_media_player
+        entity: media_player.xiaomi_v1_1dd9_play_control
+        variables:
+          ulm_card_media_player_name : 客厅的小米电视
+          ulm_card_media_player_enable_art: true
+          ulm_card_media_player_enable_volume_buttons: true
+          ulm_card_media_player_collapsible: false
+          ulm_card_media_player_more_info: true
+        tap_action:
+          action: more-info
+        hold_action:
+          action: more-info
+        double_tap_action:
+          action: more-info
+      
+      - type: "custom:button-card"
+        template: card_thermostat
+        entity: climate.miir_ir02_0544_ir_aircondition_control
+        variables:
+          ulm_card_thermostat_enable_collapse: false
+          ulm_card_thermostat_enable_controls: true
+          ulm_card_thermostat_enable_hvac_modes: true
+          ulm_card_thermostat_enable_popup: true

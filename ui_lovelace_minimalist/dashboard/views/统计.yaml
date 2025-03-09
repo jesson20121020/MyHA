@@ -1,0 +1,167 @@
+title: "统计"
+path: "statistic"
+type: custom:grid-layout
+layout:
+  margin: -0.5vh 0vh 0vh
+  grid-template-columns: auto
+  grid-template-rows: 6vh 85vh 9vh
+  grid-template-areas: |
+    "header"
+    "main"
+    "menu"
+cards:
+  - type: custom:button-card # HEADER
+    view_layout:
+      grid-area: header
+    template: card_layout_header
+    variables:
+      view_name: 统计
+  - type: custom:layout-card # MAIN
+    view_layout:
+      grid-area: main
+    layout_type: custom:vertical-layout
+    layout:
+      height: 100vh
+      margin: 0vh 0vh 0vh
+      padding: 0vh 0.4vh
+    cards:
+      # 添加个标题吧
+      - type: "custom:button-card"
+        template: card_title
+        name: 家庭用电
+        styles:
+          name:
+            - font-size: "1.0rem"
+
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template: card_generic
+            entity: sensor.month_electricity_usage_2902
+            variables:
+              ulm_card_generic_name: "上月用电量"
+              ulm_card_generic_color: "red"
+              ulm_active_state: false
+          - type: "custom:button-card"
+            template: card_generic
+            entity: sensor.yearly_electricity_charge_2902
+            variables:
+              ulm_card_generic_name: "去年用电费用"
+              ulm_card_generic_color: "red"
+              ulm_active_state: false
+
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template: card_graph
+            entity: sensor.last_electricity_usage_2902
+            variables:
+              ulm_card_graph_color: "var(--google-blue)"
+              ulm_card_graph_name: 昨日用电
+              ulm_card_graph_entity: sensor.last_electricity_usage_2902
+              ulm_card_graph_type: fill
+              ulm_card_graph_line_width: 5
+              ulm_card_graph_group_by: data
+          - type: "custom:button-card"
+            template: card_graph
+            entity: sensor.month_electricity_charge_2902
+            variables:
+              ulm_card_graph_color: "var(--google-blue)"
+              ulm_card_graph_name: 上月电费
+              ulm_card_graph_entity: sensor.month_electricity_charge_2902
+              ulm_card_graph_type: fill
+              ulm_card_graph_line_width: 5
+              ulm_card_graph_hours: 720
+
+        # 添加个标题吧
+      - type: "custom:button-card"
+        template: card_title
+        name: 充电桩
+        styles:
+          name:
+            - font-size: "1.0rem"
+
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template: card_generic
+            entity: sensor.month_electricity_usage_4702
+            variables:
+              ulm_card_generic_name: "上月用电量"
+              ulm_card_generic_color: "red"
+              ulm_active_state: false
+          - type: "custom:button-card"
+            template: card_generic
+            entity: sensor.yearly_electricity_charge_4702
+            variables:
+              ulm_card_generic_name: "去年用电费用"
+              ulm_active_state: false
+
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template: card_graph
+            entity: sensor.last_electricity_usage_4702
+            variables:
+              ulm_card_graph_color: "var(--google-blue)"
+              ulm_card_graph_name: 昨日用电
+              ulm_card_graph_entity: sensor.last_electricity_usage_4702
+              ulm_card_graph_type: fill
+              ulm_card_graph_line_width: 5
+              ulm_card_graph_group_by: data
+          - type: "custom:button-card"
+            template: card_graph
+            entity: sensor.month_electricity_charge_4702
+            variables:
+              ulm_card_graph_color: "var(--google-blue)"
+              ulm_card_graph_name: 上月电费
+              ulm_card_graph_entity: sensor.month_electricity_charge_4702
+              ulm_card_graph_type: fill
+              ulm_card_graph_line_width: 5
+              ulm_card_graph_hours: 720
+
+    #   - type: custom:apexcharts-card
+    #     graph_span: 720d
+    #     header:
+    #       show: true
+    #       title: 家庭用气情况
+    #       show_states: true
+    #       colorize_states: true
+    #     series:
+    #       - entity: sensor.ran_qi_biao_shang_qi_yong_qi_liang_2
+    #         type: column
+    #         data_generator: |
+    #           // REMOVE ME
+    #           const now = new Date();
+    #           const data = [];
+    #           for(let i = 0; i < entity.attributes.records_date.length; i++) {
+    #             let record_date = entity.attributes.records_date[i];
+    #             let record_val = entity.attributes.records_value[i];
+    #             data.push([Date.parse(record_date), record_val]);
+    #           }
+    #           return data;
+    #   - type: custom:apexcharts-card
+    #     graph_span: 540d
+    #     header:
+    #       show: true
+    #       title: 家庭用水情况
+    #       show_states: true
+    #       colorize_states: true
+    #     series:
+    #       - entity: sensor.shui_biao_shang_qi_yong_shui_liang
+    #         type: column
+    #         data_generator: |
+    #           // REMOVE ME
+    #           const now = new Date();
+    #           const data = [];
+    #           for(let i = 0; i < entity.attributes.records_date.length; i++) {
+    #             let record_date = entity.attributes.records_date[i];
+    #             let record_val = entity.attributes.records_value[i];
+    #             data.push([Date.parse(record_date), record_val]);
+    #           }
+    #           return data;
+
+  - type: "custom:button-card"
+    view_layout:
+      grid-area: menu
+    template: "card_layout_navibar"

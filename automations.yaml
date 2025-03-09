@@ -1,0 +1,260 @@
+- id: '1718518334725'
+  alias: 小米电视每日使用时长限制
+  description: ''
+  triggers:
+  - entity_id:
+    - sensor.jin_ri_dian_shi_zai_xian_shi_chang
+    above: input_number.xiao_mi_dian_shi_mei_ri_shi_yong_shi_chang_shang_xian
+    trigger: numeric_state
+  - entity_id:
+    - device_tracker.c8_28_32_34_f9_c7
+    from:
+    to: home
+    trigger: state
+  conditions:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: input_boolean.xiao_mi_dian_shi_shi_chang_xian_zhi_kai_guan
+      state: 'on'
+    - condition: numeric_state
+      entity_id: sensor.jin_ri_dian_shi_zai_xian_shi_chang
+      above: input_number.xiao_mi_dian_shi_mei_ri_shi_yong_shi_chang_shang_xian
+    - condition: state
+      entity_id: device_tracker.c8_28_32_34_f9_c7
+      state: home
+    - condition: template
+      value_template: '{{as_timestamp(now()) - as_timestamp(state_attr(''automation.xin_jian_zi_dong_hua'',''last_triggered''))
+        > 300}}'
+  actions:
+  - device_id: a0ad402ab514b5161c817d3a0c981ef7
+    domain: text
+    entity_id: be7c34e6b25c1c43b3ec12ff54ba451a
+    type: set_value
+    value: 小木耳，今日电视使用时长已超上限，十秒后即将自动关闭电视
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - device_id: 85d3ec6226d82be9b40dd0bc25a1c6a4
+    domain: select
+    entity_id: 0b92916f408f40e24711bcd7a6b071cd
+    type: select_option
+    option: power
+  mode: single
+- id: '1718520261178'
+  alias: 连续观看电视限制
+  description: ''
+  triggers:
+  - entity_id:
+    - sensor.dian_shi_lian_xu_guan_kan_shi_chang
+    above: 19
+    trigger: numeric_state
+  - entity_id:
+    - device_tracker.c8_28_32_34_f9_c7
+    from:
+    to: home
+    trigger: state
+  conditions:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: device_tracker.c8_28_32_34_f9_c7
+      state: home
+    - condition: state
+      entity_id: input_boolean.xiao_mi_dian_shi_shi_chang_xian_zhi_kai_guan
+      state: 'on'
+    - condition: numeric_state
+      entity_id: sensor.dian_shi_lian_xu_guan_kan_shi_chang
+      above: 19
+    - condition: template
+      value_template: '
+
+        {{as_timestamp(now()) - as_timestamp(state_attr(''automation.lian_xu_guan_kan_dian_shi_xian_zhi'',''last_triggered''))
+        > 300}}'
+  actions:
+  - device_id: a0ad402ab514b5161c817d3a0c981ef7
+    domain: text
+    entity_id: be7c34e6b25c1c43b3ec12ff54ba451a
+    type: set_value
+    value: 小木耳，你已连续看电视超30分钟，十秒后即将自动关闭电视
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 10
+      milliseconds: 0
+  - device_id: 85d3ec6226d82be9b40dd0bc25a1c6a4
+    domain: select
+    entity_id: 0b92916f408f40e24711bcd7a6b071cd
+    type: select_option
+    option: power
+  mode: single
+- id: '1734690433738'
+  alias: 门口有人自动通知手机
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - button.madv_miowlv2_fe51_info
+    attribute: motion_video_time
+  conditions: []
+  actions:
+  - action: notify.mobile_app_iphone_86
+    metadata: {}
+    data:
+      message: 有人在门口逗留
+      title: 注意⚠️
+  mode: single
+- id: '1734758592373'
+  alias: 长按阳台门口开关右健晾衣架下降
+  description: ''
+  triggers:
+  - device_id: dff2313aa42a05fddb131f519c8db4d3
+    domain: homekit_controller
+    type: button2
+    subtype: long_press
+    trigger: device
+  - device_id: dff2313aa42a05fddb131f519c8db4d3
+    domain: homekit_controller
+    type: button2
+    subtype: double_press
+    trigger: device
+  conditions: []
+  actions:
+  - device_id: e136cc654bb57186abec1316cc2a1337
+    domain: select
+    entity_id: d55e2ff34f2795bd2664808bed146669
+    type: select_option
+    option: 下降
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 6
+      milliseconds: 0
+  - device_id: e136cc654bb57186abec1316cc2a1337
+    domain: select
+    entity_id: d55e2ff34f2795bd2664808bed146669
+    type: select_option
+    option: 暂停
+  mode: single
+- id: '1734759050860'
+  alias: 单击阳台门口右键开关灯
+  description: ''
+  triggers:
+  - device_id: dff2313aa42a05fddb131f519c8db4d3
+    domain: homekit_controller
+    type: button2
+    subtype: single_press
+    trigger: device
+  conditions: []
+  actions:
+  - type: toggle
+    device_id: e136cc654bb57186abec1316cc2a1337
+    entity_id: d9843714121e67ce5f852dfbadfbafd9
+    domain: light
+  mode: single
+- id: '1734759167433'
+  alias: 单击阳台门口开关左键暂停晾衣架
+  description: ''
+  triggers:
+  - device_id: dff2313aa42a05fddb131f519c8db4d3
+    domain: homekit_controller
+    type: button1
+    subtype: single_press
+    metadata: {}
+    trigger: device
+  conditions: []
+  actions:
+  - device_id: e136cc654bb57186abec1316cc2a1337
+    domain: select
+    entity_id: d55e2ff34f2795bd2664808bed146669
+    type: select_option
+    option: 暂停
+  mode: single
+- id: '1734759370981'
+  alias: 长按阳台门口左键晾衣架上升
+  description: ''
+  triggers:
+  - device_id: dff2313aa42a05fddb131f519c8db4d3
+    domain: homekit_controller
+    type: button1
+    subtype: long_press
+    trigger: device
+  - device_id: dff2313aa42a05fddb131f519c8db4d3
+    domain: homekit_controller
+    type: button1
+    subtype: double_press
+    trigger: device
+  conditions: []
+  actions:
+  - device_id: e136cc654bb57186abec1316cc2a1337
+    domain: select
+    entity_id: d55e2ff34f2795bd2664808bed146669
+    type: select_option
+    option: 上升
+  mode: single
+- id: '1737078389950'
+  alias: 国家电网定时查询
+  description: ''
+  triggers:
+  - trigger: time
+    at: '10:00:00'
+  conditions: []
+  actions:
+  - action: hassio.addon_restart
+    metadata: {}
+    data:
+      addon: ff9b2288_sgcc_electricity
+  - delay:
+      hours: 1
+      minutes: 0
+      seconds: 0
+  - action: hassio.addon_stop
+    metadata: {}
+    data:
+      addon: ff9b2288_sgcc_electricity
+  mode: single
+- id: '1740894301265'
+  alias: 软路由温度高于45度自动打开风扇
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.bei_kong_j4125_istoreos_temperature
+    above: 45
+  conditions:
+  - condition: state
+    entity_id: switch.ruo_dian_xiang_feng_shan_kong_zhi_qi_switch_1
+    state: 'off'
+  actions:
+  - action: switch.turn_on
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.ruo_dian_xiang_feng_shan_kong_zhi_qi_switch_1
+  mode: single
+- id: '1740894596361'
+  alias: 软路由温度低于45度关闭风扇
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.bei_kong_j4125_istoreos_temperature
+    below: 45
+  conditions:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: switch.ruo_dian_xiang_feng_shan_kong_zhi_qi_switch_1
+      state: 'on'
+    - condition: template
+      value_template: '{{as_timestamp(now()) - as_timestamp(state_attr(''automation.ruan_lu_you_wen_du_gao_yu_45du_zi_dong_da_kai_feng_shan'',''last_triggered''))
+        > 300}}'
+  actions:
+  - action: switch.turn_off
+    metadata: {}
+    data: {}
+    target:
+      entity_id: switch.ruo_dian_xiang_feng_shan_kong_zhi_qi_switch_1
+  mode: single

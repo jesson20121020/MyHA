@@ -1,0 +1,471 @@
+title: "主页"
+path: "home"
+type: custom:grid-layout
+layout:
+  margin: -0.5vh 0vh 0vh
+  grid-template-columns: auto
+  grid-template-rows: 6vh 85vh 9vh
+  grid-template-areas: |
+    "header"
+    "main"
+    "menu"
+cards:
+  - type: custom:button-card # HEADER
+    view_layout:
+      grid-area: header
+    template: card_layout_header
+    variables:
+      view_name: "主页"
+  - type: custom:layout-card # MAIN
+    view_layout:
+      grid-area: main
+    layout_type: custom:vertical-layout
+    layout:
+      height: 100vh
+      margin: 0vh 0vh 0vh
+      padding: 0vh 0.4vh
+    cards:
+      # chips
+      # 1. 天气、室外温度、室内温度
+      - type: custom:mod-card
+        style:
+          hui-horizontal-stack-card$: |
+            hui-conditional-card {
+              flex: 0 0 auto;
+              max-width: fit-content;
+            }
+        card:
+          type: horizontal-stack
+          cards:
+            - type: "custom:button-card"
+              template: chip_temperature
+              variables:
+                ulm_chip_temperature_inside: sensor.miaomiaoce_t2_9c44_temperature
+                ulm_chip_temperature_outside: weather.hangzhou
+                ulm_chip_temperature_weather: weather.hangzhou
+                ulm_card_tap_action: "popup"
+                ulm_custom_popup:
+                  template: "popup_weather_forecast"
+                  entity: weather.hangzhou
+                  popup_variables:
+                    ulm_weather_popup_surpress_first_forecast: false
+
+              label: |
+                [[[
+                  var state = states[variables.ulm_chip_temperature_weather].state;
+                  var icon = {
+                    "clear-night": "🌙",
+                    "cloudy": "☁️",
+                    "exceptional": "🌞",
+                    "fog": "🌫️",
+                    "hail": "⛈️",
+                    "lightning": "⚡",
+                    "lightning-rainy": "⛈️",
+                    "partlycloudy": "⛅",
+                    "pouring": "🌧️",
+                    "rainy": "💧",
+                    "snowy": "❄️",
+                    "snowy-rainy": "🌨️",
+                    "sunny": "☀️",
+                    "windy": "🌪️",
+                    "default": "🌡️"
+                    }
+                  function convertTemperature(temp) {
+                    if (parseFloat(temp) == temp && Math.floor(temp) != temp) {
+                        return parseFloat(temp).toFixed(1);
+                    }
+                    return temp;
+                  }
+                  var outside_temp = states[variables.ulm_chip_temperature_outside].attributes.temperature;
+                  var inside_temp = null;
+                  if (variables.ulm_chip_temperature_inside) {
+                    inside_temp = states[variables.ulm_chip_temperature_inside].state;
+                  }
+                  var label = (icon[state] || icon["default"]) + " " + convertTemperature(outside_temp) + "°";
+                  if (inside_temp) {
+                    label = label + " / " + convertTemperature(inside_temp) + "°";
+                  }
+                  return label;
+                ]]]
+
+            # 显示房间当前开灯总数量
+            - type: conditional
+              conditions:
+                - condition: numeric_state
+                  entity: sensor.kai_deng_zong_shu_liang
+                  above: 0
+              card:
+                type: "custom:button-card"
+                template: chip_common_icon_state
+                variables:
+                  ulm_chip_mdi_icon_state_entity: sensor.kai_deng_zong_shu_liang
+                  ulm_chip_mdi_icon_state_icon: mdi:lightbulb-group
+
+            # 空调，加热器数量
+            - type: conditional
+              conditions:
+                - condition: numeric_state
+                  entity: sensor.kong_diao_jia_re_qi_kai_qi_shu_liang
+                  above: 0
+              card:
+                type: "custom:button-card"
+                template: chip_common_icon_state
+                variables:
+                  ulm_chip_mdi_icon_state_entity: sensor.kong_diao_jia_re_qi_kai_qi_shu_liang
+                  ulm_chip_mdi_icon_state_icon: mdi:air-conditioner
+
+            # 媒体播放器数量
+            - type: conditional
+              conditions:
+                - condition: numeric_state
+                  entity: sensor.yin_xiang_dian_shi_zheng_zai_bo_fang_shu_liang
+                  above: 0
+              card:
+                type: "custom:button-card"
+                template: chip_common_icon_state
+                variables:
+                  ulm_chip_mdi_icon_state_entity: sensor.yin_xiang_dian_shi_zheng_zai_bo_fang_shu_liang
+                  ulm_chip_mdi_icon_state_icon: mdi:television-speaker
+
+            # 洗衣机，烘干机正在工作数量
+            - type: conditional
+              conditions:
+                - condition: numeric_state
+                  entity: sensor.xi_yi_ji_hong_gan_ji_gong_zuo_shu_liang
+                  above: 0
+              card:
+                type: "custom:button-card"
+                template: chip_common_icon_state
+                variables:
+                  ulm_chip_mdi_icon_state_entity: sensor.xi_yi_ji_hong_gan_ji_gong_zuo_shu_liang
+                  ulm_chip_mdi_icon_state_icon: mdi:washing-machine
+            # 各种设备门处于打开状态下的数量
+            - type: conditional
+              conditions:
+                - condition: numeric_state
+                  entity: sensor.she_bei_men_da_kai_shu_liang
+                  above: 0
+              card:
+                type: "custom:button-card"
+                template: chip_common_icon_state
+                variables:
+                  ulm_chip_mdi_icon_state_entity: sensor.she_bei_men_da_kai_shu_liang
+                  ulm_chip_mdi_icon_state_icon: mdi:door-open
+
+      # 2. 人员信息
+      # 欢迎、场景卡片
+      - type: "custom:button-card"
+        template: "card_scenes_welcome"
+        variables:
+          entity_1:
+            entity_id: "input_select.chang_jing_mo_shi_xuan_ze"
+            icon: "mdi:home" #OPTIONAL
+            name: "在家模式" #OPTIONAL
+            color: "blue"
+            state: "在家模式"
+          entity_2:
+            entity_id: "input_select.chang_jing_mo_shi_xuan_ze"
+            icon: "mdi:walk" #OPTIONAL
+            name: "出门模式" #OPTIONAL
+            color: "red"
+            state: "出门模式"
+          entity_3:
+            entity_id: "input_select.chang_jing_mo_shi_xuan_ze"
+            icon: "mdi:moon-waning-crescent" #OPTIONAL
+            name: "晚安模式" #OPTIONAL
+            color: "green"
+            state: "晚安模式"
+          entity_4:
+            entity_id: "input_select.chang_jing_mo_shi_xuan_ze"
+            icon: "mdi:television-classic" #OPTIONAL
+            name: "观影模式" #OPTIONAL
+            color: "purple"
+            state: "观影模式"
+          entity_5:
+            entity_id: "input_select.chang_jing_mo_shi_xuan_ze"
+            icon: "mdi:gamepad-variant" #OPTIONAL
+            name: "游戏模式" #OPTIONAL
+            color: "yellow"
+            state: "游戏模式"
+
+      - type: "custom:button-card"
+        template: card_title
+        name: 人员
+        styles:
+          name:
+            - font-size: "1.0rem"
+      # 人员卡片
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template: card_person
+            entity: person.mu_er_ba_ba
+            show_last_changed: true
+            variables:
+              ulm_card_person_entity: person.mu_er_ba_ba
+              ulm_card_person_use_entity_picture: true
+              ulm_card_person_icon: mdi:face-woman
+              ulm_card_person_battery: sensor.iphone_86_battery_level
+            styles:
+              custom_fields:
+                notification:
+                  - background-color: >
+                      [[[
+                        return (entity.state !== 'home') ? "rgba(var(--color-red),1)" : "rgba(var(--color-blue),1)";
+                      ]]]
+          - type: "custom:button-card"
+            template: card_person
+            entity: person.mu_er_ma_ma
+            show_last_changed: true
+            variables:
+              ulm_card_person_entity: person.mu_er_ma_ma
+              ulm_card_person_use_entity_picture: true
+              ulm_card_person_icon: mdi:face-woman
+              ulm_address: person.mu_er_ma_ma
+            styles:
+              custom_fields:
+                notification:
+                  - background-color: >
+                      [[[
+                        return (entity.state !== 'home') ? "rgba(var(--color-red),1)" : "rgba(var(--color-blue),1)";
+                      ]]]
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template: card_person
+            entity: person.mu_er_ye_ye
+            show_last_changed: true
+            variables:
+              ulm_card_person_entity: person.mu_er_ye_ye
+              ulm_card_person_use_entity_picture: true
+              ulm_card_person_icon: mdi:face-woman
+              ulm_address: person.mu_er_ye_ye
+            styles:
+              custom_fields:
+                notification:
+                  - background-color: >
+                      [[[
+                        return (entity.state !== 'home') ? "rgba(var(--color-red),1)" : "rgba(var(--color-blue),1)";
+                      ]]]
+          - type: "custom:button-card"
+            template: card_person
+            entity: person.mu_er_nai_nai
+            show_last_changed: true
+            variables:
+              ulm_card_person_entity: person.mu_er_nai_nai
+              ulm_card_person_use_entity_picture: true
+              ulm_card_person_icon: mdi:face-woman
+              ulm_address: person.mu_er_nai_nai
+            styles:
+              custom_fields:
+                notification:
+                  - background-color: >
+                      [[[
+                        return (entity.state !== 'home') ? "rgba(var(--color-red),1)" : "rgba(var(--color-blue),1)";
+                      ]]]
+
+      # 房间卡片
+      - type: "custom:button-card"
+        template: card_title
+        name: 房间
+        styles:
+          name:
+            - font-size: "1.0rem"
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template:
+              - card_esh_room
+              - yellow_on
+            name: 客厅
+            icon: mdi:sofa-outline
+            tap_action:
+              action: navigate
+              navigation_path: "客厅"
+            variables:
+              ulm_card_esh_room_light_counter_sensor: sensor.ke_ting_kai_deng_shu_liang
+              entity_1:
+                entity_id: fan.dmaker_p9_e103_fan
+                icon_on: mdi:fan
+                icon_off: mdi:fan
+                color: var(--color-green)
+                on_state: "[[[ return states['fan.dmaker_p9_e103_fan'].state == 'on'; ]]]"
+              entity_2:
+                entity_id: device_tracker.c8_28_32_34_f9_c7
+                icon_on: mdi:television-pause
+                icon_off: mdi:television-play
+                on_state: "[[[return states['device_tracker.c8_28_32_34_f9_c7'].state == 'home';]]]"
+              entity_3:
+                entity_id: media_player.xiaomi_lx06_d022_play_control
+                icon_on: mdi:speaker-pause
+                icon_off: mdi:speaker-play
+                on_state: "[[[return states['media_player.xiaomi_lx06_d022_play_control'].state == 'playing';]]]"
+              entity_4:
+                entity_id: sensor.g20s_status
+                icon_on: mdi:robot-vacuum
+                icon_off: mdi:robot-vacuum-off
+                on_state: "[[[return states['sensor.g20s_status'].state != 'charging';]]]"
+              ulm_custom_card_esh_room_light_entity:
+                - switch.switch_2efe_switch_1
+                - switch.switch_2efe_switch_2
+                - switch.switch_2efe_switch_3
+                - switch.switch_58d9_switch_2
+                - switch.switch_58d9_switch_1
+                - switch.dwdz_sw0a01_fc1b_switch
+                - light.cuco_sl4_1ad9_light
+            label: >
+              [[[
+                return states['sensor.miaomiaoce_t2_9c44_temperature'].state + "°C" 
+              ]]]
+          - type: "custom:button-card"
+            template:
+              - card_esh_room
+              - yellow_on
+            name: 书房
+            icon: mdi:laptop
+            tap_action:
+              action: navigate
+              navigation_path: "书房"
+            variables:
+              ulm_custom_card_esh_room_light_entity:
+                - switch.switch_c035
+              entity_1:
+                entity_id: climate.xiaomi_mt6_dcc3_air_conditioner
+                icon_on: phu:air-conditioner
+                icon_off: phu:air-conditioner
+                color: var(--color-green)
+                on_state: "[[[ return states['climate.xiaomi_mt6_dcc3_air_conditioner'].state != 'off'; ]]]"
+                ulm_card_tap_action: "popup"
+                ulm_custom_popup:
+                  template: "popup_thermostat_temperature"
+                  entity: climate.xiaomi_mt6_dcc3_air_conditioner
+              entity_2:
+                entity_id: device_tracker.00_e4_21_d6_06_7c
+                icon_on: mdi:sony-playstation
+                icon_off: mdi:sony-playstation
+                on_state: "[[[return states['device_tracker.00_e4_21_d6_06_7c'].state == 'home';]]]"
+              entity_3:
+                entity_id: device_tracker.4c_ed_fb_c6_ec_71
+                icon_on: mdi:desktop-classic
+                icon_off: mdi:desktop-classic
+                on_state: "[[[return states['device_tracker.4c_ed_fb_c6_ec_71'].state == 'home';]]]"
+              entity_4:
+                entity_id: device_tracker.10_7b_44_15_29_d8
+                icon_on: cil:synology-nas
+                icon_off: cil:synology-nas
+                on_state: "[[[return states['device_tracker.10_7b_44_15_29_d8'].state == 'home';]]]"
+            label: '[[[ return states["sensor.xiaomi_mt6_dcc3_temperature"].state + "°C" ]]]'
+
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template:
+              - card_esh_room
+              - yellow_on
+            name: 主卧
+            icon: mdi:bed-king
+            tap_action:
+              action: navigate
+              navigation_path: "主卧"
+            variables:
+              ulm_card_esh_room_light_counter_sensor: sensor.zhu_wo_kai_deng_shu_liang
+              ulm_custom_card_esh_room_light_entity:
+                - switch.switch_c208_switch_2
+                - switch.switch_c208_switch_1
+                - switch.switch_181c_switch_1
+                - switch.switch_181c_switch_2
+                - light.yeelink_light3_d886_light
+              entity_1:
+                entity_id: fan.dmaker_p28_7dda_fan
+                icon_on: phu:pedastal-fan
+                icon_off: phu:pedastal-fan
+                color: var(--color-green)
+                on_state: "[[[ return states['fan.dmaker_p28_7dda_fan'].state == 'on'; ]]]"
+              entity_2:
+                entity_id: climate.lumi_mcn02_661e_air_conditioner
+                icon_on: phu:air-conditioner
+                icon_off: phu:air-conditioner
+                color: var(--color-green)
+                on_state: "[[[ return states['climate.lumi_mcn02_661e_air_conditioner'].state != 'off'; ]]]"
+              entity_4:
+                entity_id: media_player.xiaomi_l7a_fc90_play_control
+                icon_on: mdi:speaker-pause
+                icon_off: mdi:speaker-play
+                on_state: "[[[return states['media_player.xiaomi_l7a_fc90_play_control'].state == 'playing';]]]"
+
+            label: '[[[ return states["sensor.xiaomi_mt6_dcc3_temperature"].state + "°C" ]]]'
+          - type: "custom:button-card"
+            template:
+              - card_esh_room
+              - yellow_on
+            name: 阳台
+            icon: mdi:window-open-variant
+            tap_action:
+              action: navigate
+              navigation_path: "阳台"
+            variables:
+              ulm_custom_card_esh_room_light_entity:
+                - light.viomi_ich108_091d_light
+              entity_1:
+                entity_id: sensor.161628213624821_progress
+                icon_on: mdi:washing-machine
+                icon_off: mdi:washing-machine-off
+                color: var(--color-green)
+                on_state: "[[[ return states['sensor.161628213624821_progress'].state != 'Idle'; ]]]"
+              entity_2:
+                entity_id: sensor.minij_v20_ba3f_washer
+                icon_on: mdi:dishwasher
+                icon_off: mdi:dishwasher-off
+                on_state: "[[[ return states['sensor.minij_v20_ba3f_washer'].state == 'run'; ]]]"
+              entity_4:
+                entity_id: sensor.161628213625219_progress
+                icon_on: mdi:tumble-dryer
+                icon_off: mdi:tumble-dryer-off
+                on_state: "[[[return states['sensor.161628213625219_progress'].state != 'Prog1';]]]"
+            label: '[[[ return states["sensor.xiaomi_mt6_dcc3_temperature"].state + "°C" ]]]'
+
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template:
+              - card_esh_room
+              - yellow_on
+            name: 儿童房
+            entity: switch.switch_8769
+            icon: mdi:human-child
+            tap_action:
+              action: navigate
+              navigation_path: "儿童房"
+            variables:
+              ulm_custom_card_esh_room_light_entity:
+                - switch.switch_8769
+              entity_2:
+                entity_id: media_player.jiqid_pro_656b_play_control
+                icon_on: mdi:rabbit-variant
+                icon_off: mdi:rabbit-variant
+                on_state: "[[[states['media_player.jiqid_pro_656b_play_control'].state == 'playing';]]]"
+            label: '[[[ return states["sensor.xiaomi_mt6_dcc3_temperature"].state + "°C" ]]]'
+          - type: "custom:button-card"
+            template:
+              - card_esh_room
+              - yellow_on
+            name: 次卧
+            label: '[[[ return states["sensor.xiaomi_mt6_dcc3_temperature"].state + "°C" ]]]'
+            icon: mdi:bed-queen
+            tap_action:
+              action: navigate
+              navigation_path: "次卧"
+            variables:
+              ulm_custom_card_esh_room_light_entity:
+                - switch.switch_af79
+              entity_2:
+                entity_id: climate.lumi_mcn02_f7e6_air_conditioner
+                icon_on: phu:air-conditioner
+                icon_off: phu:air-conditioner
+                color: var(--color-green)
+                on_state: "[[[ return states['climate.lumi_mcn02_f7e6_air_conditioner'].state != 'off' && states['climate.lumi_mcn02_f7e6_air_conditioner'].state != 'unavailable'; ]]]"
+
+  - type: "custom:button-card"
+    view_layout:
+      grid-area: menu
+    template: "card_layout_navibar"

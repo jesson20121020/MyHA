@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+           <html>
+           
+           <head>
+               <style>
+                   @media only screen and (max-width: 600px) {
+                       input[type="month"] {
+                           text-align: left;
+                           /* 设置输入框左对齐 */
+                           width: 100%;
+                           /* 确保宽度占据整个父容器 */
+                           box-sizing: border-box;
+                           /* 包含内边距和边框在内的宽度 */
+                       }
+                   }
+           
+                   ha-card {
+                       padding: 0px !important;
+                   }
+           
+                   body {
+                       font-family: Arial, sans-serif;
+                       background-color: #f4f4f4;
+                       padding: 0px;
+                   }
+           
+                   form {
+                       background-color: #fff;
+                       padding: 20px;
+                       border-radius: 10px;
+                       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                       max-width: 400px;
+                       margin: 0 auto;
+                   }
+           
+                   h2 {
+                       text-align: center;
+                   }
+           
+                   label {
+                       display: block;
+                       margin-bottom: 8px;
+                   }
+           
+                   .form-grid {
+                       margin-top: 20px;
+                       display: grid;
+                       grid-template-columns: max-content 1fr;
+                       align-items: center;
+                       column-gap: 10px;
+                       /* 可根据需求调整间距 */
+                   }
+           
+                   .form-grid label {
+                       margin-bottom: 10px;
+                       justify-self: end;
+                       /* label 右对齐 */
+                       align-self: center;
+                       /* label 垂直居中 */
+                   }
+           
+                   input[type="tel"] {
+                       color: blue;
+                       width: -webkit-fill-available;
+                       padding: 10px;
+                       margin-bottom: 20px;
+                       border: 1px solid #ccc;
+                       border-radius: 5px;
+                       background-color: transparent;
+                   }
+           
+                   input[type="number"] {
+                       color: blue;
+                       width: -webkit-fill-available;
+                       padding: 10px;
+                       margin-bottom: 20px;
+                       border: 1px solid #ccc;
+                       border-radius: 5px;
+                       background-color: transparent;
+                   }
+           
+                   input[type="text"] {
+                       text-align: left;
+                       /* 设置输入框左对齐 */
+                       color: blue;
+                       width: -webkit-fill-available;
+                       padding: 10px;
+                       margin-bottom: 20px;
+                       border: 1px solid #ccc;
+                       border-radius: 5px;
+                       background-color: transparent;
+                   }
+           
+                   input[type="button"] {
+                       background-color: #4caf50;
+                       color: white;
+                       padding: 12px 20px;
+                       border: none;
+                       border-radius: 5px;
+                       cursor: pointer;
+                       width: 100%;
+                   }
+                   .row_button {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr; /* 两个输入框等宽 */
+                    grid-column-gap: 5px; /* 可以根据需要调整间距 */
+                   }
+                   .close_button, .submit_button {
+                    padding: 10px 20px;
+                    font-size: 16px;
+                    border: none;
+                    cursor: pointer;
+                    transition: background-color 0.3s, color 0.3s;
+                  }
+
+                    /* 悬停效果 */
+                  .close_button:hover {
+                    background-color: #FF0000;
+                  }
+
+                    /* 点击效果 */
+                  .close_button:active {
+                    background-color: #FF0000;
+                 }
+
+                  .submit_button:hover {
+                    background-color: #45a049;
+                  }
+
+                  .submit_button:active {
+                    background-color: #398038;
+                  }
+               </style>
+           </head>
+           
+           <body>
+               <form>
+                   <h2 style="font-size: 20px;">添加用水记录</h2>
+                   <div class="form-grid"> 
+                       <label for="readingDate">抄表日期</label>
+                       <input type="text" name="date">
+                       <label for="meterReading">水表读数</label>
+                       <input type="tel" pattern="decimal" name="value">
+                       <label for="waterUsage">用水量</label>
+                       <input type="tel" inputmode="decimal" name="usage">
+                       <label for="waterCost2">用水费用</label>
+                       <input type="tel" inputmode="decimal" name="cost">
+                   </div>
+                   <div class="row_button">
+                    <input class="close_button" type="button" value="关闭" style="background-color: #ffa000" onclick="">
+                    <input class="submit_button" type="button" value="提交" style="background-color: #4caf500" onclick="hass.callService('mqtt', 'publish', {qos: '0', topic: 'home_data/water_1504', payload: this.form.elements['date'].value + ' ' + this.form.elements['value'].value + ' ' + this.form.elements['usage'].value + ' ' + this.form.elements['cost'].value })">
+                   </div>
+                </form>
+           </body>
+           
+           </html>

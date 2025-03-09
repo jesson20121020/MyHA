@@ -1,0 +1,173 @@
+title: "书房"
+path: "书房"
+type: custom:grid-layout
+layout:
+  margin: -0.5vh 0vh 0vh
+  grid-template-columns: auto
+  grid-template-rows: 6vh 94vh
+  grid-template-areas: |
+    "header"
+    "main"
+cards:
+  - type: custom:button-card # HEADER
+    view_layout:
+      grid-area: header
+    template: card_layout_header
+    variables:
+      view_name: "书房"
+      back_path: "/ui-lovelace-minimalist/home"
+  - type: custom:layout-card # MAIN
+    view_layout:
+      grid-area: main
+    layout_type: custom:vertical-layout
+    layout:
+      height: 100vh
+      margin: 0vh 0vh 0vh
+      padding: 0vh 0.4vh
+    cards:
+      - type: custom:mod-card
+        style:
+          hui-horizontal-stack-card$: |
+            hui-conditional-card {
+              flex: 0 0 auto;
+              max-width: fit-content;
+            }
+        card:
+          type: horizontal-stack
+          cards:
+            # 显示书房当前打开的灯的数量
+            - type: conditional
+              conditions:
+                - condition: numeric_state
+                  entity: sensor.shu_fang_kai_deng_shu_liang
+                  above: 0
+              card:
+                type: "custom:button-card"
+                template: chip_common_icon_state
+                variables:
+                  ulm_chip_mdi_icon_state_entity: sensor.shu_fang_kai_deng_shu_liang
+                  ulm_chip_mdi_icon_state_icon: mdi:lightbulb-group
+
+      # 灯光卡片
+      - type: "custom:button-card"
+        template: card_title
+        name: Lights
+
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template: card_state_light
+            entity: switch.switch_c035
+            variables:
+              ulm_card_light_name: "书房灯"
+              ulm_card_light_enable_slider: false
+              ulm_card_light_enable_color: false
+              ulm_card_light_force_background_color: false
+              ulm_card_tap_action: "popup"
+              ulm_custom_popup:
+                template: "custom_card_light_popup"
+                entity: light.aqara_hub_m1s_5731_lightbulb
+
+      # 书房温度
+      - type: "custom:button-card"
+        template: card_title
+        name: 环境
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template: card_graph
+            entity: sensor.xiaomi_mt6_dcc3_temperature
+            variables:
+              ulm_card_graph_color: "var(--google-blue)"
+              ulm_card_graph_name: 温度
+              ulm_card_graph_entity: sensor.xiaomi_mt6_dcc3_temperature
+              ulm_card_graph_type: fill
+              ulm_card_graph_line_width: 5
+          - type: "custom:button-card"
+            template: card_graph
+            entity: sensor.miaomiaoce_t2_9c44_relative_humidity
+            variables:
+              ulm_card_graph_color: "var(--google-blue)"
+              ulm_card_graph_name: 湿度
+              ulm_card_graph_entity: sensor.miaomiaoce_t2_9c44_relative_humidity
+              ulm_card_graph_type: fill
+              ulm_card_graph_line_width: 5
+              ulm_card_tap_action: "popup"
+              ulm_custom_popup:
+                template: "custom_popup_weather_radar2"
+                entity: climate.xiaomi_mt6_dcc3_air_conditioner
+                popup_variables:
+                  ulm_weather_popup_surpress_first_forecast: false
+
+      - type: "custom:button-card"
+        name: +
+        tap_action:
+          action: fire-dom-event
+          browser_mod:
+            service: browser_mod.popup
+            data:
+              large: true
+              hide_header: true
+              style: |
+                --popup-border-radius: 20px;
+                --popup-padding-x: 24px;
+                --popup-padding-y: 20px;
+                --popup-max-width: auto
+                --popup-min-width: 800px;
+              card_mod:
+                style:
+                  ha-dialog$: |
+                    @media (max-width: 800px){
+                      div.mdc-dialog__container {
+                        --mdc-dialog-min-width: 95vw;
+                        --mdc-dialog-max-width: 95vw;
+                        --mdc-dialog-min-height: auto;
+                        --ha-dialog-border-radius: 10px;
+                        --vertical-align-dialog: center;
+                        --mdc-theme-surface: transparent;
+                        --mdc-dialog-background-color: transparent;
+                      }
+                    }
+              content:
+                type: custom:button-card
+                template: "custom_popup_weather_radar2"
+                entity: climate.xiaomi_mt6_dcc3_air_conditioner
+
+      - type: "custom:button-card"
+        template: card_thermostat
+        entity: climate.xiaomi_mt6_dcc3_air_conditioner
+        variables:
+          ulm_card_thermostat_enable_collapse: false
+          ulm_card_thermostat_enable_controls: true
+          ulm_card_thermostat_enable_hvac_modes: true
+          ulm_card_thermostat_enable_popup: false
+     
+      - type: "custom:button-card"
+        template: "custom_card_nik_nas"
+        entity: switch.chuangmi_212a01_e989_switch
+        variables:
+          graph_span: "1d"
+          chart_type: "radialBar"
+          entity_1:
+            entity_id: "sensor.bei_kong_j4125_istoreos_temperature"
+            icon: ''
+            name: "Temp"
+            color: "yellow"
+            max_value: 100
+          entity_2:
+            entity_id: "sensor.bei_kong_j4125_istoreos_ram_used"
+            icon: ''
+            name: "Memory"
+            color: "blue"
+            max_value: 100
+          entity_3:
+            entity_id: "sensor.bei_kong_j4125_istoreos_cpu_0"
+            icon: ''
+            name: "CPU"
+            color: "green"
+            max_value: 100
+          entity_4:
+            entity_id: "sensor.home_assistant_host_disk_used"
+            icon: "mdi:harddisk"
+            name: "Disk"
+            color: "red"

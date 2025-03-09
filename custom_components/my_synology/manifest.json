@@ -1,0 +1,25 @@
+{
+  "domain": "my_synology",
+  "name": "Synology DSM Custom",
+  "codeowners": ["@jesson20121020"],
+  "config_flow": true,
+  "dependencies": ["http"],
+  "documentation": "https://www.home-assistant.io/integrations/synology_dsm",
+  "iot_class": "local_polling",
+  "loggers": ["my_synology"],
+  "requirements": ["py-synologydsm-api==2.5.3"],
+  "ssdp": [
+    {
+      "manufacturer": "Synology",
+      "deviceType": "urn:schemas-upnp-org:device:Basic:1"
+    }
+  ],
+  "zeroconf": [
+    {
+      "type": "_http._tcp.local.",
+      "properties": {
+        "vendor": "synology*"
+      }
+    }
+  ]
+}

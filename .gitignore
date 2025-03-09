@@ -1,0 +1,9 @@
+backup.dbb
+home-assistant_v2.*
+home-assistant.log*
+.HA_VERSION
+.exports
+.jwt_secret
+.storage
+.timeline
+.vacuum
