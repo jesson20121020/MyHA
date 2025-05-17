@@ -1,0 +1,9 @@
+[2025-05-10 12:35:07] info: 	z2m: Logging to console, file (filename: log.log)
+[2025-05-10 12:35:07] info: 	z2m: Starting Zigbee2MQTT version 2.3.0 (commit #unknown)
+[2025-05-10 12:35:07] info: 	z2m: Starting zigbee-herdsman (4.0.0)
+[2025-05-10 12:35:07] info: 	zh:zstack:znp: Opening SerialPort with {"path":"/dev/ttyUSB0","baudRate":115200,"rtscts":false,"autoOpen":false}
+[2025-05-10 12:35:07] error: 	z2m: Error while starting zigbee-herdsman
+[2025-05-10 12:35:07] error: 	z2m: Failed to start zigbee-herdsman
+[2025-05-10 12:35:07] error: 	z2m: Check https://www.zigbee2mqtt.io/guide/installation/20_zigbee2mqtt-fails-to-start_crashes-runtime.html for possible solutions
+[2025-05-10 12:35:07] error: 	z2m: Exiting...
+[2025-05-10 12:35:07] error: 	z2m: Error: Error: No such file or directory, cannot open /dev/ttyUSB0

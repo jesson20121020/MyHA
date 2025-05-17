@@ -19,6 +19,10 @@ logger:
   default: info
   logs:
     custom_components.pyscript: info
+    
+
+environment_variable:
+  OPENAI_BASE_URL: https://api.deepseek.com/v1
 
 # 允许代理
 http:

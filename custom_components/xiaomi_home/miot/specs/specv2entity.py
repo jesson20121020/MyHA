@@ -48,9 +48,11 @@ Conversion rules of MIoT-Spec-V2 instance to Home Assistant entity.
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.components.event import EventDeviceClass
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 
 from homeassistant.const import (
     CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+    EntityCategory,
     LIGHT_LUX,
     UnitOfEnergy,
     UnitOfPower,
@@ -137,7 +139,7 @@ SPEC_DEVICE_TRANS_MAP: dict = {
                 'optional': {
                     'properties': {'mode', 'target-humidity'}
                 }
-            },
+            }
         },
         'optional': {
             'environment': {
@@ -163,8 +165,7 @@ SPEC_DEVICE_TRANS_MAP: dict = {
                         'continue-sweep',
                         'stop-and-gocharge'
                     }
-                },
-
+                }
             }
         },
         'optional': {
@@ -177,9 +178,9 @@ SPEC_DEVICE_TRANS_MAP: dict = {
                 'required': {
                     'properties': {
                         'battery-level': {'read'}
-                    },
+                    }
                 }
-            },
+            }
         },
         'entity': 'vacuum'
     },
@@ -195,7 +196,7 @@ SPEC_DEVICE_TRANS_MAP: dict = {
                 },
                 'optional': {
                     'properties': {'target-humidity'}
-                },
+                }
             }
         },
         'optional': {
@@ -236,7 +237,7 @@ SPEC_DEVICE_TRANS_MAP: dict = {
                     'properties': {
                         'target-temperature', 'mode', 'fan-level',
                         'temperature'}
-                },
+                }
             }
         },
         'optional': {
@@ -245,7 +246,7 @@ SPEC_DEVICE_TRANS_MAP: dict = {
                 'optional': {
                     'properties': {'temperature', 'relative-humidity'}
                 }
-            },
+            }
         },
         'entity': 'thermostat'
     },
@@ -259,7 +260,7 @@ SPEC_DEVICE_TRANS_MAP: dict = {
                 },
                 'optional': {
                     'properties': {'target-temperature', 'heat-level'}
-                },
+                }
             }
         },
         'optional': {
@@ -268,20 +269,21 @@ SPEC_DEVICE_TRANS_MAP: dict = {
                 'optional': {
                     'properties': {'temperature', 'relative-humidity'}
                 }
-            },
+            }
         },
         'entity': 'heater'
     },
     'bath-heater': {
         'required': {
             'ptc-bath-heater': {
-                'required': {},
-                'optional': {
+                'required': {
                     'properties': {
-                        'target-temperature', 'heat-level',
-                        'temperature', 'mode'
+                        'mode':{'read', 'write'}
                     }
                 },
+                'optional': {
+                    'properties': {'target-temperature', 'temperature'}
+                }
             }
         },
         'optional': {
@@ -291,7 +293,13 @@ SPEC_DEVICE_TRANS_MAP: dict = {
                     'properties': {
                         'on', 'fan-level', 'horizontal-swing', 'vertical-swing'
                     }
-                },
+                }
+            },
+            'environment': {
+                'required': {},
+                'optional': {
+                    'properties': {'temperature'}
+                }
             }
         },
         'entity': 'bath-heater',
@@ -307,7 +315,7 @@ SPEC_DEVICE_TRANS_MAP: dict = {
                 },
                 'optional': {
                     'properties': {'mode', 'temperature'}
-                },
+                }
             }
         },
         'optional': {},
@@ -330,7 +338,8 @@ SPEC_DEVICE_TRANS_MAP: dict = {
             'events': set<event instance name: str>,
             'actions': set<action instance name: str>
         },
-        'entity': str
+        'entity': str,
+        'entity_category'?: str
     }
 }
 """
@@ -348,10 +357,23 @@ SPEC_SERVICE_TRANS_MAP: dict = {
         },
         'entity': 'light'
     },
-    'indicator-light': 'light',
     'ambient-light': 'light',
     'night-light': 'light',
     'white-light': 'light',
+    'indicator-light': {
+        'required': {
+            'properties': {
+                'on': {'read', 'write'}
+            }
+        },
+        'optional': {
+            'properties': {
+                'mode', 'brightness',
+            }
+        },
+        'entity': 'light',
+        'entity_category': EntityCategory.CONFIG
+    },
     'fan': {
         'required': {
             'properties': {
@@ -366,6 +388,8 @@ SPEC_SERVICE_TRANS_MAP: dict = {
     },
     'fan-control': 'fan',
     'ceiling-fan': 'fan',
+    'air-fresh': 'fan',
+    'air-purifier': 'fan',
     'water-heater': {
         'required': {
             'properties': {
@@ -385,14 +409,27 @@ SPEC_SERVICE_TRANS_MAP: dict = {
         },
         'optional': {
             'properties': {
-                'motor-control', 'status', 'current-position', 'target-position'
+                'status', 'current-position', 'target-position'
             }
         },
         'entity': 'cover'
     },
     'window-opener': 'curtain',
     'motor-controller': 'curtain',
-    'airer': 'curtain'
+    'airer': 'curtain',
+    'air-conditioner': {
+        'required': {
+            'properties': {
+                'on': {'read', 'write'},
+                'mode': {'read', 'write'},
+                'target-temperature': {'read', 'write'}
+            }
+        },
+        'optional': {
+            'properties': {'target-humidity'}
+        },
+        'entity': 'air-conditioner'
+    }
 }
 
 """SPEC_PROP_TRANS_MAP
@@ -419,12 +456,28 @@ SPEC_PROP_TRANS_MAP: dict = {
             'format': {'int', 'float'},
             'access': {'read'}
         },
+        'binary_sensor': {
+            'format': {'bool', 'int'},
+            'access': {'read'}
+        },
         'switch': {
             'format': {'bool'},
             'access': {'read', 'write'}
         }
     },
     'properties': {
+        'submersion-state': {
+            'device_class': BinarySensorDeviceClass.MOISTURE,
+            'entity': 'binary_sensor'
+        },
+        'contact-state': {
+            'device_class': BinarySensorDeviceClass.DOOR,
+            'entity': 'binary_sensor'
+        },
+        'occupancy-status': {
+            'device_class': BinarySensorDeviceClass.OCCUPANCY,
+            'entity': 'binary_sensor',
+        },
         'temperature': {
             'device_class': SensorDeviceClass.TEMPERATURE,
             'entity': 'sensor',
@@ -471,7 +524,11 @@ SPEC_PROP_TRANS_MAP: dict = {
             'entity': 'sensor',
             'state_class': SensorStateClass.MEASUREMENT
         },
-        'voc-density': 'tvoc-density',
+        'voc-density': {
+            'device_class': SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,
+            'entity': 'sensor',
+            'state_class': SensorStateClass.MEASUREMENT
+        },
         'battery-level': {
             'device_class': SensorDeviceClass.BATTERY,
             'entity': 'sensor',
@@ -525,12 +582,6 @@ SPEC_PROP_TRANS_MAP: dict = {
             'entity': 'sensor',
             'state_class': SensorStateClass.MEASUREMENT,
             'unit_of_measurement': UnitOfPower.WATT
-        },
-        'total-battery': {
-            'device_class': SensorDeviceClass.ENERGY,
-            'entity': 'sensor',
-            'state_class': SensorStateClass.TOTAL_INCREASING,
-            'unit_of_measurement': UnitOfEnergy.KILO_WATT_HOUR
         }
     }
 }

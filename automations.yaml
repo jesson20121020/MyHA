@@ -49,7 +49,7 @@
   triggers:
   - entity_id:
     - sensor.dian_shi_lian_xu_guan_kan_shi_chang
-    above: 19
+    above: 25
     trigger: numeric_state
   - entity_id:
     - device_tracker.c8_28_32_34_f9_c7
@@ -67,7 +67,7 @@
       state: 'on'
     - condition: numeric_state
       entity_id: sensor.dian_shi_lian_xu_guan_kan_shi_chang
-      above: 19
+      above: 25
     - condition: template
       value_template: '
 
@@ -123,20 +123,18 @@
   conditions: []
   actions:
   - device_id: e136cc654bb57186abec1316cc2a1337
-    domain: select
-    entity_id: d55e2ff34f2795bd2664808bed146669
-    type: select_option
-    option: 下降
+    domain: cover
+    entity_id: 1f6c814c8ee42d656c821f7bbca6138e
+    type: open
   - delay:
       hours: 0
       minutes: 0
       seconds: 6
       milliseconds: 0
   - device_id: e136cc654bb57186abec1316cc2a1337
-    domain: select
-    entity_id: d55e2ff34f2795bd2664808bed146669
-    type: select_option
-    option: 暂停
+    domain: cover
+    entity_id: 1f6c814c8ee42d656c821f7bbca6138e
+    type: stop
   mode: single
 - id: '1734759050860'
   alias: 单击阳台门口右键开关灯
@@ -167,10 +165,9 @@
   conditions: []
   actions:
   - device_id: e136cc654bb57186abec1316cc2a1337
-    domain: select
-    entity_id: d55e2ff34f2795bd2664808bed146669
-    type: select_option
-    option: 暂停
+    domain: cover
+    entity_id: 1f6c814c8ee42d656c821f7bbca6138e
+    type: stop
   mode: single
 - id: '1734759370981'
   alias: 长按阳台门口左键晾衣架上升
@@ -189,10 +186,9 @@
   conditions: []
   actions:
   - device_id: e136cc654bb57186abec1316cc2a1337
-    domain: select
-    entity_id: d55e2ff34f2795bd2664808bed146669
-    type: select_option
-    option: 上升
+    domain: cover
+    entity_id: 1f6c814c8ee42d656c821f7bbca6138e
+    type: close
   mode: single
 - id: '1737078389950'
   alias: 国家电网定时查询

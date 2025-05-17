@@ -1,0 +1,51 @@
+version: 4
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://192.168.31.104:1883
+  user: mqtt-user
+  password: mqtt-password
+serial:
+  port: /dev/ttyUSB0
+  adapter: zstack
+  baudrate: 115200
+  rtscts: false
+advanced:
+  log_level: info
+  channel: 11
+  network_key:
+    - 74
+    - 175
+    - 90
+    - 222
+    - 218
+    - 231
+    - 170
+    - 162
+    - 34
+    - 218
+    - 186
+    - 211
+    - 253
+    - 78
+    - 139
+    - 157
+  pan_id: 28162
+  ext_pan_id:
+    - 119
+    - 141
+    - 186
+    - 250
+    - 20
+    - 250
+    - 18
+    - 153
+frontend:
+  enabled: true
+  port: 8099
+homeassistant:
+  enabled: true
+devices:
+  '0x000d6f0016689396':
+    friendly_name: 烟雾报警器
+  '0x000d6f00164551d1':
+    friendly_name: 燃气报警器

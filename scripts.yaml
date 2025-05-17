@@ -1,0 +1,25 @@
+unknown:
+  sequence:
+  - repeat:
+      sequence:
+      - type: turn_on
+        device_id: 31e8f46e6ae9b0bdedd79781993ea5e5
+        entity_id: 8348bc89ad5c700a060cad3afd253b47
+        domain: switch
+      - delay:
+          hours: 0
+          minutes: 30
+          seconds: 0
+          milliseconds: 0
+      - type: turn_off
+        device_id: 31e8f46e6ae9b0bdedd79781993ea5e5
+        entity_id: 8348bc89ad5c700a060cad3afd253b47
+        domain: switch
+      - delay:
+          hours: 1
+          minutes: 30
+          seconds: 0
+          milliseconds: 0
+      count: 3000
+  alias: 制氧机定时执行
+  description: ''

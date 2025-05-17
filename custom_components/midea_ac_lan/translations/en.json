@@ -307,10 +307,43 @@
         "name": "dehydration speed"
       },
       "dehydration_time": {
-        "name": "dehydration time"
+        "name": "Dehydration time"
+      },
+      "dehydration_time_value": {
+        "name": "Dehydration time value"
+      },
+      "wash_time_value": {
+        "name": "Wash time value"
+      },
+      "stains": {
+        "name": "Stains"
+      },
+      "dirty_degree": {
+        "name": "Dirty degree"
       },
       "detergent": {
-        "name": "detergent"
+        "name": "Detergent"
+      },
+      "intensity": {
+        "name": "Intensity"
+      },
+      "dryness_level": {
+        "name": "Dryness Level"
+      },
+      "dry_temperature": {
+        "name": "Dry Temperature"
+      },
+      "door_warn": {
+        "name": "Door Warn"
+      },
+      "ai_switch": {
+        "name": "AI Switch"
+      },
+      "material": {
+        "name": "Material"
+      },
+      "water_box": {
+        "name": "Water Box"
       },
       "energy_consumption": {
         "name": "Energy Consumption"
@@ -477,9 +510,6 @@
       "tvoc": {
         "name": "TVOC"
       },
-      "wash_level": {
-        "name": "rinse count"
-      },
       "wash_strength": {
         "name": "wash strength"
       },
@@ -491,6 +521,9 @@
       },
       "water_temperature": {
         "name": "Water Temperature"
+      },
+      "water_level": {
+        "name": "Water Level"
       },
       "working_time": {
         "name": "Working Time"

@@ -1,0 +1,253 @@
+---
+card_esh_car:
+  tap_action:
+    action: "more-info"
+  template:
+    - "ulm_translation_engine"
+  triggers_update: all
+  variables:
+    car_plate: "车牌"
+    car_milegate_rest: null
+    car_elec_usage: null
+    car_image: null
+    entity_1:
+      entity_id: null
+      icon_on: null
+      icon_off: null
+    entity_2:
+      entity_id: null
+      icon_on: null
+      icon_off: null
+    entity_3:
+      entity_id: null
+      icon_on: null
+      icon_off: null
+    entity_4:
+      entity_id: null
+      icon_on: null
+      icon_off: null
+    show_icon: false
+    show_name: false
+    show_label: false
+    show_state: false
+    custom_fields:
+      bottom_card:
+        card:
+          type: custom:button-card
+          show_icon: false
+          show_name: false
+          show_state: false
+          show_label: false
+          custom_fields:
+            card_1:
+              card:
+                type: custom:button-card
+                icon: |
+                  [[[
+                    //if (variables.entity_1.entity_id)
+                    //  return states[variables.entity_1.entity_id].state == 'on' ? varialbes.entity_1.icon_on : variables.entity_1.icon_off;
+                    return 'mdi:door-closed';
+                  ]]]
+                styles:
+                  card:
+                    - background: none
+                    - border: none
+                    - box-shadow: none
+                  icon:
+                    - color: |
+                        [[[
+                         // if (variables.entity_1.entity_id)
+                         //   return states[variables.entity_1.entity_id].state == 'on' ? 'var(--error-color)' : 'var(--success-color)';
+                          return 'var(--success-color)';
+                        ]]]
+            card_2:
+              card:
+                type: custom:button-card
+                icon: |
+                  [[[
+                    //if (variables.entity_2.entity_id)
+                    //  return states[variables.entity_2.entity_id].state == 'on' ? varialbes.entity_2.icon_on : variables.entity_2.icon_off;
+                    return 'mdi:door-closed';
+                  ]]]
+                styles:
+                  card:
+                    - background: none
+                    - border: none
+                    - box-shadow: none
+                  icon:
+                    - color: |
+                        [[[
+                          //if (variables.entity_2.entity_id)
+                            //return states[variables.entity_2.entity_id].state == 'on' ? 'var(--error-color)' : 'var(--success-color)';
+                          return 'var(--success-color)';
+                        ]]]
+            card_3:
+              card:
+                type: custom:button-card
+                icon: |
+                  [[[
+                    //if (variables.entity_3.entity_id)
+                    //  return states[variables.entity_3.entity_id].state == 'on' ? varialbes.entity_3.icon_on : variables.entity_3.icon_off;
+                    return 'mdi:door-closed';                  
+                  ]]]
+                styles:
+                  card:
+                    - background: none
+                    - border: none
+                    - box-shadow: none
+                  icon:
+                    - color: |
+                        [[[
+                         // if (variables.entity_3.entity_id)
+                         //   return states[variables.entity_3.entity_id].state == 'on' ? 'var(--error-color)' : 'var(--success-color)';
+                          return 'var(--success-color)';
+                        ]]]
+            card_4:
+              card:
+                type: custom:button-card
+                icon: |
+                  [[[
+                    // if (variables.entity_4.entity_id)
+                    //  return states[variables.entity_4.entity_id].state == 'on' ? varialbes.entity_4.icon_on : variables.entity_4.icon_off;
+                    return 'mdi:door-closed';
+                  ]]]
+                styles:
+                  card:
+                    - background: none
+                    - border: none
+                    - box-shadow: none
+                  icon:
+                    - color: |
+                        [[[
+                         // if (variables.entity_4.entity_id)
+                         //   return states[variables.entity_4.entity_id].state == 'on' ? 'var(--error-color)' : 'var(--success-color)';
+                          return 'var(--success-color)';
+                        ]]]
+          styles:
+            card:
+              - padding: 0px
+              - background: rgba(var(--color-theme), 0.05)
+              - box-shadow: none
+              - height: 50px
+            grid:
+              - grid-template-areas: |
+                  "card_1 chard_2 card_3 card_4"
+              - grid-template-columns: 25% 25% 25% 25%
+              - padding: 0px
+            custom_fields:
+              door:
+                - width: 60%
+                - height: 60%
+                - justify-self: center
+              window:
+                - width: 60%
+                - height: 60%
+                - justify-self: center
+              trunk:
+                - width: 60%
+                - height: 60%
+                - justify-self: center
+              charge:
+                - width: 60%
+                - height: 60%
+                - justify-self: center
+      plate: variables.card_plate
+      updatetime: >-
+        [[[
+            return "xxxx";
+        ]]]
+      car_img: |
+        [[[
+           return `
+            <div style="
+              width: 100%;
+              height: 100%;
+              background-image: url(variables.car_image);
+              background-size: contain;
+              background-position: right;
+              background-repeat: no-repeat;
+            "></div>
+          `;
+         ]]]
+      progress: |
+        [[[
+         const cartridges = [
+           {
+             label: variables.car_milegate_rest,
+             color: "gray",
+           }
+         ];
+         return cartridges.map(cartridge => {
+           const state = states[variables.car_elec_usage].state;
+           //const state = 80;
+           let barStyle = '';
+           barStyle = `background: ${cartridge.color}; width: ${state}%`;
+           
+           return `
+             <div style="margin-bottom: 16px; width: 75%">
+               <!-- 文本在上方 -->
+               <div style="
+                 display: flex;
+                 justify-content: space-between;
+                 margin-bottom: 4px;
+                 font-size: 0.85em;
+               ">
+                 <span style="opacity: 1.0">${cartridge.label}</span>
+                 <span style="opacity: 0.6">${state}%</span>
+               </div>
+    
+               <!-- 右对齐进度条 -->
+               <div style="
+                 background: rgba(0,0,0,0.1);
+                 border-radius: 4px;
+                 height: 5px;
+                 overflow: hidden;
+                 display: flex;
+               ">
+                 <div style="
+                   ${barStyle.replace(/\s+/g, ' ')};
+                   height: 100%;
+                   border-radius: 4px 0 0 4px;  <!-- 圆角在左侧 -->
+                   transition: width 0.3s;
+                 "></div>
+               </div>
+             </div>
+           `;
+         }).join('');
+         ]]]
+    styles:
+      card:
+        - padding: 0px
+      grid:
+        - grid-template-areas: |
+            "plate       car_img"
+            "progress    car_img"
+            "updatetime  car_img"
+            "bottom_card  bottom_card"
+        - grid-template-columns: 50% 50%
+        - grid-gap: 0px 0px
+        - padding: 20px
+        - font-family: Helvetica, Arial, sans-serif
+        - color: black
+      custom_fields:
+        plate:
+          - font-size: 12px
+          - justify-self: start
+          - color: gray
+          - text-align: left
+          - margin-bottom: 8px
+        progress:
+          - font-family: Helvetica, Arial, sans-serif
+          - width: 100%
+        updatetime:
+          - font-size: 12px
+          - color: gray
+          - justify-self: start
+          - margin-top: "-12px"
+        car_img:
+          - width: 100%
+          - height: 100%
+          - opacity: 0.9
+        bottom_card:
+          - margin-top: 10px
+          - margin-bottom: px

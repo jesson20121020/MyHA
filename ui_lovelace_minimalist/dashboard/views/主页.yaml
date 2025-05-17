@@ -411,7 +411,7 @@ cards:
                 icon_on: mdi:washing-machine
                 icon_off: mdi:washing-machine-off
                 color: var(--color-green)
-                on_state: "[[[ return states['sensor.161628213624821_progress'].state != 'Idle'; ]]]"
+                on_state: "[[[ return states['switch.161628213624821_power'].state == 'on' && states['sensor.161628213624821_progress'].state != '0'; ]]]"
               entity_2:
                 entity_id: sensor.minij_v20_ba3f_washer
                 icon_on: mdi:dishwasher
@@ -421,7 +421,7 @@ cards:
                 entity_id: sensor.161628213625219_progress
                 icon_on: mdi:tumble-dryer
                 icon_off: mdi:tumble-dryer-off
-                on_state: "[[[return states['sensor.161628213625219_progress'].state != 'Prog1';]]]"
+                on_state: "[[[return states['switch.161628213625219_power'].state == 'on' && states['sensor.161628213625219_progress'].state != 'Prog1';]]]"
             label: '[[[ return states["sensor.xiaomi_mt6_dcc3_temperature"].state + "°C" ]]]'
 
       - type: horizontal-stack
@@ -464,6 +464,32 @@ cards:
                 icon_off: phu:air-conditioner
                 color: var(--color-green)
                 on_state: "[[[ return states['climate.lumi_mcn02_f7e6_air_conditioner'].state != 'off' && states['climate.lumi_mcn02_f7e6_air_conditioner'].state != 'unavailable'; ]]]"
+
+      - type: "custom:button-card"
+        template:
+          - card_esh_car
+        entity: sensor.160528700996126_bright
+        variables:
+          car_plate: "浙ADX9561"
+          car_milegate_rest: sensor.160528700996126_bright
+          car_elec_usage: sensor.160528700996126_bright
+          car_image: "/local/images/xiaopeng_car.png"
+          entity_1:
+            entity_id: device_tracker.00_e4_21_d6_06_7c
+            icon_on: phu:air-conditioner
+            icon_off: phu:air-conditioner
+          entity_2:
+            entity_id: device_tracker.00_e4_21_d6_06_7c
+            icon_on: mdi:sony-playstation
+            icon_off: mdi:sony-playstation
+          entity_3:
+            entity_id: device_tracker.4c_ed_fb_c6_ec_71
+            icon_on: mdi:desktop-classic
+            icon_off: mdi:desktop-classic
+          entity_4:
+            entity_id: device_tracker.10_7b_44_15_29_d8
+            icon_on: cil:synology-nas
+            icon_off: cil:synology-nas
 
   - type: "custom:button-card"
     view_layout:

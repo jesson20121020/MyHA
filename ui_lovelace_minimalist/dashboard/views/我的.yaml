@@ -71,7 +71,6 @@ cards:
           entity: input_number.xiao_mi_dian_shi_mei_ri_shi_yong_shi_chang_shang_xian
           variables:
             ulm_card_input_number_name: "每日时长限制"
-
   - type: "custom:button-card"
     view_layout:
       grid-area: menu
