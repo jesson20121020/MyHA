@@ -9,10 +9,19 @@ import './tabs/bars-tab';
 import './tabs/icons-tab';
 import './tabs/customize-tab';
 import './tabs/about-tab';
+<<<<<<< HEAD
+=======
+import './tabs/info-tab';
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
 export declare class UltraVehicleCardEditor extends LitElement {
     hass: HomeAssistant;
     private config;
     private activeTab;
+<<<<<<< HEAD
+=======
+    private _highlightedSections;
+    private _highlightTimeout;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     private _cropperActive;
     private _cropperImage;
     private _cropperTargetField;
@@ -42,6 +51,12 @@ export declare class UltraVehicleCardEditor extends LitElement {
     private _t;
     private _fireForceGradientRefreshEvent;
     private _forceSaveConfig;
+<<<<<<< HEAD
+=======
+    private _handleRequestTabChange;
+    private _getHighlightedSectionsForTab;
+    private _updateHighlightedSections;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     render(): import("lit").TemplateResult<1> | typeof nothing;
     static get styles(): import("lit").CSSResult;
     firstUpdated(): void;

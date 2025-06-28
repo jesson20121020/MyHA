@@ -10,10 +10,18 @@ export declare class BarsTab extends LitElement {
     private _expandedBar;
     private _preventExpandCollapse;
     private _activeBarTabs;
+<<<<<<< HEAD
     private _gradientEditorKeys;
     private _updateStopDebounceTimer;
     private _removeStopDebounceTimer;
     private _updateOrderDebounceTimer;
+=======
+    private _updateStopDebounceTimer;
+    private _removeStopDebounceTimer;
+    private _updateOrderDebounceTimer;
+    private _gradientChangedDebounceTimer;
+    private _isUpdatingGradient;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     private readonly DEBOUNCE_DELAY;
     private readonly MAX_STOPS;
     private _t;
@@ -23,6 +31,11 @@ export declare class BarsTab extends LitElement {
     private _fireConfigChanged;
     private _fireForceRefreshEvent;
     private _fireForceGradientRefreshEvent;
+<<<<<<< HEAD
+=======
+    private _navigateToCustomizeTab;
+    private _handleGlobalBarAlignmentChange;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     private _toggleBarExpand;
     private _syncSectionsOrderWithBars;
     private _addBar;
@@ -35,11 +48,22 @@ export declare class BarsTab extends LitElement {
     private _updateBarProperty;
     private _resetBarColor;
     private _resetBarSize;
+<<<<<<< HEAD
     private _ensureGradientStops;
+=======
+    private _getEnsuredGradientStops;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     private _addGradientStop;
     private _updateGradientStop;
     private _removeGradientStop;
     private _handleDuplicateStop;
+<<<<<<< HEAD
+=======
+    private _handleGradientStopColorChange;
+    private _handleGradientChanged;
+    private _handleGradientStopDelete;
+    private _handleGradientReset;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     protected render(): TemplateResult | typeof nothing;
     private _renderBar;
     private _renderBarContent;

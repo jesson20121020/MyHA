@@ -52,14 +52,13 @@ cards:
       - type: 'custom:button-card'
         template: card_title
         name: Lights
-
+        
       - type: horizontal-stack
         cards:
         - type: "custom:button-card"
-          template: card_light
+          template: card_state_light
           entity: switch.switch_af79
           variables:
             ulm_card_light_name: "次卧灯"
-            ulm_card_light_enable_slider: false
-            ulm_card_light_enable_color: false
-            ulm_card_light_force_background_color: false    
+            ulm_custom_popup:
+              entity: light.ci_wo_xi_ding_deng

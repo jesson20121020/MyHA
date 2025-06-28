@@ -15,11 +15,17 @@ automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 
+homeassistant:  # Core configuration block
+  customize: !include customize.yaml  # Correct reference method
+  # customize_domain: !include domain_customize.yaml  # Optional domain-wide customization
 logger:
   default: info
   logs:
     custom_components.pyscript: info
     
+
+environment_variable:
+  OPENAI_BASE_URL: https://api.deepseek.com/v1
 
 environment_variable:
   OPENAI_BASE_URL: https://api.deepseek.com/v1
@@ -41,148 +47,19 @@ sensor:
     start: "{{ today_at() }}"
     end: "{{ now() }}"
 
-# iStoreOS device track
+# # iStoreOS device track
 device_tracker:
   - platform: luci
     host: 192.168.31.1
     username: root
     password: Xx20121020;
 
+
 # istore os mqtt sensor and device
 ### iStoreOS MQTT
 mqtt:
-  sensor:
-    # mem
-    - name: iStoreOS RAM used
-      state_topic: collectd/iStoreOS/memory/memory-used
-      unit_of_measurement: "%"
-      value_template: "{{ '%.2f' | format(value.split(':')[1].split('\x00')[0] | float / (16 * 1024 * 10000))}}"
-      unique_id: ram_used
-      device:
-        identifiers: G30S
-        name: 倍控J4125
-        model: J4125
-        manufacturer: 倍控
-
-    # cpu
-    - name: iStoreOS cpu-0
-      state_topic: collectd/iStoreOS/cpu-0/percent-idle
-      unit_of_measurement: "%"
-      value_template: "{{ '%.2f' | format(100 - (value.split(':')[1].split('\x00')[0] | float)) }}"
-      unique_id: cpu-0_used
-      device:
-        identifiers: G30S
-        name: 倍控J4125
-        model: J4125
-        manufacturer: 倍控
-    - name: iStoreOS cpu-1
-      state_topic: collectd/iStoreOS/cpu-1/percent-idle
-      unit_of_measurement: "%"
-      value_template: "{{ '%.2f' | format(100 - (value.split(':')[1].split('\x00')[0] | float)) }}"
-      unique_id: cpu-1_used
-      device:
-        identifiers: G30S
-        name: 倍控J4125
-        model: J4125
-        manufacturer: 倍控
-    - name: iStoreOS cpu-2
-      state_topic: collectd/iStoreOS/cpu-2/percent-idle
-      unit_of_measurement: "%"
-      value_template: "{{ '%.2f' | format(100 - (value.split(':')[1].split('\x00')[0] | float)) }}"
-      unique_id: cpu-2_used
-      device:
-        identifiers: G30S
-        name: 倍控J4125
-        model: J4125
-        manufacturer: 倍控
-    - name: iStoreOS cpu-3
-      state_topic: collectd/iStoreOS/cpu-3/percent-idle
-      unit_of_measurement: "%"
-      value_template: "{{ '%.2f' | format(100 - (value.split(':')[1].split('\x00')[0] | float)) }}"
-      unique_id: cpu-3_used
-      device:
-        identifiers: G30S
-        name: 倍控J4125
-        model: J4125
-        manufacturer: 倍控
-
-    # br-lan interface
-    - name: iStoreOS br-lan TX
-      state_topic: collectd/iStoreOS/interface-br-lan/if_octets
-      unit_of_measurement: KB/s
-      value_template: "{{ '%.2f' | format(value.split(':')[1] | float / 1024)}}"
-      unique_id: br-lan-tx-transfer
-      device:
-        identifiers: G30S
-        name: 倍控J4125
-        model: J4125
-        manufacturer: 倍控
-    - name: iStoreOS br-lan RX
-      state_topic: collectd/iStoreOS/interface-br-lan/if_octets
-      unit_of_measurement: KB/s
-      value_template: "{{ '%.2f' | format(value.split(':')[2].split('\x00')[0] | float / 1024) }}"
-      unique_id: br-lan-rx-transfer
-      device:
-        identifiers: G30S
-        name: 倍控J4125
-        model: J4125
-        manufacturer: 倍控
-    - name: iStoreOS br-lan packets
-      state_topic: collectd/iStoreOS/interface-br-lan/if_packets
-      unit_of_measurement: packets/s
-      value_template: "{{ value.split(':')[1] | int + value.split(':')[2].split('\x00')[0] | int }}"
-      unique_id: br-lan-packets
-      device:
-        identifiers: G30S
-        name: 倍控J4125
-        model: J4125
-        manufacturer: 倍控
-
-    # uptime
-    - name: iStoreOS uptime
-      state_topic: collectd/iStoreOS/uptime/uptime
-      unit_of_measurement: days
-      value_template: "{{ (value.split(':')[1].split('\x00')[0] | float / 86400) | round(1) }}"
-      unique_id: ap_uptime
-      device:
-        identifiers: G30S
-        name: 倍控J4125
-        model: J4125
-        manufacturer: 倍控
-
-    # temperature
-    - name: iStoreOS temperature
-      state_topic: collectd/iStoreOS/thermal-thermal_zone0/temperature
-      unit_of_measurement: °C
-      value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
-      unique_id: ap_temp
-      device:
-        identifiers: G30S
-        name: 倍控J4125
-        model: J4125
-        manufacturer: 倍控
-
-    # device
-    - name: iStoreOS online devices
-      state_topic: collectd/iStoreOS/exec-device-infos/count-online_count
-      unit_of_measurement: 个
-      value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
-      unique_id: online_device_count
-      device:
-        identifiers: G30S
-        name: 倍控J4125
-        model: J4125
-        manufacturer: 倍控
-    - name: iStoreOS offline devices
-      state_topic: collectd/iStoreOS/exec-device-infos/count-offline_count
-      unit_of_measurement: 个
-      value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
-      unique_id: offline_device_count
-      device:
-        identifiers: G30S
-        name: 倍控J4125
-        model: J4125
-        manufacturer: 倍控
+  sensor: !include mqtt/istoreos_sensors.yaml
+  device_tracker: !include mqtt/home_devices.yaml
 
 # 国家电网(32-1504)
 template:

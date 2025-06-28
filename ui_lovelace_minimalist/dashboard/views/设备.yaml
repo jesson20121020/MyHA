@@ -24,6 +24,62 @@ cards:
       height: 100vh
       margin: 0vh 0vh 0vh
       padding: 0vh 0.4vh
+    cards:
+      - type: custom:button-card
+        template: card_esh_car
+        variables:
+          car_plate: "浙ADX9561"
+          car_image: "/local/images/xiaopeng_car.png"
+          car_milegate_rest: "sensor.xiao_peng_qi_che_xiaopeng_remaining_mileage"
+          car_elec_usage: "sensor.xiao_peng_qi_che_xiaopeng_battery_percentage"
+          entity_1:
+            entity_id: "sensor.xiao_peng_qi_che_xiaopeng_door_status"
+            icon_on: "mdi:lock-open-outline"
+            icon_off: "mdi:lock-outline"
+            on_state: "[[[return states['sensor.xiao_peng_qi_che_xiaopeng_door_status'].state == '车门未锁';]]]"
+          entity_2:
+            entity_id: "sensor.xiao_peng_qi_che_xiaopeng_window_status"
+            icon_on: "mdi:car-door-lock-open"
+            icon_off: "mdi:car-door-lock"
+            on_state: "[[[return states['sensor.xiao_peng_qi_che_xiaopeng_window_status'].state == '车窗未锁';]]]"
+          entity_3:
+            entity_id: "sensor.xiao_peng_qi_che_xiaopeng_vehicle_status"
+            icon_on: "mdi:car"
+            icon_off: "mdi:car"
+            on_state: "[[[return states['sensor.xiao_peng_qi_che_xiaopeng_vehicle_status'].state == '行驶中';]]]"
+          entity_4:
+            entity_id: "sensor.sensor.xiao_peng_qi_che_xiaopeng_charge_status"
+            icon_on: "mdi:ev-station"
+            icon_off: "mdi:ev-station"
+            on_state: "[[[return states['sensor.xiao_peng_qi_che_xiaopeng_charge_status'].state == '正在充电';]]]"
+      - type: custom:button-card
+        template: card_esh_car
+        variables:
+          car_plate: "浙ADM6515"
+          car_image: "/local/images/neta_car.png"
+          car_milegate_rest: "sensor.na_zha_qi_che_neta_remaining_mileage"
+          car_elec_usage: "sensor.na_zha_qi_che_neta_battery_percentage"
+          entity_1:
+            entity_id: "sensor.na_zha_qi_che_neta_door_status"
+            icon_on: "mdi:lock-open-outline"
+            icon_off: "mdi:lock-outline"
+            on_state: "[[[return states['sensor.na_zha_qi_che_neta_door_status'].state == '车门未锁';]]]"
+          entity_2:
+            entity_id: "sensor.na_zha_qi_che_neta_window_status"
+            icon_on: "mdi:car-door-lock-open"
+            icon_off: "mdi:car-door-lock"
+            on_state: "[[[return states['sensor.na_zha_qi_che_neta_window_status'].state == '车窗未锁';]]]"
+          entity_3:
+            entity_id: "sensor.na_zha_qi_che_neta_vehicle_status"
+            icon_on: "mdi:car"
+            icon_off: "mdi:car"
+            on_state: "[[[return states['sensor.na_zha_qi_che_neta_vehicle_status'].state == '行驶中';]]]"
+          entity_4:
+            entity_id: "sensor.na_zha_qi_che_neta_charge_status"
+            icon_on: "mdi:ev-station"
+            icon_off: "mdi:ev-station"
+            on_state: "[[[return states['sensor.na_zha_qi_che_neta_charge_status'].state == '正在充电';]]]"
+
     
   - type: "custom:button-card"
     view_layout:

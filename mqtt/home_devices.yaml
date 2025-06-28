@@ -1,0 +1,600 @@
+- name: "device_000000000000"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_000000000000
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_000000000000"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_00e421d6067c"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_00e421d6067c
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_00e421d6067c"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_020000212301"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_020000212301
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_020000212301"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_08c7292ef433"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_08c7292ef433
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_08c7292ef433"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_107b441529d8"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_107b441529d8
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_107b441529d8"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_10b7138c1ad9"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_10b7138c1ad9
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_10b7138c1ad9"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_18a7f1d48b52"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_18a7f1d48b52
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_18a7f1d48b52"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_2262b571d1b1"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_2262b571d1b1
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_2262b571d1b1"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_2c37c556a98b"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_2c37c556a98b
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_2c37c556a98b"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_3252daf33e0c"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_3252daf33e0c
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_3252daf33e0c"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_38a5c9d254e7"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_38a5c9d254e7
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_38a5c9d254e7"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_38d2ca6064b8"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_38d2ca6064b8
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_38d2ca6064b8"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_3c2093637daf"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_3c2093637daf
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_3c2093637daf"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_3c2093e66728"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_3c2093e66728
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_3c2093e66728"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_44237c6ce7c9"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_44237c6ce7c9
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_44237c6ce7c9"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_485f08facc36"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_485f08facc36
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_485f08facc36"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_4c327533b48d"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_4c327533b48d
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_4c327533b48d"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_4cedfbc6ec71"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_4cedfbc6ec71
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_4cedfbc6ec71"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_525410ce27e9"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_525410ce27e9
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_525410ce27e9"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_527b67510a54"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_527b67510a54
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_527b67510a54"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_5448e6c630ce"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_5448e6c630ce
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_5448e6c630ce"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_5448e6dea30e"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_5448e6dea30e
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_5448e6dea30e"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_5448e6ded0fb"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_5448e6ded0fb
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_5448e6ded0fb"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_5448e6defbd7"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_5448e6defbd7
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_5448e6defbd7"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_5448e6defe98"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_5448e6defe98
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_5448e6defe98"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_54ef442689ca"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_54ef442689ca
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_54ef442689ca"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_58b62338e989"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_58b62338e989
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_58b62338e989"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_58b6236cdcc3"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_58b6236cdcc3
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_58b6236cdcc3"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_5ce91eb11293"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_5ce91eb11293
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_5ce91eb11293"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_64644ab89f64"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_64644ab89f64
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_64644ab89f64"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_6490c1c3091d"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_6490c1c3091d
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_6490c1c3091d"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_6490c1dcba3f"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_6490c1dcba3f
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_6490c1dcba3f"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_6883cb075066"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_6883cb075066
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_6883cb075066"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_68abbc397dda"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_68abbc397dda
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_68abbc397dda"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_6cf784208fc8"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_6cf784208fc8
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_6cf784208fc8"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_788b2ac9afe1"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_788b2ac9afe1
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_788b2ac9afe1"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_78df72efff03"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_78df72efff03
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_78df72efff03"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_8c53c37afc90"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_8c53c37afc90
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_8c53c37afc90"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_9c9d7ebbd022"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_9c9d7ebbd022
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_9c9d7ebbd022"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_9c9ed58bd7ac"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_9c9ed58bd7ac
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_9c9ed58bd7ac"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_9c9ed58bd91e"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_9c9ed58bd91e
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_9c9ed58bd91e"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_a8407d2faeb2"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_a8407d2faeb2
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_a8407d2faeb2"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_a8407df1065f"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_a8407df1065f
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_a8407df1065f"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_b04a39c26d98"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_b04a39c26d98
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_b04a39c26d98"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_b460ed23661e"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_b460ed23661e
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_b460ed23661e"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_bc7fa40ee479"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_bc7fa40ee479
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_bc7fa40ee479"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_c439602d83d5"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_c439602d83d5
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_c439602d83d5"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_d4da210ae7ce"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_d4da210ae7ce
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_d4da210ae7ce"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_d8c0a611fe51"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_d8c0a611fe51
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_d8c0a611fe51"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+- name: "device_de53668d8138"
+  state_topic: collectd/iStoreOS/exec-device-infos/count-device_de53668d8138
+  payload_home: "1"
+  payload_not_home: "0"
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: "device_de53668d8138"
+  device:
+    identifiers: 家庭设备
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+

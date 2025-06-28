@@ -1,12 +1,19 @@
+<<<<<<< HEAD
 ---
 card_esh_car:
   tap_action:
     action: "more-info"
+=======
+card_esh_car:
+  tap_action:
+    action: "none"
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
   template:
     - "ulm_translation_engine"
   triggers_update: all
   variables:
     car_plate: "车牌"
+<<<<<<< HEAD
     car_milegate_rest: null
     car_elec_usage: null
     car_image: null
@@ -251,3 +258,220 @@ card_esh_car:
         bottom_card:
           - margin-top: 10px
           - margin-bottom: px
+=======
+    car_milegate_rest: "sensor.car_remaining_mileage"  # 剩余里程实体
+    car_elec_usage: "sensor.car_battery_level"          # 电池电量实体
+    car_image: "/local/images/xiaopeng_car.png"         # 车辆图片路径
+    entity_1:
+      icon_on: "mdi:door-open"
+      icon_off: "mdi:door-closed"
+      on_state: false
+    entity_2:
+      icon_on: "mdi:window-open"
+      icon_off: "mdi:window-closed"
+      on_state: false
+    entity_3:
+      icon_on: "mdi:car-back"
+      icon_off: "mdi:car-back"
+      on_state: false
+    entity_4:
+      icon_on: "mdi:battery-charging"
+      icon_off: "mdi:battery"
+      on_state: false
+
+  show_icon: false
+  show_name: false
+  show_label: false
+  show_state: false
+  custom_fields:
+    bottom_card:
+      card:
+        type: custom:button-card
+        show_icon: false
+        show_name: false
+        show_state: false
+        show_label: false
+        custom_fields:
+          door:
+            card:
+              type: custom:button-card
+              icon: |
+                [[[
+                  return variables.entity_1.on_state ? variables.entity_1.icon_on : variables.entity_1.icon_off;
+                ]]]
+              styles:
+                card:
+                  - background: none
+                  - border: none
+                  - box-shadow: none
+                icon:
+                  - color: |
+                      [[[
+                        return variables.entity_1.on_state ? 'var(--success-color)' : 'var(--disabled-text-color)';
+                      ]]]
+          window:
+            card:
+              type: custom:button-card
+              icon: |
+                [[[
+                  return variables.entity_2.on_state ? variables.entity_2.icon_on : variables.entity_2.icon_off;
+                ]]]
+              styles:
+                card:
+                  - background: none
+                  - border: none
+                  - box-shadow: none
+                icon:
+                  - color: |
+                      [[[
+                        return variables.entity_2.on_state ? 'var(--success-color)' : 'var(--disabled-text-color)';
+                      ]]]
+          trunk:
+            card:
+              type: custom:button-card
+              icon: |
+                [[[
+                  return variables.entity_3.on_state ? variables.entity_3.icon_on : variables.entity_3.icon_off;
+                ]]]
+              styles:
+                card:
+                  - background: none
+                  - border: none
+                  - box-shadow: none
+                icon:
+                  - color: |
+                      [[[
+                        return variables.entity_3.on_state ? 'var(--success-color)' : 'var(--disabled-text-color)';
+                      ]]]
+          charge:
+            card:
+              type: custom:button-card
+              icon: |
+                [[[
+                  return variables.entity_4.on_state ? variables.entity_4.icon_on : variables.entity_4.icon_off;
+                ]]]
+              styles:
+                card:
+                  - background: none
+                  - border: none
+                  - box-shadow: none
+                icon:
+                  - color: |
+                      [[[
+                        return variables.entity_4.on_state ? 'var(--success-color)' : 'var(--disabled-text-color)';
+                      ]]]
+        styles:
+          card:
+            - padding: 0px
+            - background: rgba(var(--color-theme), 0.05)
+            - box-shadow: none
+            - height: 50px
+          grid:
+            - grid-template-areas: |
+                "door window trunk charge"
+            - grid-template-columns: 25% 25% 25% 25%
+            - padding: 0px
+          custom_fields:
+            door:
+              - width: 60%
+              - height: 60%
+              - justify-self: center
+            window:
+              - width: 60%
+              - height: 60%
+              - justify-self: center
+            trunk:
+              - width: 60%
+              - height: 60%
+              - justify-self: center
+            charge:
+              - width: 60%
+              - height: 60%
+              - justify-self: center
+    plate: |
+      [[[ return variables.car_plate; ]]]
+    updatetime: >-
+      [[[
+        if (variables.car_elec_usage) {
+          const entity = states[variables.car_elec_usage];
+          if (entity) {
+            const date = new Date(entity.last_updated);
+            return `更新于 ${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2,'0')}`;
+          }
+        }
+        return "未更新";
+      ]]]
+    car_img: |
+      [[[
+          return `
+          <div style="
+            width: 100%;
+            height: 100%;
+            background-image: url('${variables.car_image}');
+            background-size: contain;
+            background-position: right;
+            background-repeat: no-repeat;
+          "></div>
+        `;
+        ]]]
+    progress: |
+      [[[
+        const batteryEntity = variables.car_elec_usage;
+        const batteryState = batteryEntity ? Number(states[batteryEntity]?.state) || 0 : 0;
+        const mileage = variables.car_milegate_rest ? states[variables.car_milegate_rest]?.state || '0km' : '0km';
+        
+        return `
+          <div style="margin-bottom: 16px; width: 75%">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.85em;">
+              <span>${mileage}</span>
+              <span style="opacity: 0.6">${batteryState}%</span>
+            </div>
+            <div style="background: rgba(0,0,0,0.1); border-radius: 4px; height: 5px; overflow: hidden;">
+              <div style="
+                background: gray;
+                width: ${batteryState}%;
+                height: 100%;
+                border-radius: 4px 0 0 4px;
+                transition: width 0.3s;
+              "></div>
+            </div>
+          </div>
+        `;
+      ]]]
+  styles:
+    card:
+      - padding: 0px
+    grid:
+      - grid-template-areas: |
+          "plate       car_img"
+          "progress    car_img"
+          "updatetime  car_img"
+          "bottom_card  bottom_card"
+      - grid-template-columns: 50% 50%
+      - grid-gap: 0px 0px
+      - padding: 20px
+      - font-family: Helvetica, Arial, sans-serif
+      - color: black
+    custom_fields:
+      plate:
+        - font-size: 12px
+        - justify-self: start
+        - color: gray
+        - text-align: left
+        - margin-bottom: 8px
+      progress:
+        - font-family: Helvetica, Arial, sans-serif
+        - width: 100%
+      updatetime:
+        - font-size: 12px
+        - color: gray
+        - justify-self: start
+        - margin-top: "-12px"
+      car_img:
+        - width: 100%
+        - height: 100%
+        - opacity: 0.9
+      bottom_card:
+        - margin-top: 10px
+        - margin-bottom: px
+>>>>>>> 4a04363 (新增灯的卡片控制相关)

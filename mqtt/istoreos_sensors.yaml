@@ -1,0 +1,134 @@
+# mqtt/istoreos_sensors.yaml
+# mem
+- name: iStoreOS RAM used
+  state_topic: collectd/iStoreOS/memory/memory-used
+  unit_of_measurement: "%"
+  value_template: "{{ '%.2f' | format(value.split(':')[1].split('\x00')[0] | float / (16 * 1024 * 10000))}}"
+  unique_id: ram_used
+  device:
+    identifiers: IStoreOS
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+# cpu
+- name: iStoreOS cpu-0
+  state_topic: collectd/iStoreOS/cpu-0/percent-idle
+  unit_of_measurement: "%"
+  value_template: "{{ '%.2f' | format(100 - (value.split(':')[1].split('\x00')[0] | float)) }}"
+  unique_id: cpu-0_used
+  device:
+    identifiers: IStoreOS
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+- name: iStoreOS cpu-1
+  state_topic: collectd/iStoreOS/cpu-1/percent-idle
+  unit_of_measurement: "%"
+  value_template: "{{ '%.2f' | format(100 - (value.split(':')[1].split('\x00')[0] | float)) }}"
+  unique_id: cpu-1_used
+  device:
+    identifiers: IStoreOS
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+- name: iStoreOS cpu-2
+  state_topic: collectd/iStoreOS/cpu-2/percent-idle
+  unit_of_measurement: "%"
+  value_template: "{{ '%.2f' | format(100 - (value.split(':')[1].split('\x00')[0] | float)) }}"
+  unique_id: cpu-2_used
+  device:
+    identifiers: IStoreOS
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+- name: iStoreOS cpu-3
+  state_topic: collectd/iStoreOS/cpu-3/percent-idle
+  unit_of_measurement: "%"
+  value_template: "{{ '%.2f' | format(100 - (value.split(':')[1].split('\x00')[0] | float)) }}"
+  unique_id: cpu-3_used
+  device:
+    identifiers: IStoreOS
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+# br-lan interface
+- name: iStoreOS br-lan TX
+  state_topic: collectd/iStoreOS/interface-br-lan/if_octets
+  unit_of_measurement: KB/s
+  value_template: "{{ '%.2f' | format(value.split(':')[1] | float / 1024)}}"
+  unique_id: br-lan-tx-transfer
+  device:
+    identifiers: IStoreOS
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+- name: iStoreOS br-lan RX
+  state_topic: collectd/iStoreOS/interface-br-lan/if_octets
+  unit_of_measurement: KB/s
+  value_template: "{{ '%.2f' | format(value.split(':')[2].split('\x00')[0] | float / 1024) }}"
+  unique_id: br-lan-rx-transfer
+  device:
+    identifiers: IStoreOS
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+- name: iStoreOS br-lan packets
+  state_topic: collectd/iStoreOS/interface-br-lan/if_packets
+  unit_of_measurement: packets/s
+  value_template: "{{ value.split(':')[1] | int + value.split(':')[2].split('\x00')[0] | int }}"
+  unique_id: br-lan-packets
+  device:
+    identifiers: IStoreOS
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+# uptime
+- name: iStoreOS uptime
+  state_topic: collectd/iStoreOS/uptime/uptime
+  unit_of_measurement: days
+  value_template: "{{ (value.split(':')[1].split('\x00')[0] | float / 86400) | round(1) }}"
+  unique_id: ap_uptime
+  device:
+    identifiers: IStoreOS
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+# temperature
+- name: iStoreOS temperature
+  state_topic: collectd/iStoreOS/thermal-thermal_zone0/temperature
+  unit_of_measurement: °C
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: ap_temp
+  device:
+    identifiers: IStoreOS
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+
+# 路由器连接的wifi设备跟踪
+# 在线设备数量
+- name: iStoreOS online devices
+  state_topic: collectd/iStoreOS/exec-device-infos/count-online_count
+  unit_of_measurement: 个
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: online_device_count
+  device:
+    identifiers: IStoreOS
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控
+# 离线设备数量
+- name: iStoreOS offline devices
+  state_topic: collectd/iStoreOS/exec-device-infos/count-offline_count
+  unit_of_measurement: 个
+  value_template: "{{ value.split(':')[1].split('\x00')[0] | int }}"
+  unique_id: offline_device_count
+  device:
+    identifiers: IStoreOS
+    name: 倍控J4125
+    model: J4125
+    manufacturer: 倍控

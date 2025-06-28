@@ -23,25 +23,24 @@ card_state_light:
     ulm_card_light_brightness_high: 100
     ulm_card_light_enable_popup: false
     ulm_card_light_enable_popup_tap: false
+    ulm_card_tap_action: "popup"
+    ulm_card_hold_action: "none"
+    ulm_card_double_tap_action: "none"
+    ulm_icon_tap_action: "toggle"
+    ulm_icon_hold_action: "none"
+    ulm_icon_double_tap_action: "none"
+    ulm_name_tap_action: "none"
+    ulm_name_hold_action: "none"
+    ulm_name_double_tap_action: "none"
+    ulm_custom_popup:
+      template: "custom_card_light_popup"
+      entity: "[[[ return entity ]]]"
   show_icon: false
   show_name: false
   show_label: false
   state:
     - operator: "template"
       value: "[[[ return variables.ulm_active_state ]]]"
-      styles:
-        card:
-          - background-color: >
-              [[[
-                var color_set = (variables.ulm_card_light_enable_color && entity.attributes.rgb_color) ? entity.attributes.rgb_color : variables.ulm_card_light_color;
-                var color = 'rgba(var(--color-' + color_set + '),var(--opacity-bg))'
-                if(variables.ulm_card_light_enable_color && entity.attributes.rgb_color){
-                  color = 'rgba(' + color_set + ',var(--opacity-bg))'
-                }
-                if (variables.ulm_card_light_force_background_color) {
-                  return color
-                }
-              ]]]
   styles:
     grid:
       - grid-template-areas: >
@@ -216,6 +215,14 @@ card_state_light:
                                   return 'rgb(250,250,250)';
                               }
                           ]]]
+              styles:
+                card:
+                  - border-radius: 0px
+                  - box-shadow: none
+                  - background-color: transparent
+                  - cursor: none
+                  - --mdc-ripple-press-opacity: 0
+                  - padding: 0px
     item2:
       card:
         type: "custom:my-slider"

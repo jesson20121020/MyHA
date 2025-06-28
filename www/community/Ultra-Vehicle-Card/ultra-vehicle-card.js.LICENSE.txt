@@ -9,3 +9,12 @@
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
+<<<<<<< HEAD
+=======
+
+/**
+ * @license
+ * Copyright 2020 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+>>>>>>> 4a04363 (新增灯的卡片控制相关)

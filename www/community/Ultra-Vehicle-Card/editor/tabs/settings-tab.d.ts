@@ -14,6 +14,13 @@ export declare class SettingsTab extends LitElement {
     private _vehicleCropExpanded;
     private _activeSubTab;
     private _displayedWidth;
+<<<<<<< HEAD
+=======
+    private _rowSettingsExpanded;
+    private _activeEntityTabs;
+    private _t;
+    private _generateUniqueId;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     private _formatFieldName;
     private _truncatePath;
     private _valueChanged;
@@ -27,12 +34,20 @@ export declare class SettingsTab extends LitElement {
     protected render(): TemplateResult;
     private _handleConfigChangedFromActionImages;
     private _handleFileUploadEvent;
+<<<<<<< HEAD
     private _resetLocationTextSize;
     private _resetMileageTextSize;
     private _resetCarStateTextSize;
+=======
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     private _handleInputWidth;
     private _handleInputWidthChange;
     private _handleSliderInput;
     private _handleImageWidthChange;
+<<<<<<< HEAD
+=======
+    private _needsMigration;
+    private _performMigration;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     static styles: import("lit").CSSResult;
 }

@@ -1,4 +1,8 @@
 """The OpenAI Conversation integration."""
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
 from __future__ import annotations
 
 import json
@@ -72,11 +76,15 @@ from .exceptions import (
     ParseArgumentsFailed,
     TokenLengthExceededError,
 )
+<<<<<<< HEAD
 from .helpers import (
     get_function_executor,
     is_azure,
     validate_authentication,
 )
+=======
+from .helpers import get_function_executor, is_azure, validate_authentication
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
 from .services import async_setup_services
 
 _LOGGER = logging.getLogger(__name__)
@@ -155,6 +163,11 @@ class OpenAIAgent(conversation.AbstractConversationAgent):
                 organization=entry.data.get(CONF_ORGANIZATION),
                 http_client=get_async_client(hass),
             )
+<<<<<<< HEAD
+=======
+        # Cache current platform data which gets added to each request (caching done by library)
+        _ = hass.async_add_executor_job(self.client.platform_headers)
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
 
     @property
     def supported_languages(self) -> list[str] | Literal["*"]:

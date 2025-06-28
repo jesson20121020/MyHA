@@ -1,0 +1,7 @@
+# 修改单个实体
+device_tracker.3c_20_93_63_7d_af:
+  friendly_name: "美的洗碗机"
+  icon: mdi:weather-night
+  identifiers: 家庭设
+  model: J4125
+  manufacturer: 倍控

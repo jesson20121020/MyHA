@@ -1,0 +1,46 @@
+# 1. 剩余里程 (261km)
+- name: "xiaopeng_remain_mileage"
+  state_topic: "car/xiaopeng/status"
+  value_template: "{{ value_json.remainingMileage }}"
+  unique_id: "xiaopeng_remain_mileage"
+  unit_of_measurement: "km"
+  icon: mdi:car-speed-limiter
+  device:
+    identifiers: 汽车
+    name: 小鹏P5
+    model: 小鹏P5
+    manufacturer: 小鹏
+    
+- name: "xiaopeng_battery_percentage"
+  state_topic: "car/xiaopeng/status"
+  value_template: "{{ value_json.batteryPercentage }}"
+  unique_id: "xiaopeng_battery_percentage"
+  unit_of_measurement: "%"
+  icon: mdi:battery-50
+  device:
+    identifiers: 汽车
+    name: 小鹏P5
+    model: 小鹏P5
+    manufacturer: 小鹏
+
+- name: "xiaopeng_vehicle_status"
+  state_topic: "car/xiaopeng/status"
+  value_template: "{{ value_json.vehicleStatus }}"
+  icon: mdi:car-parking
+  unique_id: "xiaopeng_vehicle_status"
+  device:
+    identifiers: 汽车
+    name: 小鹏P5
+    model: 小鹏P5
+    manufacturer: 小鹏
+
+- name: "xiaopeng_vehicle_location"
+  state_topic: "car/xiaopeng/status"
+  value_template: "{{ value_json.vehicleAddress }}"
+  icon: mdi:map-marker
+  unique_id: "xiaopeng_vehicle_location"
+  device:
+    identifiers: 汽车
+    name: 小鹏P5
+    model: 小鹏P5
+    manufacturer: 小鹏

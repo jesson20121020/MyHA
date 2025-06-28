@@ -7,3 +7,4 @@ home-assistant.log*
 .storage
 .timeline
 .vacuum
+*.pyc

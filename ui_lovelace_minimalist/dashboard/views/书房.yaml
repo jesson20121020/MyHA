@@ -60,14 +60,9 @@ cards:
             entity: switch.switch_c035
             variables:
               ulm_card_light_name: "书房灯"
-              ulm_card_light_enable_slider: false
-              ulm_card_light_enable_color: false
-              ulm_card_light_force_background_color: false
-              ulm_card_tap_action: "popup"
               ulm_custom_popup:
-                template: "custom_card_light_popup"
-                entity: light.aqara_hub_m1s_5731_lightbulb
-
+                entity: light.shu_fang_xi_ding_deng
+        
       # 书房温度
       - type: "custom:button-card"
         template: card_title
@@ -140,7 +135,7 @@ cards:
           ulm_card_thermostat_enable_collapse: false
           ulm_card_thermostat_enable_controls: true
           ulm_card_thermostat_enable_hvac_modes: true
-          ulm_card_thermostat_enable_popup: false
+          ulm_card_thermostat_enable_popup: true
      
       - type: "custom:button-card"
         template: "custom_card_nik_nas"

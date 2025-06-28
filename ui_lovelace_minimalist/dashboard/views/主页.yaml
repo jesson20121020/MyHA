@@ -291,10 +291,10 @@ cards:
                 color: var(--color-green)
                 on_state: "[[[ return states['fan.dmaker_p9_e103_fan'].state == 'on'; ]]]"
               entity_2:
-                entity_id: device_tracker.c8_28_32_34_f9_c7
+                entity_id: device_tracker.bei_kong_j4125_device_5448e6dea30e
                 icon_on: mdi:television-pause
                 icon_off: mdi:television-play
-                on_state: "[[[return states['device_tracker.c8_28_32_34_f9_c7'].state == 'home';]]]"
+                on_state: "[[[return states['device_tracker.bei_kong_j4125_device_5448e6dea30e'].state == 'home';]]]"
               entity_3:
                 entity_id: media_player.xiaomi_lx06_d022_play_control
                 icon_on: mdi:speaker-pause
@@ -340,20 +340,20 @@ cards:
                   template: "popup_thermostat_temperature"
                   entity: climate.xiaomi_mt6_dcc3_air_conditioner
               entity_2:
-                entity_id: device_tracker.00_e4_21_d6_06_7c
+                entity_id: device_tracker.bei_kong_j4125_device_00e421d6067c
                 icon_on: mdi:sony-playstation
                 icon_off: mdi:sony-playstation
-                on_state: "[[[return states['device_tracker.00_e4_21_d6_06_7c'].state == 'home';]]]"
+                on_state: "[[[return states['device_tracker.bei_kong_j4125_device_00e421d6067c'].state == 'home';]]]"
               entity_3:
-                entity_id: device_tracker.4c_ed_fb_c6_ec_71
+                entity_id: device_tracker.bei_kong_j4125_device_4cedfbc6ec71
                 icon_on: mdi:desktop-classic
                 icon_off: mdi:desktop-classic
-                on_state: "[[[return states['device_tracker.4c_ed_fb_c6_ec_71'].state == 'home';]]]"
+                on_state: "[[[return states['device_tracker.bei_kong_j4125_device_4cedfbc6ec71'].state == 'home';]]]"
               entity_4:
-                entity_id: device_tracker.10_7b_44_15_29_d8
+                entity_id: device_tracker.bei_kong_j4125_device_107b441529d8
                 icon_on: cil:synology-nas
                 icon_off: cil:synology-nas
-                on_state: "[[[return states['device_tracker.10_7b_44_15_29_d8'].state == 'home';]]]"
+                on_state: "[[[return states['device_tracker.bei_kong_j4125_device_107b441529d8'].state == 'home';]]]"
             label: '[[[ return states["sensor.xiaomi_mt6_dcc3_temperature"].state + "°C" ]]]'
 
       - type: horizontal-stack

@@ -61,4 +61,8 @@ export declare class IconsTab extends LitElement {
     private _toggleRowSettings;
     private _toggleStateSettings;
     static styles: import("lit").CSSResult;
+<<<<<<< HEAD
+=======
+    private _navigateToCustomizeTab;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
 }

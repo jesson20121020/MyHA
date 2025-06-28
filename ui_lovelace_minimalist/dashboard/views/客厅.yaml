@@ -56,68 +56,51 @@ cards:
       - type: horizontal-stack
         cards:
         - type: "custom:button-card"
-          template: card_light
+          template: card_state_light
           entity: switch.switch_2efe_switch_1
           variables:
             ulm_card_light_name: "餐厅灯"
-            ulm_card_light_enable_slider: false
-            ulm_card_light_enable_color: false
-            ulm_card_light_force_background_color: false
+            ulm_custom_popup:
+              entity: light.can_ting_diao_deng
         - type: "custom:button-card"
-          template: card_light
+          template: card_state_light
           entity: switch.switch_2efe_switch_2
           variables:
             ulm_card_light_name: "吸顶灯"
-            ulm_card_light_enable_slider: false
-            ulm_card_light_enable_color: false
-            ulm_card_light_force_background_color: false
+            ulm_custom_popup:
+              entity: light.ke_ting_xi_ding_deng
       
       - type: horizontal-stack
         cards:
         - type: "custom:button-card"
-          template: card_light
+          template: card_state_light
           entity: switch.switch_2efe_switch_3
           variables:
             ulm_card_light_name: "灯带"
-            ulm_card_light_enable_slider: false
-            ulm_card_light_enable_color: false
-            ulm_card_light_force_background_color: false
         - type: "custom:button-card"
-          template: card_light
+          template: card_state_light
           entity: switch.switch_58d9_switch_2
           variables:
             ulm_card_light_name: "筒灯"
-            ulm_card_light_enable_slider: false
-            ulm_card_light_enable_color: false
-            ulm_card_light_force_background_color: false
       - type: horizontal-stack
         cards:
         - type: "custom:button-card"
-          template: card_light
+          template: card_state_light
           entity: switch.switch_58d9_switch_1
           variables:
             ulm_card_light_name: "走廊灯"
-            ulm_card_light_enable_slider: false
-            ulm_card_light_enable_color: false
-            ulm_card_light_force_background_color: false
         - type: "custom:button-card"
-          template: card_light
+          template: card_state_light
           entity: switch.dwdz_sw0a01_fc1b_switch
           variables:
             ulm_card_light_name: "电视柜灯"
-            ulm_card_light_enable_slider: false
-            ulm_card_light_enable_color: false
-            ulm_card_light_force_background_color: false
       - type: "custom:button-card"
-        template: card_light
+        template: card_state_light
         entity: light.cuco_sl4_1ad9_light
         variables:
           ulm_card_light_name: "电视背景灯带"
-          ulm_card_light_enable_slider: true
-          ulm_card_light_enable_color: true
-          ulm_card_light_force_background_color: true
-          ulm_card_light_enable_horizontal_wide: true
-          ulm_card_light_enable_horizontal: true
+          ulm_custom_popup:
+            entity: light.cuco_sl4_1ad9_light
 
       # 音响/电视
       - type: 'custom:button-card'

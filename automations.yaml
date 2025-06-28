@@ -106,6 +106,7 @@
       message: 有人在门口逗留
       title: 注意⚠️
   mode: single
+<<<<<<< HEAD
 - id: '1734758592373'
   alias: 长按阳台门口开关右健晾衣架下降
   description: ''
@@ -190,6 +191,8 @@
     entity_id: 1f6c814c8ee42d656c821f7bbca6138e
     type: close
   mode: single
+=======
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
 - id: '1737078389950'
   alias: 国家电网定时查询
   description: ''
@@ -253,4 +256,56 @@
     data: {}
     target:
       entity_id: switch.ruo_dian_xiang_feng_shan_kong_zhi_qi_switch_1
+  mode: single
+- id: '1748754563804'
+  alias: 制氧机定时执行任务
+  description: ''
+  triggers:
+  - trigger: homeassistant
+    event: start
+  conditions: []
+  actions:
+  - delay:
+      hours: 0
+      minutes: 10
+      seconds: 0
+      milliseconds: 0
+  - action: script.unknown
+    metadata: {}
+    data: {}
+  mode: single
+- id: '1749252364892'
+  alias: 靠近ipad自动亮屏
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - event.lumi_cn_blt_3_1i30u2ej0c801_bmgl01_motion_detected_e_2_1
+  conditions: []
+  actions:
+  - action: notify.mobile_app_jessonde_ipad
+    metadata: {}
+    data:
+      message: 有人靠近中控屏
+      title: 注意⚠️
+  mode: single
+- id: '1750905438899'
+  alias: 净水器放水时长检测
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.162727723851771_water_consumption
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    above: 0
+  conditions: []
+  actions:
+  - device_id: 8ed43fab53ba8b63b3fd78d009a19923
+    domain: text
+    entity_id: 15677603dbfe1066936cb56b10be92b8
+    type: set_value
+    value: 净水器水龙头忘记关了
   mode: single

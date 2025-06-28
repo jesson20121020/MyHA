@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { LitElement } from 'lit';
+=======
+import { LitElement, TemplateResult } from 'lit';
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
 import { HomeAssistant } from 'custom-card-helpers';
 import { UltraVehicleCardConfig } from '../types';
 declare module 'custom-card-helpers' {
@@ -22,6 +26,11 @@ export declare class UltraVehicleCard extends LitElement {
     private _templateSubscriptions;
     private _templateResults;
     private _confirmationCancelListeners;
+<<<<<<< HEAD
+=======
+    private _iconStateDebounceTimers;
+    private _highlightedSections;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     static getConfigElement(): HTMLElement;
     static getStubConfig(): {
         title: string;
@@ -39,12 +48,30 @@ export declare class UltraVehicleCard extends LitElement {
     static get styles(): import("lit").CSSResult;
     setConfig(config: UltraVehicleCardConfig): void;
     private _migrateBarsToIndividual;
+<<<<<<< HEAD
     private _saveConfigChanges;
     private _checkForGradientOrAnimationChanges;
     private _forceFullRender;
     protected render(): import("lit").TemplateResult<1>;
     private _renderImage;
     private _getFriendlyName;
+=======
+    private _cleanupInfoSections;
+    private _saveConfigChanges;
+    private _checkForGradientOrAnimationChanges;
+    private _forceFullRender;
+    protected render(): TemplateResult<1>;
+    private _renderImage;
+    private _getFriendlyName;
+    /**
+     * Check if an entity is a location tracking entity with coordinate data
+     */
+    private _isLocationTrackingEntity;
+    /**
+     * Render a map view for location tracking entities
+     */
+    private _renderMapImage;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     private _formatValue;
     private _handleImageError;
     private _renderBar;
@@ -54,6 +81,10 @@ export declare class UltraVehicleCard extends LitElement {
     private _renderIconRows;
     private _renderIconRow;
     private _renderCardIcon;
+<<<<<<< HEAD
+=======
+    private _debouncedIconStateUpdate;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     private _handleIconClick;
     /**
      * Shows a toast notification
@@ -68,6 +99,11 @@ export declare class UltraVehicleCard extends LitElement {
     private _handleDragStart;
     private _handleDragEnd;
     private _hexToRgb;
+<<<<<<< HEAD
+=======
+    private _hsToRgb;
+    private _colorTempToRgb;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
     private _getZoneInfo;
     private _renderVehicleInfo;
     private _computeImageStyle;
@@ -101,4 +137,19 @@ export declare class UltraVehicleCard extends LitElement {
     private _cancelConfirmation;
     private _checkBarSideCondition;
     private _processPercentageTemplate;
+<<<<<<< HEAD
+=======
+    private _renderInfoRowsFromConfig;
+    private _renderSingleInfoRow;
+    private _renderSingleInfoEntity;
+    private _handleInfoEntityClick;
+    private _getDisplaySections;
+    private _cleanupSectionsOrder;
+    private _ensureInfoAndIconRowsInSectionsOrder;
+    private _handleHighlightSections;
+    private _isHighlighted;
+    private _getHighlightClass;
+    private _getImageHighlightStyle;
+    private _handleClearHighlight;
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
 }

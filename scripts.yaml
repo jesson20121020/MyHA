@@ -16,7 +16,11 @@ unknown:
         entity_id: 8348bc89ad5c700a060cad3afd253b47
         domain: switch
       - delay:
+<<<<<<< HEAD
           hours: 1
+=======
+          hours: 3
+>>>>>>> 4a04363 (新增灯的卡片控制相关)
           minutes: 30
           seconds: 0
           milliseconds: 0
