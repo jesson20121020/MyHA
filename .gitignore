@@ -1,6 +1,7 @@
 backup.dbb
 home-assistant_v2.*
 home-assistant.log*
+custom_components/
 .HA_VERSION
 .exports
 .jwt_secret
