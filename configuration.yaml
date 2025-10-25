@@ -27,14 +27,12 @@ logger:
 environment_variable:
   OPENAI_BASE_URL: https://api.deepseek.com/v1
 
-environment_variable:
-  OPENAI_BASE_URL: https://api.deepseek.com/v1
-
 # 允许代理
 http:
   use_x_forwarded_for: true
   trusted_proxies:
     - 192.168.31.1 # Add the IP address of the proxy server
+
 
 # 自定义历史数据统计
 sensor:

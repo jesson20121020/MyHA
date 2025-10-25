@@ -1,4256 +1,587 @@
-/**
- * Todo Swipe Card - Fixed WebSocket Overflow Version
- * 
- * A specialized swipe card for todo lists in Home Assistant
- * Allows users to swipe between multiple todo lists with customized styling
- * 
- * Requires card-mod to be installed: https://github.com/thomasloven/lovelace-card-mod
- * 
- * @author nutteloost
- * @version ${VERSION}
- * @license MIT
- * @see {@link https://github.com/nutteloost/todo-swipe-card}
- */
-
-
-import { LitElement, html, css } from "https://unpkg.com/lit-element@2.5.1/lit-element.js?module";
-
-// Version number
-const VERSION = '2.2.0';
-
-// Configurable debug mode - set to false for production
-const DEBUG = false;
-
-/**
- * Log debug messages when debug mode is enabled
- * @param {string} message - Debug message
- * @param {any} data - Optional data to log
- */
-const debugLog = (message, data) => {
-  if (!DEBUG) return;
-  console.log(`[TodoSwipeCard] ${message}`, data !== undefined ? data : '');
-};
-
-/**
- * TodoSwipeCard: A custom card for Home Assistant to display multiple todo lists with swipe navigation
- * @extends HTMLElement
- */
-class TodoSwipeCard extends HTMLElement {
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-    this._config = {};
-    this._hass = null;
-    this.cards = [];
-    this.currentIndex = 0;
-    this.slideWidth = 0;
-    this.cardContainer = null;
-    this.sliderElement = null;
-    this.paginationElement = null;
-    this.initialized = false;
-    this._menuObservers = [];
-    this._dynamicStyleElement = null;
-    this._configUpdateTimer = null;
-    this._buildPromise = null;
-    this._cardHelpers = null;
-    this._lastConfig = null;
-    this._updateThrottle = null;
-    this._lastHassUpdate = null;
-    this._menuObserverTimeout = null;
-  }
-
-  /**
-   * Returns default configuration for the card
-   * @returns {Object} Default configuration
-   */
-  static getStubConfig() {
-    return {
-      entities: [],
-      card_spacing: 15,
-      show_pagination: true,
-      show_icons: false,
-      show_create: true,
-      show_addbutton: false,
-      show_completed: false,
-      show_completed_menu: false,
-      delete_confirmation: false
-    };
-  }
-  
-  /**
-   * Returns the editor element for the card
-   * @returns {HTMLElement} Card editor element
-   */
-  static getConfigElement() {
-    return document.createElement("todo-swipe-card-editor");
-  }
-
-  /**
-   * Handle edit button click in preview mode
-   * @param {Event} e - Click event
-   * @private
-   */
-  _handleEditClick(e) {
-    e.stopPropagation();
-    debugLog("Edit button clicked, firing show-edit-card event");
-    const event = new CustomEvent('show-edit-card', {
-      detail: { element: this },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
-  }
-
-  /**
-   * Check if there are valid entities configured
-   * @returns {boolean} True if valid entities are present
-   * @private
-   */
-  _hasValidEntities() {
-    return this._config && 
-           this._config.entities && 
-           Array.isArray(this._config.entities) && 
-           this._config.entities.length > 0 &&
-           this._config.entities.some(entity => {
-             if (typeof entity === 'string') {
-               return entity && entity.trim() !== "";
-             }
-             return entity && entity.entity && entity.entity.trim() !== "";
-           });
-  }
-
-  /**
-   * Detect legacy configuration format
-   * @param {Object} config - Configuration to check
-   * @returns {Object} Detection result with isLegacy flag and found properties
-   * @private
-   */
-  _detectLegacyConfig(config) {
-    const legacyProperties = [
-      'background_images',
-      'display_orders', 
-      'entity_titles',
-      'show_titles'
-    ];
-    
-    const foundLegacyProps = legacyProperties.filter(prop => 
-      config.hasOwnProperty(prop) && config[prop] && Object.keys(config[prop]).length > 0
-    );
-    
-    return {
-      isLegacy: foundLegacyProps.length > 0,
-      legacyProperties: foundLegacyProps
-    };
-  }
-
-  /**
-   * Migrate legacy config to new entity-centric format
-   * @param {Object} oldConfig - Legacy configuration
-   * @returns {Object} Migrated configuration
-   * @private
-   */
-  _migrateLegacyConfig(oldConfig) {
-    // Convert entities to new format
-    let migratedEntities = [];
-    if (oldConfig.entities && Array.isArray(oldConfig.entities)) {
-      migratedEntities = oldConfig.entities.map(entity => {
-        if (typeof entity === 'string') {
-          const entityConfig = { entity };
-          
-          // Migrate background image
-          if (oldConfig.background_images && oldConfig.background_images[entity]) {
-            entityConfig.background_image = oldConfig.background_images[entity];
-          }
-          
-          // Migrate display order
-          if (oldConfig.display_orders && oldConfig.display_orders[entity]) {
-            entityConfig.display_order = oldConfig.display_orders[entity];
-          }
-          
-          // Migrate show title
-          if (oldConfig.show_titles && oldConfig.show_titles[entity]) {
-            entityConfig.show_title = oldConfig.show_titles[entity];
-          }
-          
-          // Migrate entity title
-          if (oldConfig.entity_titles && oldConfig.entity_titles[entity]) {
-            entityConfig.title = oldConfig.entity_titles[entity];
-          }
-          
-          return entityConfig;
-        }
-        return entity; // Already in new format
-      });
-    }
-    
-    // Start with all properties from old config
-    const newConfig = { ...oldConfig };
-    
-    // Remove legacy properties
-    delete newConfig.background_images;
-    delete newConfig.display_orders;
-    delete newConfig.entity_titles;
-    delete newConfig.show_titles;
-    delete newConfig.custom_card_mod;
-    
-    // Update entities with migrated format
-    newConfig.entities = migratedEntities;
-    
-    // Rebuild config in desired order with type first, preserving all other properties
-    const orderedConfig = {
-      type: newConfig.type,
-      entities: newConfig.entities,
-      ...Object.fromEntries(
-        Object.entries(newConfig).filter(([key]) => key !== 'type' && key !== 'entities')
-      )
-    };
-    
-    return orderedConfig;
-  }
-
-  /**
-   * Get entity ID from entity configuration (handles both string and object formats)
-   * @param {string|Object} entity - Entity configuration
-   * @returns {string} Entity ID
-   * @private
-   */
-  _getEntityId(entity) {
-    if (typeof entity === 'string') {
-      return entity;
-    }
-    return entity?.entity || '';
-  }
-
-  /**
-   * Get all entity IDs from current configuration
-   * @returns {Array<string>} Array of entity IDs
-   * @private
-   */
-  _getAllEntityIds() {
-    if (!this._config?.entities) return [];
-    return this._config.entities
-      .map(entity => this._getEntityId(entity))
-      .filter(entityId => entityId && entityId.trim() !== "");
-  }
-
-  /**
-   * Get entity configuration by ID
-   * @param {string} entityId - Entity ID to find
-   * @returns {Object|null} Entity configuration object or null if not found
-   * @private
-   */
-  _getEntityConfig(entityId) {
-    if (!this._config?.entities) return null;
-    
-    const entity = this._config.entities.find(entity => 
-      this._getEntityId(entity) === entityId
-    );
-    
-    if (typeof entity === 'string') {
-      return { entity: entityId };
-    }
-    
-    return entity || null;
-  }
-
-  /**
-   * Check if configuration actually changed
-   * @param {Object} newConfig - New configuration
-   * @returns {boolean} True if config changed
-   * @private
-   */
-  _hasConfigChanged(newConfig) {
-    if (!this._lastConfig) return true;
-    
-    // Quick string comparison first
-    const newConfigStr = JSON.stringify(newConfig);
-    const lastConfigStr = JSON.stringify(this._lastConfig);
-    
-    return newConfigStr !== lastConfigStr;
-  }
-
-  /**
-   * Check if hass update is significant enough to propagate to child cards
-   * @param {Object} hass - New hass object
-   * @returns {boolean} True if update should be propagated
-   * @private
-   */
-  _shouldUpdateChildCards(hass) {
-    if (!this._hass || !hass) return true;
-    
-    // Skip if the hass objects are the same reference (no actual change)
-    if (this._hass === hass) return false;
-    
-    // Add a timestamp-based throttle to prevent rapid successive updates
-    const now = Date.now();
-    if (this._lastHassUpdate && (now - this._lastHassUpdate) < 250) {
-      return false;
-    }
-    this._lastHassUpdate = now;
-    
-    // Check if any of our monitored entities have changed
-    const entityIds = this._getAllEntityIds();
-    let hasRelevantChanges = false;
-    
-    for (const entityId of entityIds) {
-      if (!entityId || entityId.trim() === "") continue;
-      
-      const oldState = this._hass.states[entityId];
-      const newState = hass.states[entityId];
-      
-      // Check if the entity state or attributes have changed significantly
-      if (!oldState || !newState) {
-        hasRelevantChanges = true;
-        break;
-      }
-      
-      // Only update for meaningful changes, not just timestamp updates
-      if (oldState.state !== newState.state) {
-        hasRelevantChanges = true;
-        break;
-      }
-      
-      // Check for changes in todo items specifically
-      const oldItems = oldState.attributes?.items || [];
-      const newItems = newState.attributes?.items || [];
-      
-      // Compare item count first (quick check)
-      if (oldItems.length !== newItems.length) {
-        hasRelevantChanges = true;
-        break;
-      }
-      
-      // Deep compare items (but limit to prevent excessive processing)
-      if (oldItems.length > 0 && oldItems.length < 100) { // Limit to prevent performance issues
-        const oldItemsStr = JSON.stringify(oldItems);
-        const newItemsStr = JSON.stringify(newItems);
-        if (oldItemsStr !== newItemsStr) {
-          hasRelevantChanges = true;
-          break;
-        }
-      }
-    }
-    
-    return hasRelevantChanges;
-  }
-
-  /**
-   * Merge internal card-mod styling with user-provided custom styling
-   * Uses caching for better performance
-   * @param {Object} internalStyle - Internal card-mod style object
-   * @param {Object} customStyle - User-provided card-mod style object
-   * @returns {Object} Merged style object with custom styles taking precedence
-   * @private
-   */
-  _mergeCardModStyles(internalStyle, customStyle) {
-    // If no custom style provided, return internal style
-    if (!customStyle || Object.keys(customStyle).length === 0) {
-      return internalStyle;
-    }
-    
-    // Simple merge without caching for better performance
-    const mergedStyle = { ...internalStyle };
-    
-    for (const selector in customStyle) {
-      if (selector in mergedStyle) {
-        if (typeof customStyle[selector] === 'string' && typeof mergedStyle[selector] === 'string') {
-          mergedStyle[selector] = mergedStyle[selector] + '\n' + customStyle[selector];
-        } else {
-          mergedStyle[selector] = { ...mergedStyle[selector], ...customStyle[selector] };
-        }
-      } else {
-        mergedStyle[selector] = customStyle[selector];
-      }
-    }
-    
-    return mergedStyle;
-  }
-
-  /**
-   * Apply card-mod styles to the card
-   * Optimized to avoid redundant operations
-   * @private
-   */
-  _applyCardModStyles() {
-    // Ensure we have a valid shadowRoot
-    if (!this.shadowRoot) return;
-    
-    // Create a style element for dynamic styles if it doesn't exist
-    if (!this._dynamicStyleElement) {
-      this._dynamicStyleElement = document.createElement('style');
-      this.shadowRoot.appendChild(this._dynamicStyleElement);
-    }
-    
-    // Generate CSS based on current config
-    if (this._config && this._config.card_mod && typeof this._config.card_mod.style === 'string') {
-      let cssText = this._config.card_mod.style;
-      
-      // Check if the style already contains :host selector
-      if (cssText.includes(':host')) {
-        // Use the style as-is if it already has :host
-        this._dynamicStyleElement.textContent = cssText;
-      } else {
-        // Wrap in :host if it doesn't have it
-        this._dynamicStyleElement.textContent = `
-          :host {
-            ${cssText}
-          }
-        `;
-      }
-    } else if (this._dynamicStyleElement) {
-      this._dynamicStyleElement.textContent = '';
-    }
-  }
-
-  /**
-   * Extract and apply transition properties from card_mod styles
-   * @private
-   */
-  _applyTransitionProperties() {
-    if (!this.sliderElement || !this._config || !this._config.card_mod) return;
-    
-    try {
-      // Default values
-      let transitionSpeed = '0.3s';
-      let transitionEasing = 'ease-out';
-      
-      // Extract transition properties from card_mod style
-      if (typeof this._config.card_mod.style === 'string') {
-        const styleString = this._config.card_mod.style;
-        
-        // Extract transition speed
-        const speedRegex = /--todo-swipe-card-transition-speed\s*:\s*([^;]+)/i;
-        const speedMatch = styleString.match(speedRegex);
-        if (speedMatch && speedMatch[1]) {
-          transitionSpeed = speedMatch[1].trim();
-        }
-        
-        // Extract transition easing
-        const easingRegex = /--todo-swipe-card-transition-easing\s*:\s*([^;]+)/i;
-        const easingMatch = styleString.match(easingRegex);
-        if (easingMatch && easingMatch[1]) {
-          transitionEasing = easingMatch[1].trim();
-        }
-        
-        // Extract delete button color
-        const deleteButtonRegex = /--todo-swipe-card-delete-button-color\s*:\s*([^;]+)/i;
-        const deleteButtonMatch = styleString.match(deleteButtonRegex);
-        if (deleteButtonMatch && deleteButtonMatch[1]) {
-          this._deleteButtonColor = deleteButtonMatch[1].trim();
-          this._applyDeleteButtonColor();
-        }
-      }
-      
-      // Apply directly to the slider element with null check
-      if (this.sliderElement && this.sliderElement.style) {
-        const transitionValue = `transform ${transitionSpeed} ${transitionEasing}`;
-        this.sliderElement.style.transition = transitionValue;
-        
-        // Store the values for later use
-        this._transitionSpeed = transitionSpeed;
-        this._transitionEasing = transitionEasing;
-      }
-    } catch (e) {
-      console.error("Error applying transition properties:", e);
-    }
-  }
-
-  /**
-   * Apply delete button color to all existing delete buttons
-   * @private
-   */
-  _applyDeleteButtonColor() {
-    if (!this._deleteButtonColor) return;
-    
-    // Find all delete buttons and apply the color
-    const deleteButtons = this.shadowRoot.querySelectorAll('.delete-completed-button');
-    deleteButtons.forEach(button => {
-      button.style.color = this._deleteButtonColor;
-      
-      // Also apply to the SVG inside
-      const svg = button.querySelector('svg');
-      if (svg) {
-        svg.style.fill = this._deleteButtonColor;
-      }
-    });
-  }
-
-  /**
-   * Get the actual todo-list card element from a potentially wrapped element
-   * @param {HTMLElement} element - The element (might be wrapped)
-   * @returns {HTMLElement} The actual todo-list card element
-   * @private
-   */
-  _getActualCardElement(element) {
-    // If it's a wrapper, find the card inside
-    if (element && element.classList && element.classList.contains('todo-card-with-title-wrapper')) {
-      // The card is inside the second child (cardContainer) of the wrapper
-      const cardContainer = element.children[1]; // First child is title, second is card container
-      if (cardContainer && cardContainer.firstElementChild) {
-        return cardContainer.firstElementChild; // This is the actual card element
-      }
-    }
-    return element;
-  }
-
-  /**
-   * Set card configuration with improved debouncing
-   * @param {Object} config - Card configuration
-   */
-  setConfig(config) {
-    debugLog("setConfig called with:", JSON.stringify(config));
-    
-    // Ensure entities is an array with at least one item
-    let entities = config.entities || [];
-    if (!Array.isArray(entities)) {
-      // Convert from old object format if needed
-      if (typeof entities === 'object') {
-        entities = Object.values(entities);
-      } else if (typeof entities === 'string') {
-        entities = [entities];
-      } else {
-        entities = [];
-      }
-    }
-    
-    // Normalize entities to support both string and object formats
-    entities = entities.map(entity => {
-      if (typeof entity === 'string') {
-        // Convert string to object format, but keep it as string if empty
-        return entity.trim() === "" ? entity : { entity: entity };
-      }
-      return entity; // Already object format
-    }).filter(entity => {
-      if (typeof entity === 'string') {
-        return entity !== ""; // Keep non-empty strings
-      }
-      return entity && (entity.entity || entity.entity === ""); // Keep objects with entity property
-    });
-
-    // Set defaults and merge config
-    const newConfig = {
-      ...TodoSwipeCard.getStubConfig(),
-      ...config,
-      entities // Override with our normalized entities array
-    };
-
-    // Ensure card_spacing is a valid number
-    if (newConfig.card_spacing === undefined) {
-      newConfig.card_spacing = 15; // Default spacing
-    } else {
-      newConfig.card_spacing = parseInt(newConfig.card_spacing);
-      if (isNaN(newConfig.card_spacing) || newConfig.card_spacing < 0) {
-        newConfig.card_spacing = 15;
-      }
-    }
-
-    // Handle card_mod configuration - only include if it has meaningful content
-    if (config.card_mod && typeof config.card_mod === 'object' && Object.keys(config.card_mod).length > 0) {
-      newConfig.custom_card_mod = config.card_mod;
-    } else if (config.custom_card_mod && typeof config.custom_card_mod === 'object' && Object.keys(config.custom_card_mod).length > 0) {
-      newConfig.custom_card_mod = config.custom_card_mod;
-    }
-    // Don't set custom_card_mod to empty object if it doesn't exist or is empty
-
-    // Check if config actually changed
-    if (!this._hasConfigChanged(newConfig)) {
-      debugLog("Config unchanged, skipping update");
-      return;
-    }
-
-    // Save the old config for comparison
-    const oldConfig = this._config;
-    this._config = newConfig;
-    this._lastConfig = JSON.parse(JSON.stringify(newConfig));
-
-    debugLog("Config after processing:", JSON.stringify(this._config));
-
-    // Apply styles immediately for better perceived performance
-    this._applyCardModStyles();
-
-    // If already initialized, determine if we need a full rebuild or just updates
-    if (this.initialized) {
-      // Clear any pending config update timer
-      if (this._configUpdateTimer) {
-        clearTimeout(this._configUpdateTimer);
-      }
-
-      // Check if we need a full rebuild
-      const needsRebuild = this._needsFullRebuild(oldConfig, newConfig);
-
-      if (needsRebuild) {
-        // Debounce rebuild to prevent excessive DOM manipulation
-        this._configUpdateTimer = setTimeout(() => {
-          debugLog("Rebuilding TodoSwipeCard due to significant config change");
-          this._build().then(() => {
-            // Apply transition properties after rebuild
-            this._applyTransitionProperties();
-            this._applyDeleteButtonColor();
-          });
-        }, 300); // Increased debounce time
-      } else {
-        // Just update the specific features without rebuild
-        this._updateFromConfig(oldConfig);
-        this._applyTransitionProperties();
-        this._applyDeleteButtonColor();
-      }
-    }
+const t="3.3.1",i="none",e="alpha_asc",o="alpha_desc",n="duedate_asc",r="duedate_desc",s=(t,i)=>{},a=globalThis,d=a.ShadowRoot&&(void 0===a.ShadyCSS||a.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,c=Symbol(),h=new WeakMap;let l=class t{constructor(t,i,e){if(this.i=!0,e!==c)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=i}get styleSheet(){let t=this.o;const i=this.t;if(d&&void 0===t){const e=void 0!==i&&1===i.length;e&&(t=h.get(i)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&h.set(i,t))}return t}toString(){return this.cssText}};const p=(t,...i)=>{const e=1===t.length?t[0]:i.reduce((i,e,o)=>i+(t=>{if(!0===t.i)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(e)+t[o+1],t[0]);return new l(e,t,c)},u=d?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let i="";for(const e of t.cssRules)i+=e.cssText;return(t=>new l("string"==typeof t?t:t+"",void 0,c))(i)})(t):t,{is:g,defineProperty:m,getOwnPropertyDescriptor:f,getOwnPropertyNames:v,getOwnPropertySymbols:b,getPrototypeOf:w}=Object,x=globalThis,y=x.trustedTypes,k=y?y.emptyScript:"",_=x.reactiveElementPolyfillSupport,$=(t,i)=>t,z={toAttribute(t,i){switch(i){case Boolean:t=t?k:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t)}return t},fromAttribute(t,i){let e=t;switch(i){case Boolean:e=null!==t;break;case Number:e=null===t?null:Number(t);break;case Object:case Array:try{e=JSON.parse(t)}catch(t){e=null}}return e}},S=(t,i)=>!g(t,i),C={attribute:!0,type:String,converter:z,reflect:!1,useDefault:!1,hasChanged:S};Symbol.metadata??=Symbol("metadata"),x.litPropertyMetadata??=new WeakMap;let T=class t extends HTMLElement{static addInitializer(t){this.m(),(this.l??=[]).push(t)}static get observedAttributes(){return this.finalize(),this.v&&[...this.v.keys()]}static createProperty(t,i=C){if(i.state&&(i.attribute=!1),this.m(),this.prototype.hasOwnProperty(t)&&((i=Object.create(i)).wrapped=!0),this.elementProperties.set(t,i),!i.noAccessor){const e=Symbol(),o=this.getPropertyDescriptor(t,e,i);void 0!==o&&m(this.prototype,t,o)}}static getPropertyDescriptor(t,i,e){const{get:o,set:n}=f(this.prototype,t)??{get(){return this[i]},set(t){this[i]=t}};return{get:o,set(i){const r=o?.call(this);n?.call(this,i),this.requestUpdate(t,r,e)},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??C}static m(){if(this.hasOwnProperty($("elementProperties")))return;const t=w(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties)}static finalize(){if(this.hasOwnProperty($("finalized")))return;if(this.finalized=!0,this.m(),this.hasOwnProperty($("properties"))){const t=this.properties,i=[...v(t),...b(t)];for(const e of i)this.createProperty(e,t[e])}const t=this[Symbol.metadata];if(null!==t){const i=litPropertyMetadata.get(t);if(void 0!==i)for(const[t,e]of i)this.elementProperties.set(t,e)}this.v=new Map;for(const[t,i]of this.elementProperties){const e=this._(t,i);void 0!==e&&this.v.set(e,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(t){const i=[];if(Array.isArray(t)){const e=new Set(t.flat(1/0).reverse());for(const t of e)i.unshift(u(t))}else void 0!==t&&i.push(u(t));return i}static _(t,i){const e=i.attribute;return!1===e?void 0:"string"==typeof e?e:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this.S=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this.A=null,this.D()}D(){this.M=new Promise(t=>this.enableUpdating=t),this.N=new Map,this.I(),this.requestUpdate(),this.constructor.l?.forEach(t=>t(this))}addController(t){(this.L??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.()}removeController(t){this.L?.delete(t)}I(){const t=new Map,i=this.constructor.elementProperties;for(const e of i.keys())this.hasOwnProperty(e)&&(t.set(e,this[e]),delete this[e]);t.size>0&&(this.S=t)}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return((t,i)=>{if(d)t.adoptedStyleSheets=i.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(const e of i){const i=document.createElement("style"),o=a.litNonce;void 0!==o&&i.setAttribute("nonce",o),i.textContent=e.cssText,t.appendChild(i)}})(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this.L?.forEach(t=>t.hostConnected?.())}enableUpdating(t){}disconnectedCallback(){this.L?.forEach(t=>t.hostDisconnected?.())}attributeChangedCallback(t,i,e){this.H(t,e)}V(t,i){const e=this.constructor.elementProperties.get(t),o=this.constructor._(t,e);if(void 0!==o&&!0===e.reflect){const n=(void 0!==e.converter?.toAttribute?e.converter:z).toAttribute(i,e.type);this.A=t,null==n?this.removeAttribute(o):this.setAttribute(o,n),this.A=null}}H(t,i){const e=this.constructor,o=e.v.get(t);if(void 0!==o&&this.A!==o){const t=e.getPropertyOptions(o),n="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:z;this.A=o;const r=n.fromAttribute(i,t.type);this[o]=r??this.P?.get(o)??r,this.A=null}}requestUpdate(t,i,e){if(void 0!==t){const o=this.constructor,n=this[t];if(e??=o.getPropertyOptions(t),!((e.hasChanged??S)(n,i)||e.useDefault&&e.reflect&&n===this.P?.get(t)&&!this.hasAttribute(o._(t,e))))return;this.C(t,i,e)}!1===this.isUpdatePending&&(this.M=this.R())}C(t,i,{useDefault:e,reflect:o,wrapped:n},r){e&&!(this.P??=new Map).has(t)&&(this.P.set(t,r??i??this[t]),!0!==n||void 0!==r)||(this.N.has(t)||(this.hasUpdated||e||(i=void 0),this.N.set(t,i)),!0===o&&this.A!==t&&(this.F??=new Set).add(t))}async R(){this.isUpdatePending=!0;try{await this.M}catch(t){Promise.reject(t)}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this.S){for(const[t,i]of this.S)this[t]=i;this.S=void 0}const t=this.constructor.elementProperties;if(t.size>0)for(const[i,e]of t){const{wrapped:t}=e,o=this[i];!0!==t||this.N.has(i)||void 0===o||this.C(i,void 0,e,o)}}let t=!1;const i=this.N;try{t=this.shouldUpdate(i),t?(this.willUpdate(i),this.L?.forEach(t=>t.hostUpdate?.()),this.update(i)):this.J()}catch(i){throw t=!1,this.J(),i}t&&this.U(i)}willUpdate(t){}U(t){this.L?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t)}J(){this.N=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this.M}shouldUpdate(t){return!0}update(t){this.F&&=this.F.forEach(t=>this.V(t,this[t])),this.J()}updated(t){}firstUpdated(t){}};T.elementStyles=[],T.shadowRootOptions={mode:"open"},T[$("elementProperties")]=new Map,T[$("finalized")]=new Map,_?.({ReactiveElement:T}),(x.reactiveElementVersions??=[]).push("2.1.1");const E=globalThis,A=E.trustedTypes,D=A?A.createPolicy("lit-html",{createHTML:t=>t}):void 0,M="$lit$",N=`lit$${Math.random().toFixed(9).slice(2)}$`,O="?"+N,I=`<${O}>`,j=document,L=()=>j.createComment(""),H=t=>null===t||"object"!=typeof t&&"function"!=typeof t,V=Array.isArray,P="[ \t\n\f\r]",R=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,F=/-->/g,J=/>/g,U=RegExp(`>|${P}(?:([^\\s"'>=/]+)(${P}*=${P}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),B=/'/g,Z=/"/g,q=/^(?:script|style|textarea|title)$/i,W=(t=>(i,...e)=>({B:t,strings:i,values:e}))(1),X=Symbol.for("lit-noChange"),K=Symbol.for("lit-nothing"),G=new WeakMap,Y=j.createTreeWalker(j,129);function Q(t,i){if(!V(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==D?D.createHTML(i):i}const tt=(t,i)=>{const e=t.length-1,o=[];let n,r=2===i?"<svg>":3===i?"<math>":"",s=R;for(let i=0;i<e;i++){const e=t[i];let a,d,c=-1,h=0;for(;h<e.length&&(s.lastIndex=h,d=s.exec(e),null!==d);)h=s.lastIndex,s===R?"!--"===d[1]?s=F:void 0!==d[1]?s=J:void 0!==d[2]?(q.test(d[2])&&(n=RegExp("</"+d[2],"g")),s=U):void 0!==d[3]&&(s=U):s===U?">"===d[0]?(s=n??R,c=-1):void 0===d[1]?c=-2:(c=s.lastIndex-d[2].length,a=d[1],s=void 0===d[3]?U:'"'===d[3]?Z:B):s===Z||s===B?s=U:s===F||s===J?s=R:(s=U,n=void 0);const l=s===U&&t[i+1].startsWith("/>")?" ":"";r+=s===R?e+I:c>=0?(o.push(a),e.slice(0,c)+M+e.slice(c)+N+l):e+N+(-2===c?i:l)}return[Q(t,r+(t[e]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class it{constructor({strings:t,B:i},e){let o;this.parts=[];let n=0,r=0;const s=t.length-1,a=this.parts,[d,c]=tt(t,i);if(this.el=it.createElement(d,e),Y.currentNode=this.el.content,2===i||3===i){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes)}for(;null!==(o=Y.nextNode())&&a.length<s;){if(1===o.nodeType){if(o.hasAttributes())for(const t of o.getAttributeNames())if(t.endsWith(M)){const i=c[r++],e=o.getAttribute(t).split(N),s=/([.?@])?(.*)/.exec(i);a.push({type:1,index:n,name:s[2],strings:e,ctor:"."===s[1]?st:"?"===s[1]?at:"@"===s[1]?dt:rt}),o.removeAttribute(t)}else t.startsWith(N)&&(a.push({type:6,index:n}),o.removeAttribute(t));if(q.test(o.tagName)){const t=o.textContent.split(N),i=t.length-1;if(i>0){o.textContent=A?A.emptyScript:"";for(let e=0;e<i;e++)o.append(t[e],L()),Y.nextNode(),a.push({type:2,index:++n});o.append(t[i],L())}}}else if(8===o.nodeType)if(o.data===O)a.push({type:2,index:n});else{let t=-1;for(;-1!==(t=o.data.indexOf(N,t+1));)a.push({type:7,index:n}),t+=N.length-1}n++}}static createElement(t,i){const e=j.createElement("template");return e.innerHTML=t,e}}function et(t,i,e=t,o){if(i===X)return i;let n=void 0!==o?e.Z?.[o]:e.q;const r=H(i)?void 0:i.W;return n?.constructor!==r&&(n?.X?.(!1),void 0===r?n=void 0:(n=new r(t),n.K(t,e,o)),void 0!==o?(e.Z??=[])[o]=n:e.q=n),void 0!==n&&(i=et(t,n.G(t,i.values),n,o)),i}class ot{constructor(t,i){this.Y=[],this.tt=void 0,this.it=t,this.et=i}get parentNode(){return this.et.parentNode}get ot(){return this.et.ot}u(t){const{el:{content:i},parts:e}=this.it,o=(t?.creationScope??j).importNode(i,!0);Y.currentNode=o;let n=Y.nextNode(),r=0,s=0,a=e[0];for(;void 0!==a;){if(r===a.index){let i;2===a.type?i=new nt(n,n.nextSibling,this,t):1===a.type?i=new a.ctor(n,a.name,a.strings,this,t):6===a.type&&(i=new ct(n,this,t)),this.Y.push(i),a=e[++s]}r!==a?.index&&(n=Y.nextNode(),r++)}return Y.currentNode=j,o}p(t){let i=0;for(const e of this.Y)void 0!==e&&(void 0!==e.strings?(e.nt(t,e,i),i+=e.strings.length-2):e.nt(t[i])),i++}}class nt{get ot(){return this.et?.ot??this.rt}constructor(t,i,e,o){this.type=2,this.st=K,this.tt=void 0,this.dt=t,this.ct=i,this.et=e,this.options=o,this.rt=o?.isConnected??!0}get parentNode(){let t=this.dt.parentNode;const i=this.et;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this.dt}get endNode(){return this.ct}nt(t,i=this){t=et(this,t,i),H(t)?t===K||null==t||""===t?(this.st!==K&&this.ht(),this.st=K):t!==this.st&&t!==X&&this.lt(t):void 0!==t.B?this.$(t):void 0!==t.nodeType?this.T(t):(t=>V(t)||"function"==typeof t?.[Symbol.iterator])(t)?this.k(t):this.lt(t)}O(t){return this.dt.parentNode.insertBefore(t,this.ct)}T(t){this.st!==t&&(this.ht(),this.st=this.O(t))}lt(t){this.st!==K&&H(this.st)?this.dt.nextSibling.data=t:this.T(j.createTextNode(t)),this.st=t}$(t){const{values:i,B:e}=t,o="number"==typeof e?this.ut(t):(void 0===e.el&&(e.el=it.createElement(Q(e.h,e.h[0]),this.options)),e);if(this.st?.it===o)this.st.p(i);else{const t=new ot(o,this),e=t.u(this.options);t.p(i),this.T(e),this.st=t}}ut(t){let i=G.get(t.strings);return void 0===i&&G.set(t.strings,i=new it(t)),i}k(t){V(this.st)||(this.st=[],this.ht());const i=this.st;let e,o=0;for(const n of t)o===i.length?i.push(e=new nt(this.O(L()),this.O(L()),this,this.options)):e=i[o],e.nt(n),o++;o<i.length&&(this.ht(e&&e.ct.nextSibling,o),i.length=o)}ht(t=this.dt.nextSibling,i){for(this.gt?.(!1,!0,i);t!==this.ct;){const i=t.nextSibling;t.remove(),t=i}}setConnected(t){void 0===this.et&&(this.rt=t,this.gt?.(t))}}class rt{get tagName(){return this.element.tagName}get ot(){return this.et.ot}constructor(t,i,e,o,n){this.type=1,this.st=K,this.tt=void 0,this.element=t,this.name=i,this.et=o,this.options=n,e.length>2||""!==e[0]||""!==e[1]?(this.st=Array(e.length-1).fill(new String),this.strings=e):this.st=K}nt(t,i=this,e,o){const n=this.strings;let r=!1;if(void 0===n)t=et(this,t,i,0),r=!H(t)||t!==this.st&&t!==X,r&&(this.st=t);else{const o=t;let s,a;for(t=n[0],s=0;s<n.length-1;s++)a=et(this,o[e+s],i,s),a===X&&(a=this.st[s]),r||=!H(a)||a!==this.st[s],a===K?t=K:t!==K&&(t+=(a??"")+n[s+1]),this.st[s]=a}r&&!o&&this.j(t)}j(t){t===K?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"")}}class st extends rt{constructor(){super(...arguments),this.type=3}j(t){this.element[this.name]=t===K?void 0:t}}class at extends rt{constructor(){super(...arguments),this.type=4}j(t){this.element.toggleAttribute(this.name,!!t&&t!==K)}}class dt extends rt{constructor(t,i,e,o,n){super(t,i,e,o,n),this.type=5}nt(t,i=this){if((t=et(this,t,i,0)??K)===X)return;const e=this.st,o=t===K&&e!==K||t.capture!==e.capture||t.once!==e.once||t.passive!==e.passive,n=t!==K&&(e===K||o);o&&this.element.removeEventListener(this.name,this,e),n&&this.element.addEventListener(this.name,this,t),this.st=t}handleEvent(t){"function"==typeof this.st?this.st.call(this.options?.host??this.element,t):this.st.handleEvent(t)}}class ct{constructor(t,i,e){this.element=t,this.type=6,this.tt=void 0,this.et=i,this.options=e}get ot(){return this.et.ot}nt(t){et(this,t)}}const ht=E.litHtmlPolyfillSupport;ht?.(it,nt),(E.litHtmlVersions??=[]).push("3.3.1");const lt=globalThis;class pt extends T{constructor(){super(...arguments),this.renderOptions={host:this},this.ft=void 0}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const i=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this.ft=((t,i,e)=>{const o=e?.renderBefore??i;let n=o.vt;if(void 0===n){const t=e?.renderBefore??null;o.vt=n=new nt(i.insertBefore(L(),t),t,void 0,e??{})}return n.nt(t),n})(i,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this.ft?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this.ft?.setConnected(!1)}render(){return X}}pt.bt=!0,pt.finalized=!0,lt.litElementHydrateSupport?.({LitElement:pt});const ut=lt.litElementPolyfillSupport;ut?.({LitElement:pt}),(lt.litElementVersions??=[]).push("4.2.1");function gt(t,i,e){let o="mdi:format-list-checks";if("object"==typeof t&&t.icon)o=t.icon;else if(e&&e.states[i]){const t=e.states[i].attributes.icon;t&&(o=t)}const n=document.createElement("ha-icon");return n.className="todo-icon",n.icon=o,n}function mt(t){const i=document.createElement("div"),e=function(t){if(!t)return null;try{if(t.includes("T"))return new Date(t);{const i=new Date(`${t}T00:00:00`);return i.setHours(23,59,59,999),isNaN(i.getTime())?null:i}}catch(t){return null}}(t),o=new Date,n=e&&e<o;i.className="todo-due "+(n?"overdue":"");const r=document.createElement("ha-svg-icon");if(r.className="todo-due-icon",r.path="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.7L16.2,16.2Z",i.appendChild(r),e){if(!t.includes("T")&&(s=new Date,a=e,s.getFullYear()===a.getFullYear()&&s.getMonth()===a.getMonth()&&s.getDate()===a.getDate())){const t=document.createElement("span");t.textContent="Today",i.appendChild(t)}else{if(Math.abs(e.getTime()-o.getTime())<36e5){const t=document.createElement("span");i.appendChild(t);const o=()=>{const o=new Date,n=e.getTime()-o.getTime(),r=n<0;if(i.classList.toggle("overdue",r),Math.abs(n)<6e4){const i=Math.round(Math.abs(n)/1e3);t.textContent=i<5?"now":n<0?`${i} seconds ago`:`in ${i} seconds`}else{const i=Math.round(Math.abs(n)/6e4);t.textContent=n<0?`${i} minute${1!==i?"s":""} ago`:`in ${i} minute${1!==i?"s":""}`}};o();const n=setInterval(o,1e3),r=new MutationObserver(t=>{t.forEach(t=>{"childList"===t.type&&t.removedNodes.forEach(t=>{(t===i||t.contains?.(i))&&(clearInterval(n),r.disconnect())})})});i.parentNode&&r.observe(i.parentNode,{childList:!0,subtree:!0})}else{const t=document.createElement("ha-relative-time");t.setAttribute("capitalize",""),t.datetime=e,i.appendChild(t)}}}else{const e=document.createElement("span");e.textContent=t,i.appendChild(e)}var s,a;return i}function ft(t,i,e){setTimeout(()=>{!function(t,i,e){let o;o=t.classList.contains("todo-card-with-title-wrapper")?t.querySelector(".native-todo-card .add-textfield input"):t.querySelector(".add-textfield input");if(!o)return;if(e.wt.has(i)){const t=e.wt.get(i);t.inputHandler&&o.removeEventListener("input",t.inputHandler)}const n=o=>function(t,i,e,o){const n=t.target.value;o.xt=n,""===n.trim()?o.yt.delete(i):o.yt.set(i,n);o.cardBuilder.updateNativeTodoCard(e,i)}(o,i,t,e);o.addEventListener("input",n),e.wt.set(i,{inputHandler:n,inputElement:o})}(t,i,e)},100)}function vt(t){if(!t.paginationElement)return;let i="";if(t.kt.card_mod&&t.kt.card_mod.style&&"string"==typeof t.kt.card_mod.style){const e=t.kt.card_mod.style;["--todo-swipe-card-pagination-dot-inactive-color","--todo-swipe-card-pagination-dot-active-color","--todo-swipe-card-pagination-dot-size","--todo-swipe-card-pagination-dot-border-radius","--todo-swipe-card-pagination-dot-spacing","--todo-swipe-card-pagination-bottom","--todo-swipe-card-pagination-right","--todo-swipe-card-pagination-background","--todo-swipe-card-pagination-dot-active-size-multiplier","--todo-swipe-card-pagination-dot-active-opacity","--todo-swipe-card-pagination-dot-inactive-opacity"].forEach(t=>{const o=new RegExp(`${t}\\s*:\\s*([^;]+)`,"i"),n=e.match(o);n&&n[1]&&(i+=`${t}: ${n[1].trim()};\n`)})}if(i){t.paginationElement.style.cssText+=i;const e=t.paginationElement.querySelectorAll(".pagination-dot");requestAnimationFrame(()=>{e.forEach(t=>{t.style.borderRadius="var(--todo-swipe-card-pagination-dot-border-radius, 50%)",t.style.margin="0 var(--todo-swipe-card-pagination-dot-spacing, 4px)",t.classList.contains("active")?(t.style.width="calc(var(--todo-swipe-card-pagination-dot-size, 8px) * var(--todo-swipe-card-pagination-dot-active-size-multiplier, 1))",t.style.height="calc(var(--todo-swipe-card-pagination-dot-size, 8px) * var(--todo-swipe-card-pagination-dot-active-size-multiplier, 1))"):(t.style.width="var(--todo-swipe-card-pagination-dot-size, 8px)",t.style.height="var(--todo-swipe-card-pagination-dot-size, 8px)")})})}}async function bt(t,i){if(!i?.connection)return()=>{};try{return i.connection.subscribeMessage(i=>{const e=new CustomEvent("todo-items-updated",{detail:{entityId:t,items:i.items||[]},bubbles:!0,composed:!0});document.dispatchEvent(e)},{type:"todo/item/subscribe",entity_id:t})}catch(t){return()=>{}}}async function wt(t,i){if(!i)return[];try{const e=await i.callWS({type:"todo/item/list",entity_id:t});return e.items||[]}catch(t){return[]}}function xt(t,i,e){e&&t&&i&&e.callService("todo","add_item",{entity_id:t,item:i})}function yt(t,i,e,o){o&&t&&i&&(o.callService("todo","update_item",{entity_id:t,item:i.uid,status:e?"completed":"needs_action"}),i.summary)}async function kt(t,i,e,o){if(!o)return;const n={entity_id:t,item:i.uid,rename:e.summary};void 0!==e.completed&&(n.status=e.completed?"completed":"needs_action"),void 0!==e.description&&(n.description=e.description||null),void 0!==e.dueDate&&(e.dueDate&&""!==e.dueDate.trim()?e.dueDate.includes("T")?n.due_datetime=e.dueDate:n.due_date=e.dueDate:i.due&&i.due.includes("T")?n.due_datetime=null:n.due_date=null),await o.callService("todo","update_item",n),i.summary,e.summary}async function _t(t,i,e){if(!e)return;const o={entity_id:t,item:i.summary};i.description&&(o.description=i.description),void 0!==i.dueDate&&(o.due_date=i.dueDate||null),await e.callService("todo","add_item",o),i.summary}function $t(t,i,e){e&&(e.callService("todo","remove_item",{entity_id:t,item:i.uid}),i.summary)}function zt(t,i){i&&i.callService("todo","remove_completed_items",{entity_id:t})}function St(t,i,e){const o=[...t],n=o.filter(t=>"completed"===t.status),r=o.filter(t=>"completed"!==t.status);let s=r,a=n;if(i&&"none"!==i){const t=function(t,i){switch(t){case"alpha_asc":return(t,e)=>t.summary.localeCompare(e.summary,i?.locale?.language);case"alpha_desc":return(t,e)=>e.summary.localeCompare(t.summary,i?.locale?.language);case"duedate_asc":return(t,i)=>{const e=Ct(t.due),o=Ct(i.due);return e||o?e?o?e.getTime()-o.getTime():-1:1:0};case"duedate_desc":return(t,i)=>{const e=Ct(t.due),o=Ct(i.due);return e||o?e?o?o.getTime()-e.getTime():-1:1:0};default:return()=>0}}(i,e);s=r.sort(t),a=n.sort(t)}return[...s,...a]}function Ct(t){if(!t)return null;try{if(t.includes("T"))return new Date(t);{const i=new Date(`${t}T23:59:59`);return isNaN(i.getTime())?null:i}}catch(t){return null}}function Tt(t,i,e,o,n,r){const s=document.createElement("div");s.className="todo-item "+("completed"===t.status?"completed":""),s.dataset.itemUid=t.uid;const a=document.createElement("ha-checkbox");a.className="todo-checkbox",a.checked="completed"===t.status,a.addEventListener("change",o=>{o.stopPropagation(),e(i,t,o.target.checked)}),s.appendChild(a);const d=document.createElement("div");d.className="todo-content";const c=document.createElement("div");if(c.className="todo-summary",c.textContent=t.summary,d.appendChild(c),t.description){const i=document.createElement("div");i.className="todo-description",i.textContent=t.description,d.appendChild(i)}if(t.due){const i=mt(t.due),e=i.querySelector("ha-relative-time");e&&n&&(e.hass=n),d.appendChild(i)}s.appendChild(d),r&&Et(r,8)&&s.setAttribute("data-supports-drag","true");let h=0,l=0,p=0,u=!1;const g=t=>{t.target===a||a.contains(t.target)||t.target.closest(".todo-drag-handle")||(u=!1,p=Date.now(),"touchstart"===t.type?(h=t.touches[0].clientX,l=t.touches[0].clientY):(h=t.clientX,l=t.clientY))},m=t=>{if(!u){let i,e;"touchmove"===t.type?(i=t.touches[0].clientX,e=t.touches[0].clientY):(i=t.clientX,e=t.clientY);const o=Math.abs(i-h),n=Math.abs(e-l);(o>10||n>10)&&(u=!0)}},f=e=>{if(e.target===a||a.contains(e.target)||e.target.closest(".todo-drag-handle"))return;const n=Date.now()-p;!u&&n<1e3&&setTimeout(()=>{o(i,t)},10)};return s.addEventListener("touchstart",g,{passive:!0}),s.addEventListener("touchmove",m,{passive:!0}),s.addEventListener("touchend",f,{passive:!0}),s.addEventListener("mousedown",g),s.addEventListener("mousemove",m),s.addEventListener("mouseup",f),s.addEventListener("click",e=>{e.target===a||a.contains(e.target)||e.target.closest(".todo-drag-handle")||!u&&Date.now()-p<100&&(e.preventDefault(),e.stopPropagation(),o(i,t))}),s}function Et(t,i){return 0!==((t.attributes?.supported_features||0)&i)}var At=/*#__PURE__*/Object.freeze({__proto__:null,addTodoItem:xt,addTodoItemFromDialog:_t,createTodoItemElement:Tt,deleteCompletedItems:zt,deleteTodoItemFromDialog:$t,entitySupportsFeature:Et,fetchTodoItems:wt,moveItem:async function(t,i,e,o){if(o)try{await o.callWS({type:"todo/item/move",entity_id:t,uid:i,previous_uid:e||void 0})}catch(t){console.error("Error moving todo item:",t),t.message}},sortTodoItems:St,subscribeToTodoItems:bt,toggleTodoItem:yt,updateTodoItemFromDialog:kt});class Dt{constructor(t){this.cardInstance=t,this.currentDialog=null,this.dialogOpenTime=0}get _t(){return this.cardInstance._t}get kt(){return this.cardInstance.kt}$t(t,i){const e=document.createElement("button");return e.slot=i,e.textContent=t,e.setAttribute("destructive",""),e.style.cssText="\n      background-color: #f44336;\n      color: white;\n      border: none;\n      border-radius: 4px;\n      padding: 8px 16px;\n      font-family: var(--mdc-typography-button-font-family, inherit);\n      font-size: var(--mdc-typography-button-font-size, 0.875rem);\n      font-weight: var(--mdc-typography-button-font-weight, 500);\n      text-transform: uppercase;\n      letter-spacing: 0.0892857143em;\n      cursor: pointer;\n      min-width: 64px;\n      height: 36px;\n      display: inline-flex;\n      align-items: center;\n      justify-content: center;\n      box-sizing: border-box;\n      transition: background-color 0.2s, box-shadow 0.2s;\n      outline: none;\n    ",e.addEventListener("mouseenter",()=>{e.style.backgroundColor="#d32f2f",e.style.boxShadow="0px 2px 4px rgba(244, 67, 54, 0.3)"}),e.addEventListener("mouseleave",()=>{e.style.backgroundColor="#f44336",e.style.boxShadow="none"}),e.addEventListener("focus",()=>{e.style.backgroundColor="#d32f2f",e.style.boxShadow="0px 0px 0px 2px rgba(244, 67, 54, 0.3)"}),e.addEventListener("blur",()=>{e.style.backgroundColor="#f44336",e.style.boxShadow="none"}),e}zt(t,i){const e=document.createElement("ha-button");return e.slot=i,e.textContent=t,e}editTodoItem(t,i){const e=Date.now();e-this.dialogOpenTime<300||(this.dialogOpenTime=e,i.summary,this.showTodoItemEditDialog(t,i))}showTodoItemEditDialog(t,i=void 0){this.closeCurrentDialog();const e=document.createElement("ha-dialog");e.heading=i?"Edit item":"Add Todo Item",e.open=!0,e.style.setProperty("--mdc-dialog-min-width","min(600px, 95vw)"),e.style.setProperty("--mdc-dialog-max-width","min(600px, 95vw)"),e.setAttribute("role","dialog"),e.setAttribute("aria-labelledby","dialog-title"),e.setAttribute("aria-modal","true"),this.currentDialog=e;const o=document.createElement("div");o.style.cssText="\n      padding: 8px 0;\n      display: flex;\n      flex-direction: column;\n      gap: 16px;\n    ";const n=this._t?.states?.[t],r=n&&Et(n,64),s=n&&(Et(n,16)||Et(n,32)),a=n&&Et(n,2),d=document.createElement("div");d.style.cssText="display: flex; align-items: flex-start; gap: 8px;";let c=null;i&&(c=document.createElement("ha-checkbox"),c.checked="completed"===i.status,c.style.marginTop="8px",d.appendChild(c));const h=document.createElement("ha-textfield");h.label="Task name",h.value=i?.summary||"",h.required=!0,h.style.flexGrow="1",h.dialogInitialFocus=!0,h.validationMessage="Task name is required",d.appendChild(h),o.appendChild(d);let l=null;l=document.createElement("ha-textfield"),l.label="Description",l.value=i?.description||"",l.setAttribute("type","textarea"),l.setAttribute("rows","3"),l.style.cssText="\n        width: 100%;\n        display: block;\n        margin-bottom: 16px;\n      ",o.appendChild(l);let p=null,u=null;if(s){const t=document.createElement("div"),e=document.createElement("span");e.className="label",e.textContent="Due date:",e.style.cssText="\n        font-size: var(--ha-font-size-s, 12px);\n        font-weight: var(--ha-font-weight-medium, 500);\n        color: var(--input-label-ink-color, var(--primary-text-color));\n        display: block;\n        margin-bottom: 8px;\n      ",t.appendChild(e);const r=document.createElement("div");r.className="flex",r.style.cssText="\n        display: flex;\n        justify-content: space-between;\n        gap: 16px;\n      ";let s="",a="";if(i?.due)try{const t=new Date(i.due);isNaN(t.getTime())||(s=t.toISOString().split("T")[0],i.due.includes("T")&&(a=t.toTimeString().split(" ")[0].substring(0,5)))}catch(t){}const d=document.createElement("div");d.style.cssText="flex-grow: 1; position: relative;",p=document.createElement("input"),p.type="date",p.value=s,p.style.cssText="\n        width: 100%;\n        height: 56px;\n        padding: 20px 12px 6px 12px;\n        border: none;\n        border-bottom: 1px solid var(--divider-color);\n        border-radius: 0;\n        background: transparent;\n        color: var(--primary-text-color);\n        font-family: var(--mdc-typography-subtitle1-font-family, inherit);\n        font-size: var(--mdc-typography-subtitle1-font-size, 1rem);\n        line-height: var(--mdc-typography-subtitle1-line-height, 1.75rem);\n        box-sizing: border-box;\n        outline: none;\n        transition: border-bottom-color 0.15s ease;\n        cursor: pointer;\n        -webkit-appearance: none;\n        -moz-appearance: textfield;\n      ";const c=document.createElement("div");c.style.cssText="\n        position: relative;\n        background: var(--mdc-text-field-fill-color, #f5f5f5);\n        border-radius: 4px 4px 0 0;\n        min-height: 56px;\n        display: flex;\n        align-items: center;\n      ";const h=document.createElement("span");h.textContent="Due Date",h.style.cssText="\n        position: absolute;\n        left: 12px;\n        top: 8px;\n        font-size: 12px;\n        color: var(--secondary-text-color);\n        pointer-events: none;\n        transition: all 0.2s ease;\n      ";const l=document.createElement("button");if(l.type="button",l.innerHTML="×",l.style.cssText=`\n        position: absolute;\n        right: 36px;\n        top: 50%;\n        transform: translateY(-50%);\n        background: none;\n        border: none;\n        color: var(--secondary-text-color);\n        font-size: 18px;\n        cursor: pointer;\n        padding: 4px;\n        border-radius: 50%;\n        width: 20px;\n        height: 20px;\n        display: ${s?"flex":"none"};\n        align-items: center;\n        justify-content: center;\n        z-index: 2;\n      `,l.addEventListener("click",t=>{t.preventDefault(),t.stopPropagation(),p.value="",l.style.display="none",u&&(u.value="")}),p.addEventListener("input",()=>{l.style.display=p.value?"flex":"none"}),c.appendChild(h),c.appendChild(p),c.appendChild(l),d.appendChild(c),r.appendChild(d),Et(n,32)){const t=document.createElement("div");t.style.cssText="position: relative; min-width: 120px;";const i=document.createElement("div");i.style.cssText="\n          position: relative;\n          background: var(--mdc-text-field-fill-color, #f5f5f5);\n          border-radius: 4px 4px 0 0;\n          min-height: 56px;\n          display: flex;\n          align-items: center;\n        ",u=document.createElement("input"),u.type="time",u.value=a,u.style.cssText="\n          width: 100%;\n          height: 56px;\n          padding: 20px 12px 6px 12px;\n          border: none;\n          border-bottom: 1px solid var(--divider-color);\n          border-radius: 0;\n          background: transparent;\n          color: var(--primary-text-color);\n          font-family: var(--mdc-typography-subtitle1-font-family, inherit);\n          font-size: var(--mdc-typography-subtitle1-font-size, 1rem);\n          line-height: var(--mdc-typography-subtitle1-line-height, 1.75rem);\n          box-sizing: border-box;\n          outline: none;\n          transition: border-bottom-color 0.15s ease;\n          -webkit-appearance: none;\n          -moz-appearance: textfield;\n        ";const e=document.createElement("span");e.textContent="Time",e.style.cssText="\n          position: absolute;\n          left: 12px;\n          top: 8px;\n          font-size: 12px;\n          color: var(--secondary-text-color);\n          pointer-events: none;\n          transition: all 0.2s ease;\n        ",i.appendChild(e),i.appendChild(u),t.appendChild(i),r.appendChild(t)}t.appendChild(r),o.appendChild(t)}if(setTimeout(()=>{const t=e.querySelectorAll("ha-textfield, ha-checkbox, input, button, ha-button");if(0===t.length)return;const i=t[0],o=t[t.length-1];e.addEventListener("keydown",t=>{"Tab"===t.key&&(t.shiftKey&&document.activeElement===i?(t.preventDefault(),o.focus()):t.shiftKey||document.activeElement!==o||(t.preventDefault(),i.focus()))})},100),e.appendChild(o),i&&a){const o=this.$t("Delete item","secondaryAction");o.addEventListener("click",async()=>{await this.showDeleteConfirmationDialog(i.summary)&&($t(t,i,this._t),this.closeDialog(e))}),e.appendChild(o)}const g=this.zt("Cancel","primaryAction");g.addEventListener("click",()=>{this.closeDialog(e)}),e.appendChild(g);const m=i?"Save item":"Add",f=this.zt(m,"primaryAction");f.addEventListener("click",async()=>{const o=h.value.trim();if(!o)return void h.reportValidity();let n="";if(p?.value)if(u?.value){const t=`${p.value}T${u.value}:00`;try{n=new Date(t).toISOString()}catch(t){console.error("Invalid date/time combination"),n=p.value}}else n=p.value;const a={summary:o,completed:c?.checked||!1};r&&(a.description=l?.value),s&&(a.dueDate=n);await this.handleDialogSave(t,i,a)&&this.closeDialog(e)}),e.appendChild(f),h.addEventListener("keydown",o=>{if("Enter"===o.key){o.preventDefault();const n=h.value.trim();if(n){let a="";if(p?.value)if(u?.value){const t=`${p.value}T${u.value}:00`;try{a=new Date(t).toISOString()}catch(o){console.error("Invalid date/time combination"),a=p.value}}else a=p.value;const d={summary:n,completed:c?.checked||!1};r&&(d.description=l?.value),s&&(d.dueDate=a),this.handleDialogSave(t,i,d).then(t=>{t&&this.closeDialog(e)})}}}),e.addEventListener("closed",()=>{this.onDialogClosed(e)}),document.body.appendChild(e),setTimeout(()=>{h.focus()},100)}closeDialog(t){t&&t.open&&(t.open=!1,t.close())}closeCurrentDialog(){this.currentDialog&&(this.closeDialog(this.currentDialog),this.currentDialog=null)}onDialogClosed(t){t.parentNode&&t.parentNode.removeChild(t),this.currentDialog===t&&(this.currentDialog=null)}async handleDialogSave(t,i,e){if(!e.summary)return!1;try{return i?await kt(t,i,e,this._t):await _t(t,e,this._t),!0}catch(t){return!1}}async showDeleteConfirmationDialog(t){return new Promise(i=>{const e=document.createElement("ha-dialog");e.heading="Confirm Deletion",e.open=!0;const o=document.createElement("div");o.style.padding="16px",o.textContent=`Are you sure you want to delete "${t}"?`,e.appendChild(o);const n=this.zt("Cancel","secondaryAction");n.addEventListener("click",()=>{e.close(),i(!1)});const r=this.$t("Delete","primaryAction");r.addEventListener("click",()=>{e.close(),i(!0)}),e.appendChild(n),e.appendChild(r),e.addEventListener("closed",()=>{e.parentNode&&e.parentNode.removeChild(e),i(!1)}),document.body.appendChild(e)})}showDeleteCompletedConfirmation(t){const i=document.createElement("ha-dialog");i.heading="Confirm Deletion",i.open=!0;const e=document.createElement("div");e.style.padding="16px",e.textContent="Are you sure you want to delete all completed items from the list?",i.appendChild(e);const o=this.zt("Cancel","secondaryAction");o.addEventListener("click",()=>{i.close()});const n=this.$t("Delete","primaryAction");n.addEventListener("click",()=>{i.close(),Promise.resolve().then(function(){return At}).then(i=>{i.deleteCompletedItems(t,this._t)})}),i.appendChild(o),i.appendChild(n),i.addEventListener("closed",()=>{i.parentNode&&i.parentNode.removeChild(i)}),document.body.appendChild(i)}}class Mt{constructor(t){this.cardInstance=t}get _t(){return this.cardInstance._t}get kt(){return this.cardInstance.kt}St(t){return"string"==typeof t?t:t?.entity||""}Ct(t){if(!this.kt?.entities)return null;const i=this.kt.entities.find(i=>this.St(i)===t);return"string"==typeof i?{entity:t}:i||null}async createNativeTodoCards(){if(!this.cardInstance.sliderElement)return;if(this.cardInstance.Tt)return;const t=this.cardInstance.sliderElement;for(let i=0;i<this.kt.entities.length;i++){if(this.cardInstance.Tt)return void s();const e=this.kt.entities[i],o=this.St(e);if(!o||""===o.trim())continue;if(this.cardInstance.sliderElement!==t)return void s();if(!this.cardInstance.sliderElement)return void s();const n=document.createElement("div");n.className="slide";try{const r=await this.createNativeTodoCard(e);if(this.cardInstance.Tt)return void s();if(this.cardInstance.cards[i]={element:r,slide:n,entityId:o,entityConfig:e},n.appendChild(r),this.kt.show_completed&&this.kt.show_completed_menu){const t=this.cardInstance.Et(o,e);n.appendChild(t)}if(this.kt.show_icons){const t=gt(e,o,this._t);n.appendChild(t)}if(!this.cardInstance.sliderElement||this.cardInstance.sliderElement!==t||this.cardInstance.Tt)return void s();this.cardInstance.sliderElement.appendChild(n),s()}catch(e){if(!this.cardInstance.Tt){console.error(`Error creating native todo card ${i}:`,o,e);const r=document.createElement("div");r.style.cssText="color: red; background: white; padding: 16px; border: 1px solid red; height: 100%; box-sizing: border-box;",r.textContent=`Error creating card: ${e.message||e}. Check console for details.`,n.appendChild(r),this.cardInstance.sliderElement&&this.cardInstance.sliderElement===t&&this.cardInstance.sliderElement.appendChild(n),this.cardInstance.cards[i]={error:!0,slide:n}}}}this.cardInstance.cards=this.cardInstance.cards.filter(Boolean),this.cardInstance.cards.length}async createNativeTodoCard(t){const i=this.St(t);this.cardInstance.At||(this.cardInstance.At=new Map),this.cardInstance.Dt||(this.cardInstance.Dt=new Map);const e=document.createElement("div");e.className="native-todo-card","object"==typeof t&&t.background_image&&(e.style.backgroundImage=`url('${t.background_image}')`,e.style.backgroundPosition="center center",e.style.backgroundRepeat="no-repeat",e.style.backgroundSize="cover");let o=e;const n="object"==typeof t&&t.show_title||!1,r="object"==typeof t&&t.title||"";if(n&&r&&(o=function(t,i){const e=document.createElement("div");e.className="todo-card-with-title-wrapper";const o=document.createElement("div");o.className="todo-swipe-card-external-title",o.textContent=i;const n=document.createElement("div");return n.className="todo-card-container",e.appendChild(o),n.appendChild(t),e.appendChild(n),e}(e,r)),this.kt.show_create){const t=this.createAddRow(i);e.appendChild(t)}const s=document.createElement("div");if(s.className="todo-list",e.appendChild(s),this.kt.enable_search&&this.kt.show_create&&ft(e,i,this.cardInstance),this._t){const t=this.cardInstance.Dt.get(i);if(t&&"function"==typeof t)try{t()}catch(t){}const e=await bt(i,this._t);this.cardInstance.Dt.set(i,e),setTimeout(async()=>{await this.updateNativeTodoCard(o,i)},100)}return o}createAddRow(t){const i=document.createElement("div");i.className="add-row";const e=document.createElement("div");e.className="add-textfield";const o=document.createElement("input");if(o.type="text",o.placeholder=this.kt.enable_search?"Type to search / add":"Add item",o.addEventListener("keydown",i=>{if("Enter"===i.key){const e=o.value.trim();e&&(this.kt.enable_search?function(t,i,e,o,n){if(t.key,"Enter"===t.key){t.preventDefault(),t.stopPropagation();const e=o.value.trim();if(e){n.yt.delete(i),n.xt="",o.value="",Array.from(n.yt.keys());const t=n._t?.states?.[i];(t?.attributes?.items||[]).some(t=>t.summary.toLowerCase()===e.toLowerCase())||n.Mt(i,e)}}else"Escape"===t.key&&(o.value="",n.xt="",n.yt.delete(i),n.cardBuilder.updateNativeTodoCard(e,i))}(i,t,o.closest(".native-todo-card")||o.closest(".todo-card-with-title-wrapper"),o,this.cardInstance):(this.cardInstance.Mt(t,e),o.value="",o.focus()))}else if("Escape"===i.key&&this.kt.enable_search){o.value="",this.cardInstance.yt.delete(t),this.cardInstance.xt="";const i=o.closest(".native-todo-card")||o.closest(".todo-card-with-title-wrapper");i&&this.updateNativeTodoCard(i,t)}}),e.appendChild(o),i.appendChild(e),this.kt.show_addbutton){const e=document.createElement("button");e.className="add-button",e.title="Add item",e.innerHTML='\n       <svg viewBox="0 0 24 24">\n         <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />\n       </svg>\n     ',e.addEventListener("click",()=>{const i=o.value.trim();if(i){if(this.kt.enable_search){this.cardInstance.yt.delete(t),this.cardInstance.xt="",o.value="";const e=this.cardInstance._t?.states?.[t];(e?.attributes?.items||[]).some(t=>t.summary.toLowerCase()===i.toLowerCase())||this.cardInstance.Mt(t,i);const n=o.closest(".native-todo-card")||o.closest(".todo-card-with-title-wrapper");n&&this.updateNativeTodoCard(n,t)}else this.cardInstance.Mt(t,i),o.value="";o.focus()}}),i.appendChild(e)}return i}async updateNativeTodoCard(t,i){if(!this._t||!i)return;const e=this._t.states[i];if(!e)return;let o=[];try{o=await wt(i,this._t),o.length,this.cardInstance.At||(this.cardInstance.At=new Map),this.cardInstance.At.set(i,o)}catch(t){this.cardInstance.At&&this.cardInstance.At.has(i)?(o=this.cardInstance.At.get(i)||[],o.length):(o=e.attributes?.items||[],o.length)}let n=null;if(n=t.classList.contains("todo-card-with-title-wrapper")?t.querySelector(".native-todo-card .todo-list"):(t.classList.contains("native-todo-card"),t.querySelector(".todo-list")),!n){let i=t;if(t.classList.contains("todo-card-with-title-wrapper")&&(i=t.querySelector(".native-todo-card")),!i)return;n=document.createElement("div"),n.className="todo-list",i.appendChild(n)}const r=this.Ct(i),s=St(o,r?.display_order,this._t),a=this.cardInstance.yt.get(i)||"",d=a&&""!==a.trim(),c=d?s.filter(t=>function(t,i){if(!i)return!0;try{const e=new RegExp(i,"i");return e.test(t.summary)||t.description&&e.test(t.description)}catch(e){const o=i.toLowerCase();return t.summary.toLowerCase().includes(o)||t.description&&t.description.toLowerCase().includes(o)}}(t,a)):s;if(c.length,o.length,n.innerHTML="",c.length>0&&c.forEach((t,o)=>{try{const o=Tt(t,i,this.cardInstance.Nt,this.cardInstance.Ot,this._t,e);this.kt.show_completed||"completed"!==t.status||d||(o.style.display="none"),n.appendChild(o)}catch(i){console.error(`Error creating item element ${o}:`,i,t)}}),this.updateSearchCounter(t,i,a,c.length,s.length),Et(e,8)){const{setupDragAndDrop:t}=await Promise.resolve().then(function(){return It});t(n,i,c,this._t)}}updateSearchCounter(t,i,e,o,n){let r=null;if(r=t.classList.contains("todo-card-with-title-wrapper")?t.querySelector(".native-todo-card .add-row"):t.querySelector(".add-row"),!r)return;const s=t.querySelector(".search-counter");if(s&&s.remove(),e&&""!==e.trim()&&n>0){r.classList.add("has-search-counter");const t=document.createElement("div");t.className="search-counter",t.textContent=`Showing ${o} of ${n} results`,r.parentNode.insertBefore(t,r.nextSibling)}else r.classList.remove("has-search-counter")}}class Nt{constructor(t){this.cardInstance=t,this.handleTodoUpdate=this.handleTodoUpdate.bind(this)}get _t(){return this.cardInstance._t}get kt(){return this.cardInstance.kt}async initializeSubscriptions(t,i){if(this.cardInstance.initialized&&this.cardInstance.cards&&0!==this.cardInstance.cards.length&&!i&&this.cardInstance.cards.length>0)for(const t of this.cardInstance.cards)if(t&&t.entityId){s(t.entityId);const i=this.cardInstance.Dt?.get(t.entityId);if(i&&"function"==typeof i)try{i()}catch(t){s()}const e=await bt(t.entityId,this._t);this.cardInstance.Dt||(this.cardInstance.Dt=new Map),this.cardInstance.Dt.set(t.entityId,e),setTimeout(async()=>{await this.cardInstance.cardBuilder.updateNativeTodoCard(t.element,t.entityId)},100)}}setupEventListeners(){document.addEventListener("todo-items-updated",this.handleTodoUpdate)}removeEventListeners(){document.removeEventListener("todo-items-updated",this.handleTodoUpdate)}handleTodoUpdate(t){const{entityId:i,items:e}=t.detail;this.cardInstance.At||(this.cardInstance.At=new Map),this.cardInstance.At.set(i,e);const o=this.cardInstance.cards.find(t=>t.entityId===i);o&&o.element&&setTimeout(()=>{this.cardInstance.cardBuilder.updateNativeTodoCard(o.element,i)},50)}cleanup(){this.cardInstance.Dt&&(this.cardInstance.Dt.forEach(async(t,i)=>{try{"function"==typeof t&&await Promise.resolve(t()).catch(t=>{})}catch(t){}}),this.cardInstance.Dt.clear()),this.cardInstance.At&&this.cardInstance.At.clear(),this.removeEventListeners()}}class TodoSwipeCard extends pt{constructor(){super(),this.kt={},this._t=null,this.cards=[],this.currentIndex=0,this.slideWidth=0,this.cardContainer=null,this.sliderElement=null,this.paginationElement=null,this.initialized=!1,this.It=null,this.jt=null,this.Lt=null,this.Ht=null,this.Vt=null,this.Pt=null,this.Dt=new Map,this.Rt=null,this.yt=new Map,this.xt="",this.wt=new Map,this.At=new Map,this.Ft=!1,this.dialogManager=new Dt(this),this.cardBuilder=new Mt(this),this.subscriptionManager=new Nt(this),this.Mt=this.Mt.bind(this),this.Nt=this.Nt.bind(this),this.Ot=this.Ot.bind(this)}render(){return W``}static getStubConfig(){return{entities:[],card_spacing:15,show_pagination:!0,show_icons:!1,show_create:!0,show_addbutton:!1,show_completed:!1,show_completed_menu:!1,delete_confirmation:!1,enable_search:!1}}static getConfigElement(){return document.createElement("todo-swipe-card-editor")}Jt(){return this.kt&&this.kt.entities&&Array.isArray(this.kt.entities)&&this.kt.entities.length>0&&this.kt.entities.some(t=>"string"==typeof t?t&&""!==t.trim():t&&t.entity&&""!==t.entity.trim())}St(t){return"string"==typeof t?t:t?.entity||""}Ct(t){if(!this.kt?.entities)return null;const i=this.kt.entities.find(i=>this.St(i)===t);return"string"==typeof i?{entity:t}:i||null}Ut(t){if(!this.Ht)return!0;return JSON.stringify(t)!==JSON.stringify(this.Ht)}Bt(){if(this.shadowRoot)if(this.It||(this.It=document.createElement("style"),this.shadowRoot.appendChild(this.It)),this.kt&&this.kt.card_mod&&"string"==typeof this.kt.card_mod.style){const t=this.kt.card_mod.style;t.includes(":host")?this.It.textContent=t:this.It.textContent=`\n          :host {\n            ${t}\n          }\n        `}else this.It&&(this.It.textContent="")}Zt(){if(this.sliderElement&&this.kt)try{let t="0.3s",i="ease-out";const e=this.kt.card_mod||this.kt.custom_card_mod;if(e&&"string"==typeof e.style){const o=e.style,n=/--todo-swipe-card-transition-speed\s*:\s*([^;]+)/i,r=o.match(n);r&&r[1]&&(t=r[1].trim());const s=/--todo-swipe-card-transition-easing\s*:\s*([^;]+)/i,a=o.match(s);a&&a[1]&&(i=a[1].trim());const d=/--todo-swipe-card-delete-button-color\s*:\s*([^;]+)/i,c=o.match(d);c&&c[1]&&(this.Rt=c[1].trim(),this.qt())}if(this.sliderElement&&this.sliderElement.style){const e=`transform ${t} ${i}`;this.sliderElement.style.transition=e,this.Wt=t,this.Xt=i}}catch(t){console.error("Error applying transition properties:",t)}}qt(){if(!this.Rt)return;this.shadowRoot.querySelectorAll(".delete-completed-button").forEach(t=>{t.style.color=this.Rt;const i=t.querySelector("svg");i&&(i.style.fill=this.Rt)})}setConfig(t){JSON.stringify(t);let i=t.entities||[];Array.isArray(i)||(i="object"==typeof i?Object.values(i):"string"==typeof i?[i]:[]),i=i.map(t=>"string"==typeof t?""===t.trim()?t:{entity:t}:t).filter(t=>"string"==typeof t?""!==t:t&&(t.entity||""===t.entity));const e={...TodoSwipeCard.getStubConfig(),...t,entities:i};if(void 0===e.card_spacing?e.card_spacing=15:(e.card_spacing=parseInt(e.card_spacing),(isNaN(e.card_spacing)||e.card_spacing<0)&&(e.card_spacing=15)),t.card_mod&&"object"==typeof t.card_mod&&Object.keys(t.card_mod).length>0?e.card_mod=t.card_mod:t.custom_card_mod&&"object"==typeof t.custom_card_mod&&Object.keys(t.custom_card_mod).length>0&&(e.card_mod=t.custom_card_mod),!this.Ut(e))return;const o=this.kt;if(this.kt=e,this.Ht=JSON.parse(JSON.stringify(e)),JSON.stringify(this.kt),this.Bt(),this.initialized){this.jt&&clearTimeout(this.jt);this.Kt(o,e)?this.jt=setTimeout(()=>{this.Gt().then(()=>{this.Zt(),this.qt()})},300):(this.Yt(o),this.Zt(),this.qt())}}Kt(t,i){if(!t)return!0;const e=JSON.stringify(t.entities)!==JSON.stringify(i.entities),o=t.show_pagination!==i.show_pagination,n=t.show_create!==i.show_create,r=JSON.stringify(t.card_mod)!==JSON.stringify(i.card_mod),s=t.enable_search!==i.enable_search;return e||o||n||r||s}Yt(t){requestAnimationFrame(()=>{this.kt.show_completed!==t.show_completed&&this.cards.forEach(t=>{if(t.element){t.element.querySelectorAll(".todo-item.completed").forEach(t=>{t.style.display=this.kt.show_completed?"":"none"})}}),this.kt.show_completed_menu===t.show_completed_menu&&this.kt.show_completed===t.show_completed||this.Qt(),this.kt.card_spacing!==t.card_spacing&&this.sliderElement&&(this.sliderElement.style.gap=`${this.kt.card_spacing}px`,this.updateSlider(!1)),JSON.stringify(this.kt.card_mod||this.kt.custom_card_mod)!==JSON.stringify(t.card_mod||t.custom_card_mod)&&(this.Bt(),this.paginationElement&&this.ti())})}Qt(){this.cards.forEach(t=>{const i=t.slide;if(!i)return;if(i.querySelectorAll(".delete-completed-button").forEach(t=>t.remove()),this.kt.show_completed&&this.kt.show_completed_menu){const e=t.entityConfig||this.Ct(t.entityId),o=this.Et(t.entityId,e);i.appendChild(o)}})}Et(t,i=null){const e=document.createElement("button");if(e.className="delete-completed-button",e.title="Delete completed items",e.innerHTML='\n      <svg viewBox="0 0 24 24">\n        <path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" />\n      </svg>\n    ',i&&i.show_title&&i.title){const t=`calc(${35}px + ${"var(--todo-swipe-card-title-height, 40px)"})`;e.style.setProperty("--todo-swipe-card-delete-button-auto-top",t)}if(this.Rt){e.style.color=this.Rt;const t=e.querySelector("svg");t&&(t.style.fill=this.Rt)}return e.addEventListener("click",i=>{i.preventDefault(),i.stopPropagation(),this.kt.delete_confirmation?this.dialogManager.showDeleteCompletedConfirmation(t):zt(t,this._t)}),e}set hass(t){if(!t)return;const i=this._t;this._t=t,this.subscriptionManager.initializeSubscriptions(t,i)}connectedCallback(){super.connectedCallback(),this.subscriptionManager.setupEventListeners(),this.kt&&(this.initialized||(this.Bt(),setTimeout(()=>{this.Gt()},0)))}disconnectedCallback(){var t;this.jt&&(clearTimeout(this.jt),this.jt=null),this.Vt&&(clearTimeout(this.Vt),this.Vt=null),this.resizeObserver&&(this.resizeObserver.disconnect(),this.resizeObserver=null),this.subscriptionManager.cleanup(),(t=this).wt&&(t.wt.forEach(t=>{t.inputElement&&(t.inputHandler&&t.inputElement.removeEventListener("input",t.inputHandler),t.keydownHandler&&t.inputElement.removeEventListener("keydown",t.keydownHandler))}),t.wt.clear()),t.yt&&t.yt.clear(),t.xt="",this.cardContainer&&(this.ii&&(this.cardContainer.removeEventListener("touchstart",this.ii),this.cardContainer.removeEventListener("touchmove",this.ei),this.cardContainer.removeEventListener("touchend",this.oi),this.cardContainer.removeEventListener("touchcancel",this.oi),this.cardContainer.removeEventListener("mousedown",this.ni)),window.removeEventListener("mousemove",this.ri),window.removeEventListener("mouseup",this.si)),this.initialized=!1,this.cards=[],this.cardContainer=null,this.sliderElement=null,this.paginationElement=null,this.Pt=null,this.shadowRoot&&(this.shadowRoot.innerHTML="")}async Gt(){if(this.Lt)return this.Lt;this.Lt=this.ai();try{await this.Lt}finally{this.Lt=null}}async ai(){const t=document.createDocumentFragment(),i=this.renderRoot||this.shadowRoot;if(!i)return void console.error("No render root available");i.innerHTML="";const e=function(t){const i=document.createElement("style");return i.textContent=`\n    :host {\n      display: block;\n      overflow: hidden;\n      width: 100%;\n      height: 100%;\n      --card-border-radius: var(--ha-card-border-radius, 12px);\n      border-radius: var(--card-border-radius);\n    }\n\n    .card-container {\n      position: relative;\n      width: 100%;\n      height: 100%;\n      overflow: hidden;\n      border-radius: var(--card-border-radius);\n    }\n    \n    .card-container, .slide {\n      border-radius: var(--card-border-radius) !important;\n    }\n\n    .slider {\n      position: relative;\n      display: flex;\n      width: 100%;\n      height: 100%;\n      transition: transform 0.3s ease-out;\n      will-change: transform;\n    }\n\n    .slide {\n      position: relative;\n      flex: 0 0 100%;\n      max-width: 100%;\n      overflow: hidden;\n      height: 100%;\n      box-sizing: border-box;\n      border-radius: var(--card-border-radius);\n      background: var(--todo-swipe-card-background, var(--ha-card-background, var(--card-background-color, white)));\n    }\n\n    .pagination {\n      position: absolute;\n      bottom: var(--todo-swipe-card-pagination-bottom, 8px);\n      left: 0;\n      right: 0;\n      display: flex;\n      justify-content: center;\n      align-items: center;\n      z-index: 1;\n      background-color: var(--todo-swipe-card-pagination-background, transparent);\n    }\n\n    .pagination-dot {\n      width: var(--todo-swipe-card-pagination-dot-size, 8px);\n      height: var(--todo-swipe-card-pagination-dot-size, 8px);\n      border-radius: var(--todo-swipe-card-pagination-dot-border-radius, 50%);\n      margin: 0 var(--todo-swipe-card-pagination-dot-spacing, 4px);\n      background-color: var(--todo-swipe-card-pagination-dot-inactive-color, rgba(127, 127, 127, 0.6));\n      opacity: var(--todo-swipe-card-pagination-dot-inactive-opacity, 0.6);\n      cursor: pointer;\n      transition: background-color 0.2s ease, width 0.2s ease, height 0.2s ease;\n      flex-shrink: 0;\n    }\n\n    .pagination-dot.active {\n      background-color: var(--todo-swipe-card-pagination-dot-active-color, var(--primary-color, #03a9f4));\n      width: calc(var(--todo-swipe-card-pagination-dot-size, 8px) * var(--todo-swipe-card-pagination-dot-active-size-multiplier, 1));\n      height: calc(var(--todo-swipe-card-pagination-dot-size, 8px) * var(--todo-swipe-card-pagination-dot-active-size-multiplier, 1));\n      opacity: var(--todo-swipe-card-pagination-dot-active-opacity, 1);\n    }\n    \n    .delete-completed-button {\n      position: absolute;\n      right: 7px;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      top: var(--todo-swipe-card-delete-button-top, var(--todo-swipe-card-delete-button-auto-top, 35px));\n      padding: 4px;\n      background-color: transparent;\n      border: none;\n      color: var(--todo-swipe-card-delete-button-color, var(--todo-swipe-card-text-color, var(--primary-text-color)));\n      cursor: pointer;\n      border-radius: 50%;\n      width: 36px;\n      height: 36px;\n      z-index: 10;\n    }\n\n    .delete-completed-button:hover {\n      background-color: rgba(127, 127, 127, 0.2);\n    }\n\n    .delete-completed-button svg {\n      width: 20px;\n      height: 20px;\n      fill: currentColor;\n    }\n\n    /* Preview styles */\n    .preview-container {\n      display: flex;\n      flex-direction: column;\n      align-items: center;\n      justify-content: center;\n      text-align: center;\n      padding: 16px;\n      box-sizing: border-box;\n      height: 100%;\n      background: var(--ha-card-background, var(--card-background-color, white));\n      border-radius: inherit;\n    }\n    \n    .preview-icon-container {\n      margin-bottom: 16px;\n    }\n    \n    .preview-icon-container ha-icon {\n      color: var(--primary-color, #03a9f4);\n      font-size: 48px;\n      width: 48px;\n      height: 48px;\n    }\n    \n    .preview-text-container {\n      margin-bottom: 16px;\n    }\n    \n    .preview-title {\n      font-size: 18px;\n      font-weight: bold;\n      margin-bottom: 8px;\n      color: var(--primary-text-color);\n    }\n    \n    .preview-description {\n      font-size: 14px;\n      color: var(--secondary-text-color);\n      max-width: 300px;\n      line-height: 1.4;\n      margin: 0 auto;\n    }\n    \n    /* Dialog styles */\n    ha-dialog {\n      --mdc-dialog-min-width: 300px;\n      --mdc-dialog-max-width: 500px;\n      --mdc-dialog-heading-ink-color: var(--primary-text-color);\n      --mdc-dialog-content-ink-color: var(--primary-text-color);\n      --justify-action-buttons: space-between;\n    }\n    \n    ha-dialog div {\n      padding: 8px 16px 16px 16px;\n      color: var(--primary-text-color);\n    }\n    \n    /* Todo icon styling */\n    .todo-icon {\n      position: absolute;\n      right: var(--todo-swipe-card-icon-right, 16px);\n      bottom: var(--todo-swipe-card-icon-bottom, 8px);\n      width: var(--todo-swipe-card-icon-size, 48px);\n      height: var(--todo-swipe-card-icon-size, 48px);\n      color: var(--todo-swipe-card-icon-color, rgba(255, 255, 255, 0.3));\n      opacity: var(--todo-swipe-card-icon-opacity, 0.6);\n      z-index: 1;\n      pointer-events: none;\n      --mdc-icon-size: var(--todo-swipe-card-icon-size, 48px);\n    }\n\n    .native-todo-card {\n      height: 100%;\n      box-sizing: border-box;\n      overflow-y: auto;\n      border-radius: var(--card-border-radius);\n      background: var(--todo-swipe-card-background, var(--ha-card-background, var(--card-background-color, white)));\n      color: var(--todo-swipe-card-text-color, var(--primary-text-color));\n      font-size: var(--todo-swipe-card-font-size, var(--todo-swipe-card-typography-size, 11px));\n      position: relative;\n      \n      /* Hide scrollbar for all browsers */\n      scrollbar-width: none; /* Firefox */\n      -ms-overflow-style: none; /* Internet Explorer 10+ */\n    }\n\n    .native-todo-card::-webkit-scrollbar {\n      display: none; /* WebKit browsers (Chrome, Safari, Edge) */\n    }\n\n    .todo-card-with-title-wrapper .native-todo-card {\n      border-radius: 0 0 var(--card-border-radius) var(--card-border-radius);\n    }\n\n    .add-row {\n      padding: 8px 12px;\n      padding-bottom: 0;\n      margin-bottom: 6px; /* 6px + 4px todo-list padding = 10px total when no search */\n      position: relative;\n      display: flex;\n      flex-direction: row;\n      align-items: center;\n    }\n\n    .add-row.has-search-counter {\n      margin-bottom: 0px; /* 4px gap to search counter when search is active */\n    }\n\n    .add-textfield {\n      flex-grow: 1;\n      margin-right: 8px;\n    }\n\n    .add-textfield input {\n      color: var(--todo-swipe-card-text-color, var(--primary-text-color)) !important;\n      font-weight: var(--todo-swipe-card-input-font-weight, normal) !important;\n      background: transparent !important;\n      border: none !important;\n      outline: none !important;\n      padding: 8px 8px 2px 8px !important;\n      margin-left: -4px !important;\n      margin-top: 3px !important;\n      width: 100% !important;\n      box-sizing: border-box !important;\n      font-size: inherit !important;\n      font-family: inherit !important;\n    }\n\n    .add-textfield input::placeholder {\n      color: var(--todo-swipe-card-placeholder-color, var(--todo-swipe-card-text-color, var(--primary-text-color))) !important;\n      opacity: var(--todo-swipe-card-placeholder-opacity, 1) !important;\n      font-weight: var(--todo-swipe-card-placeholder-font-weight, normal) !important;\n    }\n\n    .add-textfield input::-webkit-input-placeholder {\n      color: var(--todo-swipe-card-placeholder-color, var(--todo-swipe-card-text-color, var(--primary-text-color))) !important;\n      opacity: 1 !important;\n      font-weight: var(--todo-swipe-card-placeholder-font-weight, normal) !important;\n    }\n\n    .add-textfield input::-moz-placeholder {\n      color: var(--todo-swipe-card-placeholder-color, var(--todo-swipe-card-text-color, var(--primary-text-color))) !important;\n      opacity: 1 !important;\n      font-weight: var(--todo-swipe-card-placeholder-font-weight, normal) !important;\n    }\n\n    .add-button {\n      position: absolute;\n      right: 5px;\n      top: 5px;\n      background: none;\n      border: none;\n      cursor: pointer;\n      padding: 8px;\n      border-radius: 50%;\n      display: flex;\n      align-items: center;\n      justify-content: center;\n      color: var(--todo-swipe-card-add-button-color, var(--todo-swipe-card-text-color, var(--primary-text-color)));\n      opacity: ${t?.show_addbutton?"1":"0"};\n      visibility: ${t?.show_addbutton?"visible":"hidden"};\n      pointer-events: ${t?.show_addbutton?"auto":"none"};\n    }\n\n    .add-button:hover {\n      background-color: rgba(127, 127, 127, 0.1);\n    }\n\n    .add-button svg {\n      width: 24px;\n      height: 24px;\n      fill: currentColor;\n    }\n\n    .todo-list {\n      padding: 4px 0;\n    }\n\n    .header {\n      display: none;\n    }\n\n    .empty {\n      display: none;\n    }\n\n    .todo-item {\n      display: flex;\n      align-items: var(--todo-swipe-card-item-align, flex-start);\n      padding: 1px 12px;\n      min-height: var(--todo-swipe-card-item-height, calc(var(--todo-swipe-card-font-size, 11px) + 8px));\n      margin-top: var(--todo-swipe-card-item-spacing, 1px);\n      cursor: pointer;\n      position: relative;\n      padding-right: 30px;\n    }\n\n    .todo-item:first-child {\n      margin-top: 0 !important;\n    }\n\n    .todo-item:hover {\n      background-color: rgba(127, 127, 127, 0.1);\n    }\n\n    .todo-checkbox {\n      margin-right: var(--todo-swipe-card-item-margin, 5px);\n      margin-top: var(--todo-swipe-card-checkbox-margin-top, 1px);\n      margin-left: 4px;\n      flex-shrink: 0;\n      opacity: 70%;\n      --mdc-checkbox-unchecked-color: var(--todo-swipe-card-checkbox-color, var(--todo-swipe-card-text-color, var(--primary-text-color)));\n      --mdc-checkbox-checked-color: var(--todo-swipe-card-checkbox-checked-color, var(--primary-color));\n      --mdc-checkbox-ink-color: var(--todo-swipe-card-checkbox-checkmark-color, white);\n      --mdc-checkbox-mark-color: var(--todo-swipe-card-checkbox-checkmark-color, white);\n      --mdc-checkbox-size: var(--todo-swipe-card-checkbox-size, 18px);\n      --mdc-checkbox-ripple-size: var(--todo-swipe-card-checkbox-size, 18px);\n      --mdc-checkbox-state-layer-size: var(--todo-swipe-card-checkbox-size, 18px);\n    }\n\n    .todo-content {\n      flex: 1;\n      max-width: calc(100% - 30px);\n      overflow: visible;\n      color: var(--todo-swipe-card-text-color, var(--primary-text-color));\n      font-weight: var(--todo-swipe-card-item-font-weight, normal);\n      line-height: var(--todo-swipe-card-line-height, 1.3);\n      white-space: normal;\n      word-wrap: break-word;\n      overflow-wrap: break-word;\n    }\n\n    .todo-summary {\n      margin: 0;\n      margin-top: var(--todo-swipe-card-summary-margin-top, 3px);\n      padding: 0;\n      color: inherit;\n      font-size: inherit;\n      font-weight: inherit;\n      line-height: inherit;\n      white-space: normal;\n      word-wrap: break-word;\n      overflow-wrap: break-word;\n      hyphens: none;\n      word-break: normal;        \n    }\n\n    .todo-item.completed .todo-summary {\n      text-decoration: line-through;\n    }\n\n    .todo-description {\n      margin-top: var(--todo-swipe-card-description-margin-top, 1px);\n      color: var(--todo-swipe-card-font-color-description, var(--secondary-text-color));\n      font-size: var(--todo-swipe-card-font-size-description, var(--todo-swipe-card-font-size, var(--todo-swipe-card-typography-size, 11px)));\n      font-weight: var(--todo-swipe-card-font-weight-description, normal);\n      line-height: var(--todo-swipe-card-line-height, 1.3);\n      white-space: normal;\n      word-wrap: break-word;\n      overflow-wrap: break-word;\n    }\n\n    .todo-due {\n      margin-top: var(--todo-swipe-card-due-date-margin-top, 2px);\n      color: var(--todo-swipe-card-font-color-due-date, var(--secondary-text-color));\n      font-size: var(--todo-swipe-card-font-size-due-date, var(--todo-swipe-card-typography-size-due-date, var(--todo-swipe-card-font-size, var(--todo-swipe-card-typography-size, 11px))));\n      font-weight: var(--todo-swipe-card-font-weight-due-date, normal);\n      line-height: var(--todo-swipe-card-line-height, 1.3);\n      display: flex;\n      align-items: flex-start;\n      gap: 3px;\n    }\n\n    .todo-due.overdue {\n      color: var(--todo-swipe-card-font-color-due-date-overdue, var(--warning-color));\n    }\n\n    .todo-item.completed .todo-due.overdue {\n      color: var(--todo-swipe-card-font-color-due-date, var(--secondary-text-color));\n    }\n\n    .todo-due-icon {\n      --mdc-icon-size: var(--todo-swipe-card-due-icon-size, 14px);\n      width: var(--todo-swipe-card-due-icon-size, 14px);\n      height: var(--todo-swipe-card-due-icon-size, 14px);\n      margin-inline-start: initial;\n      flex-shrink: 0;\n      margin-top: 1px;\n    }\n\n    .todo-item.completed {\n      display: flex;\n    }\n\n    .todo-card-with-title-wrapper {\n      position: relative;\n      height: 100%;\n      width: 100%;\n      border-radius: var(--ha-card-border-radius, 12px);\n      overflow: hidden;\n      background: var(--ha-card-background, var(--card-background-color, white));\n      display: flex;\n      flex-direction: column;\n    }\n\n    .todo-swipe-card-external-title {\n      min-height: var(--todo-swipe-card-title-height, 40px);\n      display: flex;\n      align-items: center;\n      justify-content: var(--todo-swipe-card-title-align, center);\n      background: var(--todo-swipe-card-title-background, var(--secondary-background-color, #f7f7f7));\n      color: var(--todo-swipe-card-title-color, var(--primary-text-color));\n      font-size: var(--todo-swipe-card-title-font-size, 16px);\n      font-weight: var(--todo-swipe-card-title-font-weight, 500);\n      border-bottom: var(--todo-swipe-card-title-border-width, 1px) solid var(--todo-swipe-card-title-border-color, rgba(0,0,0,0.12));\n      padding: 0 var(--todo-swipe-card-title-padding-horizontal, 16px);\n      box-sizing: content-box;\n      text-align: var(--todo-swipe-card-title-align, center);\n      flex-shrink: 0;\n      z-index: 1;\n      border-radius: var(--ha-card-border-radius, 12px) var(--ha-card-border-radius, 12px) 0 0;\n      margin: 0;\n      line-height: 1;\n      font-family: inherit;\n      white-space: var(--todo-swipe-card-title-white-space, nowrap);\n      overflow: var(--todo-swipe-card-title-overflow, hidden);\n      text-overflow: var(--todo-swipe-card-title-text-overflow, clip);\n    }\n\n    .todo-card-container {\n      flex: 1;\n      min-height: 0;\n      position: relative;\n    }\n\n    .search-counter {\n      padding: 2px 12px 2px 12px;\n      margin-left: 4px;\n      margin-bottom: 0px; /* Let todo-list top padding provide the 4px gap */\n      font-size: var(--todo-swipe-card-search-counter-font-size, 12px);\n      color: var(--todo-swipe-card-search-counter-color, var(--secondary-text-color));\n      font-style: italic;\n      text-align: left;\n    }\n\n  /* Drag and drop styles - minimal visual feedback */\n    .todo-item[data-supports-drag="true"] {\n      cursor: grab;\n    }\n\n    .todo-item.dragging {\n      opacity: 0.5;\n      cursor: grabbing;\n      z-index: 1000;\n    }\n\n    .todo-item.drag-over-top {\n      border-top: 2px solid var(--primary-color);\n    }\n\n    .todo-item.drag-over-bottom {\n      border-bottom: 2px solid var(--primary-color);\n    }\n  `,i}(this.kt);if(t.appendChild(e),this.It&&t.appendChild(this.It),!this.Jt())return function(t){const i=document.createElement("div");i.className="preview-container";const e=document.createElement("div");e.className="preview-icon-container";const o=document.createElement("ha-icon");o.icon="mdi:format-list-checks",e.appendChild(o);const n=document.createElement("div");n.className="preview-text-container";const r=document.createElement("div");r.className="preview-title",r.textContent="Todo Swipe Card";const s=document.createElement("div");s.className="preview-description",s.textContent="A specialized swipe card for todo lists with native styling. Supports multiple lists with swipe navigation.",n.appendChild(r),n.appendChild(s);const a=document.createElement("div");a.className="preview-actions";const d=document.createElement("ha-button");d.raised=!0,d.textContent="EDIT CARD",d.setAttribute("aria-label","Edit Card"),d.addEventListener("click",t=>{t.stopPropagation();const i=new CustomEvent("show-edit-card",{detail:{element:t.target.closest("todo-swipe-card")},bubbles:!0,composed:!0});t.target.dispatchEvent(i)}),a.appendChild(d),i.appendChild(e),i.appendChild(n),i.appendChild(a),t.appendChild(i)}(t),i.appendChild(t),void(this.initialized=!0);this.cardContainer=document.createElement("div"),this.cardContainer.className="card-container",this.sliderElement=document.createElement("div"),this.sliderElement.className="slider",this.cardContainer.appendChild(this.sliderElement),t.appendChild(this.cardContainer),i.appendChild(t),this.cards=[];try{await this.cardBuilder.createNativeTodoCards()}catch(t){console.error("Error creating native todo cards:",t)}!1!==this.kt.show_pagination&&this.cards.length>1?function(t){t.paginationElement=document.createElement("div"),t.paginationElement.className="pagination";for(let i=0;i<t.cards.length;i++){const e=document.createElement("div");e.className="pagination-dot",i===t.currentIndex&&e.classList.add("active"),e.addEventListener("click",()=>{t.goToSlide(i)}),t.paginationElement.appendChild(e)}t.cardContainer.appendChild(t.paginationElement),vt(t)}(this):this.paginationElement=null,requestAnimationFrame(()=>{if(!this.cardContainer)return;this.slideWidth=this.cardContainer.offsetWidth,this.currentIndex=Math.max(0,Math.min(this.currentIndex,this.cards.length-1));const t=getComputedStyle(this.cardContainer).borderRadius;this.cards.forEach(i=>{i.slide&&(i.slide.style.borderRadius=t)}),this.updateSlider(!1),this.di(),this.cards.forEach((t,i)=>{t&&t.element&&t.entityId&&(t.entityId,setTimeout(()=>{this.cardBuilder.updateNativeTodoCard(t.element,t.entityId)},50*i))})}),this.cards.length>1&&function(t){t.ii&&(t.cardContainer.removeEventListener("touchstart",t.ii),t.cardContainer.removeEventListener("touchmove",t.ei),t.cardContainer.removeEventListener("touchend",t.oi),t.cardContainer.removeEventListener("touchcancel",t.oi),t.cardContainer.removeEventListener("mousedown",t.ni),window.removeEventListener("mousemove",t.ri),window.removeEventListener("mouseup",t.si));let i=0,e=0,o=0,n=!1,r=!1,s=0,a=!1,d=!1;t.ci=i=>{if(!i||i===t.cardContainer||i===t.sliderElement)return!1;let e=i,o=0;for(;e&&o<15;){try{if(e.nodeType===Node.ELEMENT_NODE){const t=e.localName?.toLowerCase(),i=e.getAttribute&&e.getAttribute("role");if(["input","textarea","select","button","a","ha-switch","ha-checkbox","mwc-checkbox","paper-checkbox","ha-textfield","ha-slider","paper-slider","ha-icon-button","mwc-button","paper-button"].includes(t))return!0;if(i&&["button","checkbox","switch","slider","link","menuitem","textbox","input","combobox","searchbox"].includes(i))return!0;if(e.classList){const t=["mdc-text-field","mdc-text-field__input","mdc-text-field__ripple","mdc-line-ripple","mdc-floating-label","mdc-text-field__affix"];for(const i of t)if(e.classList.contains(i))return!0}}}catch(t){break}e=e.assignedSlot||e.parentNode||e.getRootNode&&e.getRootNode().host,o++}return!1},t.hi=c=>{if(!(n||"mousedown"===c.type&&0!==c.button||(a=t.ci(c.target),a))){if(n=!1,r=!1,d=!1,"touchstart"===c.type?(i=c.touches[0].clientX,e=c.touches[0].clientY):(i=c.clientX,e=c.clientY),o=i,t.sliderElement){const i=window.getComputedStyle(t.sliderElement),e=new DOMMatrixReadOnly(i.transform);s=e.m41}"mousedown"===c.type&&(window.addEventListener("mousemove",t.ri),window.addEventListener("mouseup",t.si))}},t.li=c=>{if(a)return;let h,l;"touchmove"===c.type?(h=c.touches[0].clientX,l=c.touches[0].clientY):(h=c.clientX,l=c.clientY);const p=h-i,u=l-e;if(!r&&!d){if(Math.abs(u)>Math.abs(p)&&Math.abs(u)>15)return void(r=!0);if(!(Math.abs(p)>15))return;d=!0,n=!0,t.sliderElement&&(t.sliderElement.style.transition="none",t.sliderElement.style.cursor="grabbing"),c.cancelable&&c.preventDefault()}if(r||!d)return;c.cancelable&&c.preventDefault(),o=h;let g=o-i;const m=0===t.currentIndex,f=t.currentIndex===t.cards.length-1;(m&&g>0||f&&g<0)&&(g*=.5*(.3+.7/(1+Math.abs(g)/(.5*t.slideWidth))));const v=s+g;t.sliderElement&&requestAnimationFrame(()=>{t.sliderElement.style.transform=`translateX(${v}px)`})},t.pi=e=>{if("mouseup"!==e.type&&"mouseleave"!==e.type||(window.removeEventListener("mousemove",t.ri),window.removeEventListener("mouseup",t.si)),a)return void(a=!1);const s=n;if(n=!1,r=!1,d=!1,a=!1,t.sliderElement){const i=t.Wt||"0.3s",e=t.Xt||"ease-out";t.sliderElement.style.transition=`transform ${i} ${e}`,t.sliderElement.style.cursor=""}if(!s||"touchcancel"===e.type)return void t.updateSlider();const c=o-i,h=.2*t.slideWidth;Math.abs(c)>h&&(c>0&&t.currentIndex>0?t.currentIndex--:c<0&&t.currentIndex<t.cards.length-1&&t.currentIndex++),t.updateSlider(!0)},t.ii=t.hi.bind(t),t.ei=t.li.bind(t),t.oi=t.pi.bind(t),t.ni=t.hi.bind(t),t.ri=t.li.bind(t),t.si=t.pi.bind(t),t.cardContainer.addEventListener("touchstart",t.ii,{passive:!0}),t.cardContainer.addEventListener("touchmove",t.ei,{passive:!1}),t.cardContainer.addEventListener("touchend",t.oi,{passive:!0}),t.cardContainer.addEventListener("touchcancel",t.oi,{passive:!0}),t.cardContainer.addEventListener("mousedown",t.ni)}(this),setTimeout(()=>{this.Zt()},200),this.initialized=!0}Mt(t,i){xt(t,i,this._t)}Nt(t,i,e){yt(t,i,e,this._t)}Ot(t,i){this.dialogManager.editTodoItem(t,i)}di(){let t;this.resizeObserver&&this.resizeObserver.disconnect(),this.resizeObserver=new ResizeObserver(()=>{t&&clearTimeout(t),t=setTimeout(()=>{if(!this.cardContainer)return;const t=this.cardContainer.offsetWidth;t>0&&Math.abs(t-this.slideWidth)>1&&(this.slideWidth=t,requestAnimationFrame(()=>{const t=getComputedStyle(this.cardContainer).borderRadius;this.cards.forEach(i=>{i.slide&&(i.slide.style.borderRadius=t)}),this.updateSlider(!1)}))},200)}),this.cardContainer&&this.resizeObserver.observe(this.cardContainer)}goToSlide(t){this.cards&&0!==this.cards.length&&this.initialized&&(t=Math.max(0,Math.min(t,this.cards.length-1)))!==this.currentIndex&&(this.currentIndex=t,this.updateSlider())}updateSlider(t=!0){this.sliderElement&&this.slideWidth&&0!==this.cards.length&&this.initialized&&requestAnimationFrame(()=>{if(!this.sliderElement||!this.cardContainer||!this.initialized)return;const i=this.Wt||"0.3s",e=this.Xt||"ease-out";this.sliderElement.style.transition=t?`transform ${i} ${e}`:"none";const o=this.kt.card_spacing||0;this.sliderElement.style.gap=`${o}px`;const n=this.currentIndex*(this.slideWidth+o);this.sliderElement.style.transform=`translateX(-${n}px)`;const r=getComputedStyle(this.cardContainer).borderRadius;var s;this.cards.forEach(t=>{t.slide&&(t.slide.style.marginRight="0px",t.slide.style.borderRadius=r)}),(s=this).paginationElement&&(s.paginationElement.querySelectorAll(".pagination-dot").forEach((t,i)=>{t.classList.toggle("active",i===s.currentIndex)}),vt(s)),this.kt.enable_search&&this.cards[this.currentIndex]})}getCardSize(){return 3}}class TodoSwipeCardEditor extends pt{static get properties(){return{hass:{type:Object},kt:{type:Object},ui:{type:Set,state:!0},gi:{type:String,state:!0}}}constructor(){super(),this.ui=new Set,this.gi="normal",this.mi=this.mi.bind(this)}async connectedCallback(){super.connectedCallback(),await this.fi(),this.requestUpdate()}async fi(){let t=0;for(;!customElements.get("ha-entity-picker")&&t<50;)await this.bi(),customElements.get("ha-entity-picker")||(await new Promise(t=>setTimeout(t,100)),t++);customElements.get("ha-entity-picker")||console.error("Failed to load ha-entity-picker after multiple attempts")}async bi(){if(!customElements.get("ha-entity-picker"))try{const t=[()=>customElements.get("hui-entities-card")?.getConfigElement?.(),()=>customElements.get("hui-entity-picker-card")?.getConfigElement?.()];for(const i of t)try{if(await i(),customElements.get("ha-entity-picker"))break}catch(t){}}catch(t){console.warn("Could not load ha-entity-picker",t)}}updated(t){super.updated(t),t.has("_config")&&this.kt&&this.kt.entities&&this.kt.entities.length>0&&(this.wi&&cancelAnimationFrame(this.wi),this.wi=requestAnimationFrame(()=>{const t=this.shadowRoot.querySelectorAll("ha-entity-picker");(0===t.length||t.length<this.kt.entities.length)&&this.requestUpdate(),this.wi=null}))}St(t){return"string"==typeof t?t:t?.entity||""}xi(t){const i={type:t.type,entities:t.entities,card_spacing:t.card_spacing,show_pagination:t.show_pagination,show_create:t.show_create,show_addbutton:t.show_addbutton,show_completed:t.show_completed,show_completed_menu:t.show_completed_menu,delete_confirmation:t.delete_confirmation,enable_search:t.enable_search},e=["type","entities","card_spacing","show_pagination","show_create","show_addbutton","show_completed","show_completed_menu","delete_confirmation","enable_search","custom_card_mod"];return Object.entries(t).forEach(([t,o])=>{e.includes(t)||(i[t]=o)}),t.custom_card_mod&&"object"==typeof t.custom_card_mod&&Object.keys(t.custom_card_mod).length>0&&(i.custom_card_mod=t.custom_card_mod),i}setConfig(t){if(JSON.stringify(t),this.kt={...this.constructor.getStubConfig()},t){let i=t.entities||[];Array.isArray(i)||(i="object"==typeof i?Object.values(i):"string"==typeof i?[i]:[]),i=i.map(t=>t);if(i.length>0&&(""===i[i.length-1]||"object"==typeof i[i.length-1]&&""===i[i.length-1].entity)){const t=i.slice(0,-1).filter(t=>"string"==typeof t?t&&""!==t.trim():t&&t.entity&&""!==t.entity.trim());i=[...t,""]}else i=i.filter(t=>"string"==typeof t?t&&""!==t.trim():t&&t.entity&&""!==t.entity.trim());let e=t.card_spacing;void 0===e?e=15:(e=parseInt(e),(isNaN(e)||e<0)&&(e=15));const o={...this.kt,...t,entities:i,card_spacing:e};t.custom_card_mod&&"object"==typeof t.custom_card_mod&&Object.keys(t.custom_card_mod).length>0&&(o.custom_card_mod=t.custom_card_mod),this.kt=o}JSON.stringify(this.kt),this.requestUpdate()}static getStubConfig(){return{entities:[],card_spacing:15,show_pagination:!0,show_icons:!1,show_create:!0,show_addbutton:!1,show_completed:!1,show_completed_menu:!1,delete_confirmation:!1,enable_search:!1}}get yi(){return!1!==this.kt.show_pagination}get ki(){return!0===this.kt.show_addbutton}get _i(){return!1!==this.kt.show_create}get $i(){return!0===this.kt.show_completed}get zi(){return!0===this.kt.show_completed_menu}get Si(){return!0===this.kt.delete_confirmation}get Ci(){return!0===this.kt.show_icons}get Ti(){return!0===this.kt.enable_search}get Ei(){return void 0!==this.kt.card_spacing?this.kt.card_spacing:15}get Ai(){return(this.kt.entities||[]).filter(t=>{const i=this.St(t);return i&&""!==i.trim()})}get Di(){return this.$i}get Mi(){return this.$i&&this.zi}get Ni(){return this.Ai.length>0}static get styles(){return p`
+      ${p`
+  /* Card config container */
+  .card-config {
+    /* Let HA handle padding */
   }
-
-  /**
-   * Determine if a full rebuild is needed based on config changes
-   * @param {Object} oldConfig - Previous configuration
-   * @param {Object} newConfig - New configuration
-   * @returns {boolean} True if full rebuild needed
-   * @private
-   */
-  _needsFullRebuild(oldConfig, newConfig) {
-    if (!oldConfig) return true;
-  
-    // Check for changes that require full rebuild
-    const entitiesChanged = JSON.stringify(oldConfig.entities) !== JSON.stringify(newConfig.entities);
-    const paginationChanged = oldConfig.show_pagination !== newConfig.show_pagination;
-    const createFieldChanged = oldConfig.show_create !== newConfig.show_create;
-    const cardModChanged = JSON.stringify(oldConfig.card_mod) !== JSON.stringify(newConfig.card_mod);
-  
-    return entitiesChanged || paginationChanged || createFieldChanged || cardModChanged;
-  }
-  
 
-  /**
-   * Updates specific card features without a full rebuild
-   * Optimized version
-   * @param {Object} oldConfig - Previous configuration
-   * @private
-   */
-  _updateFromConfig(oldConfig) {
-    debugLog("Applying minor config updates");
-    
-    // Batch DOM updates using requestAnimationFrame
-    requestAnimationFrame(() => {
-      // Update show_completed setting
-      if (this._config.show_completed !== oldConfig.show_completed) {
-        this.cards.forEach(card => {
-          if (card.element && card.element.shadowRoot) {
-            const items = card.element.shadowRoot.querySelectorAll('ha-check-list-item.editRow.completed');
-            items.forEach(item => {
-              item.style.display = this._config.show_completed ? '' : 'none';
-            });
-          }
-        });
-      }
-      
-      // Update show_completed_menu setting
-      if (this._config.show_completed_menu !== oldConfig.show_completed_menu || 
-          this._config.show_completed !== oldConfig.show_completed) {
-        this._updateDeleteButtons();
-      }
-      
-      // Update card spacing
-      if (this._config.card_spacing !== oldConfig.card_spacing) {
-        if (this.sliderElement) {
-          this.sliderElement.style.gap = `${this._config.card_spacing}px`;
-          this.updateSlider(false); // Update without animation
-        }
-      }
-      
-      // Apply pagination styles if they changed
-      if (this._config.card_mod !== oldConfig.card_mod) {
-        this._applyCardModStyles();
-        if (this.paginationElement) {
-          this._applyPaginationStyles();
-        }
-      }
-    });
+  /* MAIN SECTION STYLES */
+  .section {
+    margin: 16px 0;
+    padding: 16px;
+    border: 1px solid var(--divider-color);
+    border-radius: var(--ha-card-border-radius, 8px);
+    background-color: var(--card-background-color, var(--primary-background-color));
   }
 
-  /**
-   * Update delete buttons for all cards
-   * @private
-   */
-  _updateDeleteButtons() {
-    this.cards.forEach((card, index) => {
-      const slide = card.slide;
-      if (!slide) return;
-      
-      // Remove existing delete buttons
-      const oldButtons = slide.querySelectorAll('.delete-completed-button');
-      oldButtons.forEach(btn => btn.remove());
-      
-      // Add delete button if configured to show completed items and menu
-      if (this._config.show_completed && this._config.show_completed_menu) {
-        // Use the stored entity config from the card object first, then fallback to lookup
-        const entityConfig = card.entityConfig || this._getEntityConfig(card.entityId);
-        const deleteButton = this._createDeleteButton(card.entityId, entityConfig);
-        slide.appendChild(deleteButton);
-      }
-    });
+  .section-header {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    color: var(--primary-text-color);
   }
 
-  /**
-   * Create a delete button element
-   * @param {string} entityId - Entity ID for the todo list
-   * @param {Object} entityConfig - Entity configuration object
-   * @returns {HTMLElement} Delete button element
-   * @private
-   */
-  _createDeleteButton(entityId, entityConfig = null) {
-    const deleteButton = document.createElement('button');
-    deleteButton.className = 'delete-completed-button';
-    deleteButton.title = 'Delete completed items';
-    deleteButton.innerHTML = `
-      <svg viewBox="0 0 24 24">
-        <path d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" />
-      </svg>
-    `;
-    
-    // Auto-adjust position if entity has a title
-    if (entityConfig && entityConfig.show_title && entityConfig.title) {
-      // Calculate auto-adjusted position: default 35px + title height (default 40px)
-      const basePosition = 35;
-      const titleHeight = 'var(--todo-swipe-card-title-height, 40px)';
-      const autoAdjustedTop = `calc(${basePosition}px + ${titleHeight})`;
-      
-      // Set the auto-adjustment CSS variable on the button
-      deleteButton.style.setProperty('--todo-swipe-card-delete-button-auto-top', autoAdjustedTop);
-    }
-    
-    // Apply delete button color if available
-    if (this._deleteButtonColor) {
-      deleteButton.style.color = this._deleteButtonColor;
-      const svg = deleteButton.querySelector('svg');
-      if (svg) {
-        svg.style.fill = this._deleteButtonColor;
-      }
-    }
-    
-    // Add click handler for the delete button with confirmation dialog
-    deleteButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Check if confirmation is required
-      if (this._config.delete_confirmation) {
-        this._showDeleteConfirmation(entityId);
-      } else {
-        // No confirmation needed, delete immediately
-        this._deleteCompletedItems(entityId);
-      }
-    });
-    
-    return deleteButton;
+  ha-switch {
+    padding: 8px 0;
   }
-
-  /**
-   * Show delete confirmation dialog
-   * @param {string} entityId - Entity ID for the todo list
-   * @private
-   */
-  _showDeleteConfirmation(entityId) {
-    // Create confirmation dialog
-    const dialog = document.createElement('ha-dialog');
-    dialog.heading = 'Confirm Deletion';
-    dialog.open = true;
-    
-    // Create content container
-    const content = document.createElement('div');
-    content.innerText = 'Are you sure you want to delete all completed items from the list?';
-    dialog.appendChild(content);
-    
-    // Create confirm button
-    const confirmButton = document.createElement('mwc-button');
-    confirmButton.slot = 'primaryAction';
-    confirmButton.label = 'Confirm';
-    confirmButton.style.color = 'var(--primary-color)';
-    confirmButton.setAttribute('aria-label', 'Confirm');
-    
-    // Add confirm button click handler
-    confirmButton.addEventListener('click', () => {
-      dialog.parentNode.removeChild(dialog);
-      this._deleteCompletedItems(entityId);
-    });
-    
-    // Create cancel button
-    const cancelButton = document.createElement('mwc-button');
-    cancelButton.slot = 'secondaryAction';
-    cancelButton.label = 'Cancel';
-    cancelButton.setAttribute('aria-label', 'Cancel');
-    
-    // Add cancel button click handler
-    cancelButton.addEventListener('click', () => {
-      dialog.parentNode.removeChild(dialog);
-    });
-    
-    // Append buttons to dialog
-    dialog.appendChild(confirmButton);
-    dialog.appendChild(cancelButton);
-    
-    // Add dialog to document
-    document.body.appendChild(dialog);
+  .side-by-side {
+    display: flex;
+    align-items: center;
   }
-
-  /**
-   * Delete completed items from a todo list
-   * @param {string} entityId - Entity ID for the todo list
-   * @private
-   */
-  _deleteCompletedItems(entityId) {
-    if (this._hass) {
-      this._hass.callService('todo', 'remove_completed_items', {
-        entity_id: entityId
-      });
-    }
+  .side-by-side > * {
+    flex: 1;
+    padding-right: 8px;
   }
 
-  /**
-   * Set the hass object and update all child cards
-   * @param {Object} hass - Home Assistant object
-   */
-  set hass(hass) {
-    if (!hass) return;
-    
-    // Store the new hass object
-    const previousHass = this._hass;
-    this._hass = hass;
-    
-    // Skip if we're not initialized or have no cards
-    if (!this.initialized || !this.cards || this.cards.length === 0) {
-      return;
-    }
-    
-    // Clear any existing throttle timer
-    if (this._updateThrottle) {
-      clearTimeout(this._updateThrottle);
-    }
-    
-    // Throttle hass updates to prevent excessive re-renders
-    this._updateThrottle = setTimeout(() => {
-      // More strict check for entity changes
-      if (this._shouldUpdateChildCards(hass)) {
-        debugLog("Updating child cards due to entity changes");
-        
-        // Update child cards in a batch with additional safety checks
-        requestAnimationFrame(() => {
-          // Double-check cards still exist after RAF
-          if (!this.cards || !this._hass) return;
-          
-          this.cards.forEach((card, index) => {
-            if (card && card.element) {
-              try {
-                // Get the actual card element (might be wrapped)
-                const actualCard = this._getActualCardElement(card.element);
-                
-                // Only update if the card element exists, is connected, and hass actually changed
-                if (actualCard && actualCard.isConnected && actualCard.hass !== hass) {
-                  actualCard.hass = hass;
-                }
-              } catch (e) {
-                console.error("Error setting hass on child card:", e);
-              }
-            }
-          });
-        });
-      }
-      
-      this._updateThrottle = null;
-    }, 500);
+  /* Card row styles similar to simple-swipe-card */
+  .card-list {
+    margin-top: 8px;
+    margin-bottom: 16px;
   }
 
-  /**
-   * Called when the element is connected to the DOM
-   */
-  connectedCallback() {
-    // Ensure we have a valid config before proceeding
-    if (!this._config) {
-      debugLog("TodoSwipeCard connected but no config available");
-      return;
-    }
-    
-    if (!this.initialized) {
-      debugLog("TodoSwipeCard connecting and building");
-      this._applyCardModStyles(); // Apply styles first for transitions
-      this._build();
-    }
+  .card-row {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid var(--divider-color);
+    border-radius: var(--ha-card-border-radius, 4px);
+    margin-bottom: 8px;
+    background: var(--secondary-background-color);
   }
 
-  /**
-   * Called when the element is disconnected from the DOM
-   * Improved cleanup for better memory management and to prevent WebSocket flooding
-   */
-  disconnectedCallback() {
-    debugLog("TodoSwipeCard disconnecting - performing cleanup");
-    
-    // Clear all timers first to prevent any pending operations
-    if (this._configUpdateTimer) {
-      clearTimeout(this._configUpdateTimer);
-      this._configUpdateTimer = null;
-    }
-    
-    if (this._updateThrottle) {
-      clearTimeout(this._updateThrottle);
-      this._updateThrottle = null;
-    }
-    
-    if (this._menuObserverTimeout) {
-      clearTimeout(this._menuObserverTimeout);
-      this._menuObserverTimeout = null;
-    }
-    
-    // Clear resize observer
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-      this.resizeObserver = null;
-    }
-    
-    // Clear menu observers with safety check
-    if (this._menuObservers) {
-      this._menuObservers.forEach(observer => {
-        try {
-          observer.disconnect();
-        } catch (e) {
-          console.warn("Error disconnecting menu observer:", e);
-        }
-      });
-      this._menuObservers = [];
-    }
-    
-    // Properly remove swipe gesture handlers
-    if (this.cardContainer) {
-      if (this._touchStartHandler) {
-        this.cardContainer.removeEventListener('touchstart', this._touchStartHandler);
-        this.cardContainer.removeEventListener('touchmove', this._touchMoveHandler);
-        this.cardContainer.removeEventListener('touchend', this._touchEndHandler);
-        this.cardContainer.removeEventListener('touchcancel', this._touchEndHandler);
-        this.cardContainer.removeEventListener('mousedown', this._mouseDownHandler);
-      }
-      
-      // Clean up window event listeners that might have been added
-      window.removeEventListener('mousemove', this._mouseMoveHandler);
-      window.removeEventListener('mouseup', this._mouseUpHandler);
-    }
-    
-    // Disconnect child cards from hass to prevent further updates
-    if (this.cards) {
-      this.cards.forEach(card => {
-        if (card?.element) {
-          try {
-            const actualCard = this._getActualCardElement(card.element);
-            if (actualCard) {
-              // Set hass to null to stop further updates
-              actualCard.hass = null;
-            }
-          } catch (e) {
-            console.warn("Error disconnecting child card:", e);
-          }
-        }
-      });
-    }
-    
-    // Mark as not initialized but keep critical references
-    this.initialized = false;
-    
-    // Clear DOM references
-    this.cards = [];
-    this.cardContainer = null;
-    this.sliderElement = null;
-    this.paginationElement = null;
-    
-    // Reset update tracking
-    this._lastHassUpdate = null;
-    
-    // Only clear shadowRoot content if it exists
-    if (this.shadowRoot) {
-      this.shadowRoot.innerHTML = '';
-    }
-    
-    debugLog("TodoSwipeCard cleanup completed");
+  .card-info {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    margin-right: 8px;
+    overflow: hidden;
   }
 
-  /**
-   * Build the card UI with optimized DOM handling
-   * Now returns a promise for better async handling
-   * @private
-   */
-  async _build() {
-    // Prevent concurrent builds
-    if (this._buildPromise) {
-      debugLog("Build already in progress, waiting...");
-      return this._buildPromise;
-    }
-    
-    this._buildPromise = this._doBuild();
-    
-    try {
-      await this._buildPromise;
-    } finally {
-      this._buildPromise = null;
-    }
+  .card-index {
+    font-weight: bold;
+    margin-right: 10px;
+    color: var(--secondary-text-color);
+    flex-shrink: 0;
   }
-
-  /**
-   * Actually perform the build
-   * @private
-   */
-  async _doBuild() {
-    debugLog("Starting build...");
-
-    // Use document fragment for better performance
-    const fragment = document.createDocumentFragment();
-    const root = this.shadowRoot;
-    root.innerHTML = ''; // Clear previous content
-
-    // Add base styles
-    const style = this._createBaseStyles();
-    fragment.appendChild(style);
-    
-    // Re-add the dynamic style element if it exists
-    if (this._dynamicStyleElement) {
-      fragment.appendChild(this._dynamicStyleElement);
-    }
-
-    // Check if we should show the preview (no valid entities configured)
-    if (!this._hasValidEntities()) {
-      this._buildPreview(fragment);
-      root.appendChild(fragment);
-      this.initialized = true;
-      debugLog("Preview build completed");
-      return;
-    }
-
-    // Regular card layout - only proceed if we have valid entities
-    debugLog("Building regular card layout");
-    
-    // Create container
-    this.cardContainer = document.createElement('div');
-    this.cardContainer.className = 'card-container';
-
-    // Create slider
-    this.sliderElement = document.createElement('div');
-    this.sliderElement.className = 'slider';
-    this.cardContainer.appendChild(this.sliderElement);
-    fragment.appendChild(this.cardContainer);
-
-    // Load card helpers (cache for reuse)
-    if (!this._cardHelpers) {
-      this._cardHelpers = await window.loadCardHelpers();
-      if (!this._cardHelpers) {
-        console.error("TodoSwipeCard: Card helpers not loaded");
-        const errorAlert = document.createElement('ha-alert');
-        errorAlert.setAttribute('alert-type', 'error');
-        errorAlert.textContent = "Card Helpers are required for this card to function.";
-        root.appendChild(errorAlert);
-        this.initialized = false;
-        return;
-      }
-    }
-    
-    this.cards = [];
-
-    // Create slides for each todo entity
-    await this._createTodoCards(this._cardHelpers);
-
-    // Create pagination if enabled (and more than one card)
-    if (this._config.show_pagination !== false && this.cards.length > 1) {
-      this._createPagination();
-    } else {
-      this.paginationElement = null;
-    }
-
-    // Only at the end, append to the DOM
-    root.appendChild(fragment);
-
-    // Initial positioning requires element dimensions, wait for next frame
-    requestAnimationFrame(() => {
-      if (!this.cardContainer) {
-        return;
-      }
-      
-      this.slideWidth = this.cardContainer.offsetWidth;
-      // Ensure currentIndex is valid before updating slider
-      this.currentIndex = Math.max(0, Math.min(this.currentIndex, this.cards.length - 1));
-      
-      // Apply border radius to all slides
-      const cardBorderRadius = getComputedStyle(this.cardContainer).borderRadius;
-      this.cards.forEach(cardData => {
-        if (cardData.slide) {
-          cardData.slide.style.borderRadius = cardBorderRadius;
-        }
-      });
-      
-      this.updateSlider(false); // Update without animation initially
-
-      // Setup resize observer only after initial layout
-      this._setupResizeObserver();
-    });
 
-    // Add swipe detection only if more than one card
-    if (this.cards.length > 1) {
-      this._addSwiperGesture();
-    }
-
-    // Set up menu button observers with a slight delay to ensure DOM is ready
-    setTimeout(() => {
-      this._setupMenuButtonObservers();
-    }, 100);
-
-    // Apply transition properties
-    setTimeout(() => {
-      this._applyTransitionProperties();
-    }, 200);
-
-    // Mark as initialized AFTER build completes
-    this.initialized = true;
-    debugLog("Regular card build completed.");
+  .card-type {
+    font-size: 14px;
+    color: var(--primary-text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-
-  /**
-   * Create base styles for the card
-   * @returns {HTMLStyleElement} Style element
-   * @private
-   */
-  _createBaseStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-      :host {
-        display: block;
-        overflow: hidden;
-        width: 100%;
-        height: 100%;
-        --card-border-radius: var(--ha-card-border-radius, 12px);
-        border-radius: var(--card-border-radius);
-      }
-
-      .card-container {
-        position: relative;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        border-radius: var(--card-border-radius);
-      }
-      
-      .card-container, .slide, ha-card {
-        border-radius: var(--card-border-radius) !important;
-      }
-
-      .slider {
-        position: relative;
-        display: flex;
-        width: 100%;
-        height: 100%;
-        transition: transform 0.3s ease-out;
-        will-change: transform;
-      }
-
-      .slide {
-        position: relative;
-        flex: 0 0 100%;
-        max-width: 100%;
-        overflow: hidden;
-        height: 100%;
-        box-sizing: border-box;
-        border-radius: var(--card-border-radius);
-        background: var(--todo-swipe-card-background, var(--ha-card-background, var(--card-background-color, white)));
-      }
-
-      .pagination {
-        position: absolute;
-        bottom: var(--todo-swipe-card-pagination-bottom, 8px);
-        left: 0;
-        right: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1;
-        background-color: var(--todo-swipe-card-pagination-background, transparent);
-      }
-
-      .pagination-dot {
-        width: var(--todo-swipe-card-pagination-dot-size, 8px);
-        height: var(--todo-swipe-card-pagination-dot-size, 8px);
-        border-radius: var(--todo-swipe-card-pagination-dot-border-radius, 50%);
-        margin: 0 var(--todo-swipe-card-pagination-dot-spacing, 4px);
-        background-color: var(--todo-swipe-card-pagination-dot-inactive-color, rgba(127, 127, 127, 0.6));
-        opacity: var(--todo-swipe-card-pagination-dot-inactive-opacity, 0.6);
-        cursor: pointer;
-        transition: background-color 0.2s ease, width 0.2s ease, height 0.2s ease;
-        flex-shrink: 0;
-      }
 
-      .pagination-dot.active {
-        background-color: var(--todo-swipe-card-pagination-dot-active-color, var(--primary-color, #03a9f4));
-        width: calc(var(--todo-swipe-card-pagination-dot-size, 8px) * var(--todo-swipe-card-pagination-dot-active-size-multiplier, 1));
-        height: calc(var(--todo-swipe-card-pagination-dot-size, 8px) * var(--todo-swipe-card-pagination-dot-active-size-multiplier, 1));
-        opacity: var(--todo-swipe-card-pagination-dot-active-opacity, 1);
-      }
-      
-      .delete-completed-button {
-        position: absolute;
-        right: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        top: var(--todo-swipe-card-delete-button-top, var(--todo-swipe-card-delete-button-auto-top, 35px));
-        padding: 4px;
-        background-color: transparent;
-        border: none;
-        color: var(--todo-swipe-card-delete-button-color, var(--todo-swipe-card-text-color, var(--primary-text-color)));
-        cursor: pointer;
-        border-radius: 50%;
-        width: 36px;
-        height: 36px;
-        z-index: 10;
-      }
-
-      .delete-completed-button:hover {
-        background-color: rgba(127, 127, 127, 0.2);
-      }
-
-      .delete-completed-button svg {
-        width: 20px;
-        height: 20px;
-        fill: currentColor;
-      }
-
-      /* Global style to ensure all three-dots menus are hidden */
-      ::shadow ha-button-menu,
-      ::part(ha-button-menu),
-      ha-button-menu,
-      .header ha-button-menu,
-      [id*="menu"],
-      [class*="menu-button"] {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-      }
-
-      /* Preview styles */
-      .preview-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 16px;
-        box-sizing: border-box;
-        height: 100%;
-        background: var(--ha-card-background, var(--card-background-color, white));
-        border-radius: inherit;
-      }
-      
-      .preview-icon-container {
-        margin-bottom: 16px;
-      }
-      
-      .preview-icon-container ha-icon {
-        color: var(--primary-color, #03a9f4);
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
-      }
-      
-      .preview-text-container {
-        margin-bottom: 16px;
-      }
-      
-      .preview-title {
-        font-size: 18px;
-        font-weight: bold;
-        margin-bottom: 8px;
-        color: var(--primary-text-color);
-      }
-      
-      .preview-description {
-        font-size: 14px;
-        color: var(--secondary-text-color);
-        max-width: 300px;
-        line-height: 1.4;
-        margin: 0 auto;
-      }
-      
-      /* Dialog styles */
-      ha-dialog {
-        --mdc-dialog-min-width: 300px;
-        --mdc-dialog-max-width: 500px;
-        --mdc-dialog-heading-ink-color: var(--primary-text-color);
-        --mdc-dialog-content-ink-color: var(--primary-text-color);
-        --justify-action-buttons: space-between;
-      }
-      
-      ha-dialog div {
-        padding: 8px 16px 16px 16px;
-        color: var(--primary-text-color);
-      }
-      
-      /* Todo icon styling */
-      .todo-icon {
-        position: absolute;
-        right: var(--todo-swipe-card-icon-right, 16px);
-        bottom: var(--todo-swipe-card-icon-bottom, 8px);
-        width: var(--todo-swipe-card-icon-size, 48px);
-        height: var(--todo-swipe-card-icon-size, 48px);
-        color: var(--todo-swipe-card-icon-color, rgba(255, 255, 255, 0.3));
-        opacity: var(--todo-swipe-card-icon-opacity, 0.6);
-        z-index: 1;
-        pointer-events: none;
-        --mdc-icon-size: var(--todo-swipe-card-icon-size, 48px);
-      }
-    `;
-    
-    return style;
+  .card-name {
+    font-size: 12px;
+    color: var(--secondary-text-color);
+    margin-left: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  /**
-   * Build preview state
-   * @param {DocumentFragment} fragment - Document fragment to append to
-   * @private
-   */
-  _buildPreview(fragment) {
-    debugLog("Building preview state");
-    const previewContainer = document.createElement('div');
-    previewContainer.className = 'preview-container';
-    
-    // Icon container
-    const iconContainer = document.createElement('div');
-    iconContainer.className = 'preview-icon-container';
-    const icon = document.createElement('ha-icon');
-    icon.icon = 'mdi:format-list-checks';
-    iconContainer.appendChild(icon);
-    
-    // Text container
-    const textContainer = document.createElement('div');
-    textContainer.className = 'preview-text-container';
-    
-    // Title
-    const title = document.createElement('div');
-    title.className = 'preview-title';
-    title.textContent = 'Todo Swipe Card';
-    
-    // Description
-    const description = document.createElement('div');
-    description.className = 'preview-description';
-    description.textContent = 'A specialized swipe card for todo lists with built-in styling. Supports multiple lists with swipe navigation.';
-    
-    textContainer.appendChild(title);
-    textContainer.appendChild(description);
-    
-    // Button
-    const actionsContainer = document.createElement('div');
-    actionsContainer.className = 'preview-actions';
-    const editButton = document.createElement('ha-button');
-    editButton.raised = true;
-    editButton.textContent = 'EDIT CARD';
-    editButton.setAttribute('aria-label', 'Edit Card');
-    editButton.addEventListener('click', this._handleEditClick.bind(this));
-    actionsContainer.appendChild(editButton);
-    
-    // Append all elements
-    previewContainer.appendChild(iconContainer);
-    previewContainer.appendChild(textContainer);
-    previewContainer.appendChild(actionsContainer);
-    
-    fragment.appendChild(previewContainer);
+  .card-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
   }
-
-  /**
-   * Create pagination element
-   * @private
-   */
-  _createPagination() {
-    this.paginationElement = document.createElement('div');
-    this.paginationElement.className = 'pagination';
 
-    for (let i = 0; i < this.cards.length; i++) {
-      const dot = document.createElement('div');
-      dot.className = 'pagination-dot';
-      if (i === this.currentIndex) dot.classList.add('active');
-
-      // Add click handler to dots
-      dot.addEventListener('click', () => {
-        this.goToSlide(i);
-      });
-
-      this.paginationElement.appendChild(dot);
-    }
-
-    this.cardContainer.appendChild(this.paginationElement);
-    
-    // Apply pagination styles
-    this._applyPaginationStyles();
+  .card-actions ha-icon-button {
+    --mdc-icon-button-size: 36px;
+    color: var(--secondary-text-color);
   }
-
-  /**
-   * Create todo cards from entities
-   * Optimized version with better error handling
-   * @param {Object} helpers - Card helpers from Home Assistant
-   * @private
-   */
-  async _createTodoCards(helpers) {
-    // Process entities in chunks for better performance with many cards
-    const entityBatches = [];
-    const batchSize = 3; // Process 3 entities at a time
-    
-    for (let i = 0; i < this._config.entities.length; i += batchSize) {
-      entityBatches.push(this._config.entities.slice(i, i + batchSize));
-    }
-    
-    // Process batches sequentially
-    let currentIndex = 0;
-    for (const batch of entityBatches) {
-      const batchStartIndex = currentIndex;
-      await Promise.all(batch.map(async (entityConfig, batchIndex) => {
-        const i = batchStartIndex + batchIndex;
-        const entityId = this._getEntityId(entityConfig);
-        
-        if (!entityId || entityId.trim() === "") {
-          debugLog("Skipping empty entity at index", i);
-          return null;
-        }
-
-        const slideDiv = document.createElement('div');
-        slideDiv.className = 'slide';
 
-        try {
-          // Create card element
-          const cardElement = await this._createSingleTodoCard(helpers, entityConfig);
-          
-          // Pass hass immediately if available
-          if (this._hass) {
-            const actualCard = this._getActualCardElement(cardElement);
-            if (actualCard) {
-              actualCard.hass = this._hass;
-            }
-          }
-          
-          // Store reference to the card
-          this.cards[i] = {
-            element: cardElement,
-            slide: slideDiv,
-            entityId: entityId,
-            entityConfig: entityConfig
-          };
-          
-          // Add card to slide
-          slideDiv.appendChild(cardElement);
-
-          // Add custom delete button if configured
-          if (this._config.show_completed && this._config.show_completed_menu) {
-            const deleteButton = this._createDeleteButton(entityId, entityConfig);
-            slideDiv.appendChild(deleteButton);
-          }
-
-          // Add icon if configured
-          if (this._config.show_icons) {
-            const iconElement = this._createIconElement(entityConfig, entityId);
-            slideDiv.appendChild(iconElement);
-          }
-          
-          this.sliderElement.appendChild(slideDiv);
-          
-          // Process menus after a slight delay to ensure DOM is ready
-          setTimeout(() => {
-            const actualCard = this._getActualCardElement(cardElement);
-            if (actualCard && actualCard.shadowRoot) {
-              this._hideMenusInRoot(actualCard.shadowRoot);
-            }
-          }, 50);
-          
-          // Setup input field enhancements
-          this._enhanceInputField(this._getActualCardElement(cardElement));
-          
-        } catch (e) {
-          console.error(`Error creating card ${i}:`, entityId, e);
-          const errorDiv = document.createElement('div');
-          errorDiv.style.cssText = "color: red; background: white; padding: 16px; border: 1px solid red; height: 100%; box-sizing: border-box;";
-          errorDiv.textContent = `Error creating card: ${e.message || e}. Check console for details.`;
-          slideDiv.appendChild(errorDiv);
-          this.sliderElement.appendChild(slideDiv);
-          this.cards[i] = { error: true, slide: slideDiv };
-        }
-      }));
-      currentIndex += batch.length;
-    }
-    
-    // Filter out any potential gaps if errors occurred
-    this.cards = this.cards.filter(Boolean);
+  .card-actions ha-icon-button:hover {
+    color: var(--primary-text-color);
   }
 
-  /**
-   * Create a single todo card
-   * @param {Object} helpers - Card helpers
-   * @param {string|Object} entityConfig - Entity configuration (string or object)
-   * @returns {Promise<HTMLElement>} Card element
-   * @private
-   */
-  async _createSingleTodoCard(helpers, entityConfig) {
-    const entityId = this._getEntityId(entityConfig);
-    debugLog("Creating card for entity:", entityId);
-    
-    // Generate internal styles for this card
-    const internalStyles = this._generateInternalStyles(entityConfig);
-    
-    // Get custom card mod styling from config
-    const customCardModStyle = this._config.card_mod || this._config.custom_card_mod || {};
-    
-    // Merge internal and custom styling using the optimized method
-    const mergedCardModStyle = this._mergeCardModStyles(internalStyles, customCardModStyle);
-    
-    // Get display order for this entity
-    const displayOrder = (typeof entityConfig === 'object' && entityConfig.display_order) || 'none';
-    
-    // Create the todo-list card with merged card-mod styling and display order
-    const cardConfig = {
-      type: 'todo-list',
-      entity: entityId,
-      hide_create: !this._config.show_create,
-      hide_completed: !this._config.show_completed,
-      display_order: displayOrder,
-      card_mod: {
-        style: mergedCardModStyle
-      }
-    };
-    
-    const cardElement = await helpers.createCardElement(cardConfig);
-
-    // Check if title should be shown
-    const showTitle = (typeof entityConfig === 'object' && entityConfig.show_title) || false;
-    const titleText = (typeof entityConfig === 'object' && entityConfig.title) || '';
-    
-    let finalElement = cardElement;
-    
-    // If title is enabled and has text, create wrapper
-    if (showTitle && titleText) {
-      finalElement = this._createCardWithTitle(cardElement, titleText);
-    }
-    
-    return finalElement;
+  .no-cards {
+    text-align: center;
+    color: var(--secondary-text-color);
+    padding: 16px;
+    border: 1px dashed var(--divider-color);
+    border-radius: var(--ha-card-border-radius, 4px);
+    margin-bottom: 16px;
   }
 
-  /**
-   * Create a wrapper around the card with title
-   * This replaces the old _addTitleToCard method
-   * @param {HTMLElement} cardElement - The card element
-   * @param {string} titleText - The title text
-   * @returns {HTMLElement} Wrapper element containing title and card
-   * @private
-   */
-  _createCardWithTitle(cardElement, titleText) {
-    // Create wrapper
-    const wrapper = document.createElement('div');
-    wrapper.className = 'todo-card-with-title-wrapper';
-    wrapper.style.cssText = `
-      position: relative;
-      height: 100%;
-      width: 100%;
-      border-radius: var(--ha-card-border-radius, 12px);
-      overflow: hidden;
-      background: var(--ha-card-background, var(--card-background-color, white));
-      display: flex;
-      flex-direction: column;
-    `;
-    
-    // Create title
-    const titleElement = document.createElement('div');
-    titleElement.className = 'todo-swipe-card-external-title';
-    titleElement.textContent = titleText;
-    titleElement.style.cssText = `
-      height: var(--todo-swipe-card-title-height, 40px);
-      display: flex;
-      align-items: center;
-      justify-content: var(--todo-swipe-card-title-justify, center);
-      background: var(--todo-swipe-card-title-background, var(--secondary-background-color, #f7f7f7));
-      color: var(--todo-swipe-card-title-color, var(--primary-text-color));
-      font-size: var(--todo-swipe-card-title-font-size, 16px);
-      font-weight: var(--todo-swipe-card-title-font-weight, 500);
-      border-bottom: var(--todo-swipe-card-title-border-width, 1px) solid var(--todo-swipe-card-title-border-color, rgba(0,0,0,0.12));
-      padding: 0 var(--todo-swipe-card-title-padding-horizontal, 16px);
-      box-sizing: border-box;
-      text-align: var(--todo-swipe-card-title-text-align, center);
-      flex-shrink: 0;
-      z-index: 1;
-      border-radius: var(--ha-card-border-radius, 12px) var(--ha-card-border-radius, 12px) 0 0;
-      margin: 0;
-      line-height: 1;
-      font-family: inherit;
-      white-space: var(--todo-swipe-card-title-white-space, nowrap);
-      overflow: var(--todo-swipe-card-title-overflow, hidden);
-      text-overflow: var(--todo-swipe-card-title-text-overflow, clip);
-    `;
-    
-    // Create card container
-    const cardContainer = document.createElement('div');
-    cardContainer.style.cssText = `
-      flex: 1;
-      min-height: 0;
-      overflow: auto;
-      position: relative;
-    `;
-    
-    // Ensure the card takes full height and remove top border radius
-    cardElement.style.height = '100%';
-    cardElement.style.minHeight = '0';
-    cardElement.style.borderRadius = '0 0 var(--ha-card-border-radius, 12px) var(--ha-card-border-radius, 12px)';
-    cardElement.style.borderTopLeftRadius = '0';
-    cardElement.style.borderTopRightRadius = '0';
-
-    // Also target the ha-card inside if it exists
-    setTimeout(() => {
-      const haCard = cardElement.shadowRoot?.querySelector('ha-card');
-      if (haCard) {
-        haCard.style.borderRadius = '0 0 var(--ha-card-border-radius, 12px) var(--ha-card-border-radius, 12px)';
-        haCard.style.borderTopLeftRadius = '0';
-        haCard.style.borderTopRightRadius = '0';
-      }
-    }, 0);
-    
-    // Assemble
-    wrapper.appendChild(titleElement);
-    cardContainer.appendChild(cardElement);
-    wrapper.appendChild(cardContainer);
-    
-    return wrapper;
+  .expand-button {
+    --mdc-icon-button-size: 32px;
+    color: var(--secondary-text-color);
+    margin: 0 8px 0 0;
+    flex-shrink: 0;
+    order: -1;
+    transition:
+      color 0.2s ease,
+      transform 0.2s ease;
   }
 
-  /**
-   * Create an icon element for the slide
-   * @param {string|Object} entityConfig - Entity configuration
-   * @param {string} entityId - Entity ID
-   * @returns {HTMLElement} Icon element
-   * @private
-   */
-  _createIconElement(entityConfig, entityId) {
-    // Determine which icon to use
-    let iconName = 'mdi:format-list-checks'; // Default fallback icon
-    
-    // Check for custom icon in entity config
-    if (typeof entityConfig === 'object' && entityConfig.icon) {
-      iconName = entityConfig.icon;
-    } else if (this._hass && this._hass.states[entityId]) {
-      // Use entity's default icon if available
-      const entityIcon = this._hass.states[entityId].attributes.icon;
-      if (entityIcon) {
-        iconName = entityIcon;
-      }
-    }
-    
-    // Create icon element
-    const iconElement = document.createElement('ha-icon');
-    iconElement.className = 'todo-icon';
-    iconElement.icon = iconName;
-    
-    return iconElement;
+  .expand-button:hover {
+    color: #ffc107;
+    background-color: rgba(255, 193, 7, 0.1);
   }
-
-  /**
-   * Generate internal styles for a todo card
-   * Updated to include automatic due date icon scaling and new CSS variable names
-   * @param {string|Object} entityConfig - Entity configuration (string or object)
-   * @returns {Object} Internal card mod styles
-   * @private
-   */
-  _generateInternalStyles(entityConfig) {
-    const entityId = this._getEntityId(entityConfig);
-    
-    // Get background image if configured
-    let backgroundImage = null;
-    if (typeof entityConfig === 'object' && entityConfig.background_image) {
-      backgroundImage = entityConfig.background_image;
-    }
-    
-    // Determine if Add button should be shown
-    const showAddButton = this._config.show_addbutton !== undefined ? 
-                          this._config.show_addbutton : false;
-    
-    // Use CSS variables for all colors with proper fallbacks
-    let textColor = `var(--todo-swipe-card-text-color, var(--primary-text-color))`;
-    let checkboxColor = `var(--todo-swipe-card-checkbox-color, rgba(255, 255, 255, 0.5))`;
-    let checkboxCheckedColor = `var(--todo-swipe-card-checkbox-checked-color, var(--primary-color))`;
-    let checkboxCheckmarkColor = `var(--todo-swipe-card-checkbox-checkmark-color, var(--primary-text-color))`;
-    let addButtonColor = `var(--todo-swipe-card-add-button-color, ${textColor})`;
-    let deleteButtonColor = `var(--todo-swipe-card-delete-button-color, ${textColor})`;
-    
-    return {
-      'ha-textfield': {
-        $: `
-          /* Input styling with text cutoff before add button */
-          .mdc-text-field__input {
-            color: ${textColor} !important;
-            font-weight: var(--todo-swipe-card-input-font-weight, normal) !important;
-            max-width: calc(100% - 13px) !important;
-            padding-right: 10px !important;
-            margin-left: -4px !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            box-sizing: border-box !important;
-          }
-          
-          /* Text field container adjustment */
-          .mdc-text-field {
-            --mdc-text-field-fill-color: transparent;
-            height: auto !important;
-            --text-field-padding: 0px 13px 5px 5px;
-            position: relative !important;
-          }
-          
-          /* Basic field styling */
-          .mdc-text-field {
-            --mdc-text-field-fill-color: transparent;
-            height: auto !important;
-            --text-field-padding: 0px 0px 5px 5px;
-          }
-  
-          /* Remove underline */
-          .mdc-line-ripple::before,
-          .mdc-line-ripple::after {
-            border-bottom-style: none !important;
-          }
-  
-          /* Placeholder text styling with CSS variable control */
-          .mdc-text-field__input::placeholder {
-            color: var(--todo-swipe-card-placeholder-color, ${textColor}) !important;
-            opacity: var(--todo-swipe-card-placeholder-opacity, 1) !important;
-            font-weight: var(--todo-swipe-card-placeholder-font-weight, normal) !important;
-          }
-          
-          /* Cross-browser placeholder support */
-          .mdc-text-field__input::-webkit-input-placeholder {
-            color: var(--todo-swipe-card-placeholder-color, ${textColor}) !important;
-            opacity: var(--todo-swipe-card-placeholder-opacity, 1) !important;
-            font-weight: var(--todo-swipe-card-placeholder-font-weight, normal) !important;
-          }
-          
-          .mdc-text-field__input::-moz-placeholder {
-            color: var(--todo-swipe-card-placeholder-color, ${textColor}) !important;
-            opacity: var(--todo-swipe-card-placeholder-opacity, 1) !important;
-            font-weight: var(--todo-swipe-card-placeholder-font-weight, normal) !important;
-          }
-          
-          .mdc-text-field__input:-ms-input-placeholder {
-            color: var(--todo-swipe-card-placeholder-color, ${textColor}) !important;
-            opacity: var(--todo-swipe-card-placeholder-opacity, 1) !important;
-            font-weight: var(--todo-swipe-card-placeholder-font-weight, normal) !important;
-          }
-        `
-      },
-      '.': `
-        ha-card {
-          --mdc-typography-subtitle1-font-size: var(--todo-swipe-card-font-size, var(--todo-swipe-card-typography-size, 11px));
-          box-shadow: none;
-          height: 100% !important;
-          width: 100%;
-          max-height: none;
-          overflow-y: auto;
-          border-radius: inherit;
-          color: ${textColor};
-
-          /* Apply background image with higher specificity if provided */
-          ${backgroundImage ? 
-            `background-image: url('${backgroundImage}') !important; 
-            background-position: center center !important; 
-            background-repeat: no-repeat !important;
-            background-size: cover !important;
-            background-color: transparent !important;` : 
-            `background: var(--todo-swipe-card-background, var(--ha-card-background, var(--card-background-color, white))) !important;`
-          }
-        }
-
-        /* Apply consistent color to text elements but no forced opacity */
-        ha-check-list-item,
-        .mdc-list-item__text,
-        .mdc-list-item__primary-text {
-          color: ${textColor} !important;
-          font-weight: var(--todo-swipe-card-item-font-weight, normal) !important;
-        }
-
-        :host {
-          /* Establish color hierarchy for proper inheritance */
-          --todo-swipe-card-text-color: var(--todo-swipe-card-text-color, var(--primary-text-color));
-          --todo-swipe-card-delete-button-color: var(--todo-swipe-card-delete-button-color, var(--todo-swipe-card-text-color, var(--primary-text-color)));
-
-          /* Checkbox styling with CSS variable control */
-          --mdc-checkbox-ripple-size: var(--todo-swipe-card-checkbox-size, 20px);
-          --mdc-checkbox-state-layer-size: var(--todo-swipe-card-checkbox-size, 20px);
-          
-          /* Text field styling */
-          --mdc-text-field-idle-line-color: var(--todo-swipe-card-field-line-color, grey);
-          --mdc-text-field-hover-line-color: var(--todo-swipe-card-field-line-color, grey);
-          --mdc-text-field-outlined-idle-border-color: var(--todo-swipe-card-field-line-color, grey);
-          --mdc-text-field-outlined-hover-border-color: var(--todo-swipe-card-field-line-color, grey);
-          
-          /* Border radius handling */
-          --card-border-radius: var(--ha-card-border-radius, 12px);
-          border-radius: var(--card-border-radius);
-          
-          /* Checkbox colors with CSS variable control */
-          --mdc-checkbox-unchecked-color: ${checkboxColor} !important;
-          --mdc-checkbox-checked-color: ${checkboxCheckedColor} !important;
-          --mdc-checkbox-selected-checkmark-color: ${checkboxCheckmarkColor} !important;
-          --mdc-checkbox-mark-color: ${checkboxCheckmarkColor} !important;
-          --mdc-checkbox-ink-color: ${checkboxCheckmarkColor} !important;
-        }
-
-        ha-checkbox {
-          --mdc-checkbox-unchecked-color: ${checkboxColor} !important;
-          --mdc-checkbox-checked-color: ${checkboxCheckedColor} !important;
-          --mdc-checkbox-selected-checkmark-color: ${checkboxCheckmarkColor} !important;
-          --mdc-checkbox-mark-color: ${checkboxCheckmarkColor} !important;
-          --mdc-checkbox-ink-color: ${checkboxCheckmarkColor} !important;
-          --mdc-checkbox-disabled-color: rgba(0, 0, 0, 0.38) !important;
-        }
-
-        /* Direct SVG path targeting for checkmark - keep at full opacity */
-        ha-checkbox svg path,
-        ha-checkbox .mdc-checkbox__checkmark-path {
-          stroke: ${checkboxCheckmarkColor} !important;
-        }
-
-        /* Direct SVG path targeting for checkmark */
-        ha-checkbox svg path {
-          fill: ${checkboxCheckmarkColor} !important;
-        }
-
-        /* Alternative approach - target the checkmark more specifically */
-        ha-checkbox .mdc-checkbox__checkmark-path {
-          stroke: ${checkboxCheckmarkColor} !important;
-        }
-
-        /* Input field styling - no forced opacity */
-        .mdc-text-field__input {
-          color: ${textColor} !important;
-        }
-
-        ::-webkit-scrollbar {
-          display: none;
-        }
-
-        /* Hide "No tasks to do" text */
-        p.empty {
-          display: none;
-        }
-
-        /* Control the Add button visibility with consistent styling */
-        ${!showAddButton ? `
-        ha-icon-button.addButton {
-          position: absolute !important;
-          width: 1px !important;
-          height: 1px !important;
-          overflow: hidden !important;
-          opacity: 0 !important;
-          left: -9999px !important;
-          top: -9999px !important;
-        }` : `
-        ha-icon-button.addButton {
-          position: absolute !important;
-          right: 1px !important;
-          top: 0px !important;
-          z-index: 10 !important;
-          color: ${addButtonColor} !important;
-        }
-        
-        ha-icon-button.addButton svg,
-        ha-icon-button.addButton ha-icon {
-          color: ${addButtonColor} !important;
-          fill: ${addButtonColor} !important;
-        }`}
-
-        /* Hide all headers and menus and fix margin inconsistency */
-        ha-card.type-todo-list div.header h2,
-        ha-card.type-todo-list div.header ha-button-menu,
-        ha-button-menu {
-          display: none !important;
-        }
-
-        /* Fix header margin inconsistency across all cards */
-        ha-card.type-todo-list div.header {
-          margin-top: 0 !important;
-          margin-bottom: 0 !important;
-        }
-
-        /* Hide separator and completed header */
-        ha-card.type-todo-list div.divider,
-        ha-card.type-todo-list div.header:nth-of-type(2) {
-          display: none !important;
-        }
-
-        /* Hide completed items if not configured to show */
-        ${!this._config.show_completed ? 'ha-check-list-item.editRow.completed { display: none; }' : ''}
-        
-        /* Hide reorder buttons */
-        ha-icon-button.reorderButton {
-          display: none !important;
-        }
-
-        /* List item base styling */
-        ha-check-list-item {
-          min-height: var(--todo-swipe-card-item-height, 0px) !important;
-          --mdc-list-item-graphic-margin: var(--todo-swipe-card-item-margin, 5px) !important;
-          color: ${textColor} !important;
-          padding-right: 40px !important;
-          align-items: flex-start !important;
-          margin-top: var(--todo-swipe-card-item-spacing, 0px) !important;
-        }
-
-        /* Remove margin from first item - more specific selector */
-        ha-card.type-todo-list ha-check-list-item:first-child,
-        ha-check-list-item:first-of-type {
-          margin-top: 0 !important;
-        }
-
-        /* Enable text wrapping for text content containers */
-        ha-check-list-item .mdc-list-item__text {
-          max-width: calc(100% - 70px) !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-          white-space: normal !important;
-          color: ${textColor} !important;
-          font-weight: var(--todo-swipe-card-item-font-weight, normal) !important;
-          line-height: var(--todo-swipe-card-line-height, 1.4) !important;
-        }
-
-        /* Ensure primary text wraps properly */
-        ha-check-list-item .mdc-list-item__primary-text {
-          max-width: calc(100% - 70px) !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-          white-space: normal !important;
-          color: ${textColor} !important;
-          font-weight: var(--todo-swipe-card-item-font-weight, normal) !important;
-          line-height: var(--todo-swipe-card-line-height, 1.4) !important;
-        }
-
-        /* Apply text wrapping at the item level to override Material Design defaults */
-        ha-check-list-item span,
-        ha-check-list-item .mdc-deprecated-list-item__text,
-        ha-check-list-item .mdc-deprecated-list-item__primary-text {
-          white-space: normal !important;
-          word-wrap: break-word !important;
-          overflow-wrap: break-word !important;
-          line-height: var(--todo-swipe-card-line-height, 1.4) !important;
-        }
-
-        /* Ensure checkbox graphic stays at top when text wraps */
-        ha-check-list-item .mdc-list-item__graphic {
-          align-self: flex-start !important;
-          margin-top: 2px !important;
-        }
-
-        /* Special handling for multiline items (with due dates) */
-        ha-check-list-item.multiline {
-          align-items: flex-start !important;
-          --check-list-item-graphic-margin-top: 0px !important; 
-        }
-
-        ha-check-list-item.multiline .mdc-list-item__text {
-          white-space: normal !important;
-          overflow: visible !important;
-          text-overflow: clip !important;
-          line-height: var(--todo-swipe-card-line-height, 1.4) !important;
-        }
-        
-        /* Target the .column div (which contains summary and due date) inside a multiline item */
-        ha-check-list-item.multiline .column {
-          margin-top: 0 !important;
-          margin-bottom: 0 !important;
-        }
-
-        /* Allow text within the summary and due date lines themselves to wrap if it's very long */
-        ha-check-list-item.multiline .summary,
-        ha-check-list-item.multiline .due {
-          white-space: normal !important;
-        }
-
-        /* Description styling with customizable color */
-        .description,
-        ha-markdown-element.description,
-        ha-check-list-item .description,
-        ha-check-list-item ha-markdown-element.description {
-          color: var(--todo-swipe-card-font-color-description, var(--secondary-text-color)) !important;
-          font-size: var(--todo-swipe-card-font-size-description, var(--todo-swipe-card-font-size, var(--todo-swipe-card-typography-size, 11px))) !important;
-          font-weight: var(--todo-swipe-card-font-weight-description, normal) !important;
-          margin-top: var(--todo-swipe-card-description-margin-top, 2px) !important;
-          line-height: var(--todo-swipe-card-line-height, 1.4) !important;
-        }
-
-        /* Due date styling with customizable colors and font size */
-        .due,
-        ha-check-list-item .due,
-        ha-check-list-item.multiline .due {
-          color: var(--todo-swipe-card-font-color-due-date, var(--secondary-text-color)) !important;
-          font-size: var(--todo-swipe-card-font-size-due-date, var(--todo-swipe-card-typography-size-due-date, var(--todo-swipe-card-font-size, var(--todo-swipe-card-typography-size, 11px)))) !important;
-          font-weight: var(--todo-swipe-card-font-weight-due-date, normal) !important;
-          margin-top: var(--todo-swipe-card-due-date-margin-top, 4px) !important;
-          line-height: var(--todo-swipe-card-line-height, 1.4) !important;
-        }
-
-        /* Overdue due date styling with customizable color */
-        .due.overdue,
-        ha-check-list-item .due.overdue,
-        ha-check-list-item.multiline .due.overdue {
-          color: var(--todo-swipe-card-font-color-due-date-overdue, var(--warning-color)) !important;
-        }
-
-        /* Completed items with overdue dates revert to normal due date color */
-        ha-check-list-item.completed .due.overdue {
-          color: var(--todo-swipe-card-font-color-due-date, var(--secondary-text-color)) !important;
-        }
-
-        /* Apply custom font size to secondary text (where due date appears) with new variable names and backward compatibility */
-        ha-check-list-item .mdc-list-item__secondary-text,
-        ha-check-list-item .mdc-deprecated-list-item__secondary-text {
-          font-size: var(--todo-swipe-card-font-size-due-date, var(--todo-swipe-card-typography-size-due-date, var(--todo-swipe-card-font-size, var(--todo-swipe-card-typography-size, 11px)))) !important;
-        }
 
-        /* Due date icon scaling - automatically matches text size with new variable names and backward compatibility */
-        .due ha-svg-icon,
-        ha-check-list-item .due ha-svg-icon,
-        ha-check-list-item.multiline .due ha-svg-icon {
-          --mdc-icon-size: calc(var(--todo-swipe-card-font-size-due-date, var(--todo-swipe-card-typography-size-due-date, var(--todo-swipe-card-font-size, var(--todo-swipe-card-typography-size, 11px)))) * 1.2) !important;
-          width: calc(var(--todo-swipe-card-font-size-due-date, var(--todo-swipe-card-typography-size-due-date, var(--todo-swipe-card-font-size, var(--todo-swipe-card-typography-size, 11px)))) * 1.2) !important;
-          height: calc(var(--todo-swipe-card-font-size-due-date, var(--todo-swipe-card-typography-size-due-date, var(--todo-swipe-card-font-size, var(--todo-swipe-card-typography-size, 11px)))) * 1.2) !important;
-          margin-right: 0 !important;
-          margin-inline-end: 0 !important;
-          margin-inline-start: initial !important;
-        }
-
-        /* Ensure proper alignment of due date content with icons */
-        ha-check-list-item.multiline .due,
-        ha-check-list-item .mdc-list-item__secondary-text,
-        ha-check-list-item .mdc-deprecated-list-item__secondary-text {
-          display: flex !important;
-          align-items: center !important;
-          gap: 4px !important;
-        }
-
-        /* Content area constraint */
-        ha-check-list-item .mdc-list-item__content {
-          max-width: calc(100% - 75px) !important;
-          overflow: visible !important;
-        }
-      `
-    };
+  .expand-button[aria-label*='Collapse'] {
+    color: #ffc107;
   }
 
-  /**
-   * Enhance input field for better mobile experience
-   * @param {HTMLElement} cardElement - Card element
-   * @private
-   */
-  _enhanceInputField(cardElement) {
-    if (!cardElement || !cardElement.shadowRoot) return;
-    
-    // Use requestAnimationFrame to ensure DOM is ready
-    requestAnimationFrame(() => {
-      const textField = cardElement.shadowRoot.querySelector('ha-textfield');
-      if (!textField || !textField.shadowRoot) return;
-      
-      const inputElement = textField.shadowRoot.querySelector('input');
-      if (!inputElement) return;
-      
-      // Set enterKeyHint for mobile keyboards
-      inputElement.enterKeyHint = 'done';
-      
-      // Add a focused class to improve touch response
-      textField.addEventListener('click', () => {
-        if (inputElement) {
-          inputElement.focus();
-        }
-      });
-      
-      debugLog("Enhanced input field setup successfully");
-    });
+  .card-row:hover .expand-button {
+    color: #ffc107;
   }
-
-  /**
-   * Setup resize observer with improved debounce
-   * @private 
-   */
-  _setupResizeObserver() {
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-    }
-
-    let resizeTimeout;
-    this.resizeObserver = new ResizeObserver(() => {
-      // Clear existing timeout
-      if (resizeTimeout) clearTimeout(resizeTimeout);
-      
-      // Debounce resize handling
-      resizeTimeout = setTimeout(() => {
-        if (!this.cardContainer) return;
-        
-        const newWidth = this.cardContainer.offsetWidth;
-        // Only update if width actually changed significantly
-        if (newWidth > 0 && Math.abs(newWidth - this.slideWidth) > 1) {
-          debugLog("Resizing slider...");
-          this.slideWidth = newWidth;
-          
-          // Batch DOM updates
-          requestAnimationFrame(() => {
-            // Reapply border radius when resizing
-            const cardBorderRadius = getComputedStyle(this.cardContainer).borderRadius;
-            this.cards.forEach(cardData => {
-              if (cardData.slide) {
-                cardData.slide.style.borderRadius = cardBorderRadius;
-              }
-            });
-            
-            this.updateSlider(false); // Update without animation on resize
-          });
-        }
-      }, 200); // Increased debounce time
-    });
 
-    if (this.cardContainer) {
-      this.resizeObserver.observe(this.cardContainer);
-    }
-  }
-  
-  /**
-   * Apply pagination-specific styles from card_mod
-   * @private
-   */
-  _applyPaginationStyles() {
-    if (!this.paginationElement) return;
-    
-    // Extract pagination styling from card_mod
-    let paginationStyles = '';
-    
-    // Handle string-based card_mod style
-    if (this._config.card_mod && this._config.card_mod.style && typeof this._config.card_mod.style === 'string') {
-      // Look for our pagination variables in the style string
-      const styleString = this._config.card_mod.style;
-      const variablesToExtract = [
-        '--todo-swipe-card-pagination-dot-inactive-color',
-        '--todo-swipe-card-pagination-dot-active-color',
-        '--todo-swipe-card-pagination-dot-size',
-        '--todo-swipe-card-pagination-dot-border-radius',
-        '--todo-swipe-card-pagination-dot-spacing',
-        '--todo-swipe-card-pagination-bottom',
-        '--todo-swipe-card-pagination-right',
-        '--todo-swipe-card-pagination-background',
-        '--todo-swipe-card-pagination-dot-active-size-multiplier',
-        '--todo-swipe-card-pagination-dot-active-opacity',
-        '--todo-swipe-card-pagination-dot-inactive-opacity'
-      ];
-      
-      // For each variable, try to extract its value from the style string
-      variablesToExtract.forEach(varName => {
-        const regex = new RegExp(`${varName}\\s*:\\s*([^;]+)`, 'i');
-        const match = styleString.match(regex);
-        if (match && match[1]) {
-          paginationStyles += `${varName}: ${match[1].trim()};\n`;
-        }
-      });
-    }
-    
-    // If we found pagination styles, apply them directly to the pagination element
-    if (paginationStyles) {
-      this.paginationElement.style.cssText += paginationStyles;
-      
-      // Get all dots for individual styling
-      const dots = this.paginationElement.querySelectorAll('.pagination-dot');
-      
-      // Apply special handling for individual dot properties
-      requestAnimationFrame(() => {
-        dots.forEach((dot, index) => {
-          // Apply base styles
-          dot.style.borderRadius = `var(--todo-swipe-card-pagination-dot-border-radius, 50%)`;
-          dot.style.margin = `0 var(--todo-swipe-card-pagination-dot-spacing, 4px)`;
-          
-          // Apply size based on active state
-          if (dot.classList.contains('active')) {
-            dot.style.width = `calc(var(--todo-swipe-card-pagination-dot-size, 8px) * var(--todo-swipe-card-pagination-dot-active-size-multiplier, 1))`;
-            dot.style.height = `calc(var(--todo-swipe-card-pagination-dot-size, 8px) * var(--todo-swipe-card-pagination-dot-active-size-multiplier, 1))`;
-          } else {
-            dot.style.width = `var(--todo-swipe-card-pagination-dot-size, 8px)`;
-            dot.style.height = `var(--todo-swipe-card-pagination-dot-size, 8px)`;
-          }
-        });
-      });
-    }
+  .clickable-row {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
   }
 
-  /**
-   * Set up optimized menu button observers
-   * Uses a single observer with better performance and longer debouncing
-   * @private
-   */
-  _setupMenuButtonObservers() {
-    debugLog("Setting up menu button observers");
-    
-    // Clear any existing observers
-    if (this._menuObservers) {
-      this._menuObservers.forEach(observer => observer.disconnect());
-      this._menuObservers = [];
-    }
-    
-    // Single observer with increased debounce time
-    const observer = new MutationObserver(() => {
-      // Increased debounce from 250ms to 1000ms to prevent flooding
-      if (this._menuObserverTimeout) clearTimeout(this._menuObserverTimeout);
-      this._menuObserverTimeout = setTimeout(() => {
-        // Only process if we're still connected and initialized
-        if (!this.initialized || !this.shadowRoot) return;
-        
-        this.cards.forEach(card => {
-          if (card?.element?.shadowRoot) {
-            this._hideMenusInRoot(card.element.shadowRoot);
-          }
-        });
-      }, 1000);
-    });
-    
-    // Observe only necessary elements with reduced scope
-    this.cards.forEach(card => {
-      if (card?.element) {
-        // Get the actual card element (might be wrapped)
-        const actualCard = this._getActualCardElement(card.element);
-        
-        if (actualCard && actualCard.shadowRoot) {
-          this._hideMenusInRoot(actualCard.shadowRoot);
-          observer.observe(actualCard.shadowRoot, {
-            childList: true,
-            subtree: false, // Reduced scope - only direct children
-            attributes: false, // Don't observe attribute changes
-            characterData: false // Don't observe text changes
-          });
-        }
-      }
-    });
-    
-    this._menuObservers.push(observer);
+  .clickable-row:hover {
+    background: rgba(255, 193, 7, 0.1);
+    border-color: rgba(255, 193, 7, 0.56);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
-  /**
-   * Hide menu buttons in a DOM tree
-   * Hide menu buttons with performance optimizations
-   * @param {ShadowRoot|Element} root - Root element to process
-   * @param {number} depth - Current recursion depth
-   * @private
-   */
-  _hideMenusInRoot(root, depth = 0) {
-    if (!root || depth > 2) return; // Reduced depth limit from 3 to 2
-    
-    try {
-      // Find all menu buttons in this root
-      const menus = root.querySelectorAll ? root.querySelectorAll('ha-button-menu') : [];
-      if (menus.length > 0) {
-        // Batch style updates and only update if not already hidden
-        requestAnimationFrame(() => {
-          menus.forEach(menu => {
-            if (menu && menu.parentNode && menu.style && menu.style.display !== 'none') {
-              // Apply all styles at once
-              menu.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; position: absolute !important;';
-              
-              // Also hide parent header if it exists
-              if (menu.parentNode.classList && menu.parentNode.classList.contains('header')) {
-                menu.parentNode.style.display = 'none';
-                menu.parentNode.style.visibility = 'hidden';
-              }
-            }
-          });
-        });
-      }
-      
-      // Reduced recursive checking with stricter limits
-      if (root.querySelectorAll && depth < 2) { // Reduced depth
-        const shadowElements = root.querySelectorAll('*');
-        let count = 0;
-        
-        for (const el of shadowElements) {
-          if (count > 10) break; // Reduced limit from 20 to 10
-          if (el && el.shadowRoot) {
-            this._hideMenusInRoot(el.shadowRoot, depth + 1);
-            count++;
-          }
-        }
-      }
-    } catch (e) {
-      console.error("Error hiding menus:", e);
-    }
+  .clickable-row:hover::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #ffc107;
+    border-radius: 0 2px 2px 0;
   }
-
-  /**
-   * Add swipe gesture handling with optimizations
-   * Handle swipe gestures with touch and mouse support
-   * @private
-   */
-  _addSwiperGesture() {
-    // Remove previous listeners if rebuilding to prevent duplicates
-    if (this._touchStartHandler) {
-      this.cardContainer.removeEventListener('touchstart', this._touchStartHandler);
-      this.cardContainer.removeEventListener('touchmove', this._touchMoveHandler);
-      this.cardContainer.removeEventListener('touchend', this._touchEndHandler);
-      this.cardContainer.removeEventListener('touchcancel', this._touchEndHandler);
-      this.cardContainer.removeEventListener('mousedown', this._mouseDownHandler);
-      window.removeEventListener('mousemove', this._mouseMoveHandler);
-      window.removeEventListener('mouseup', this._mouseUpHandler);
-    }
-
-    let startX = 0;
-    let startY = 0;
-    let currentX = 0;
-    let isDragging = false;
-    let isScrolling = false;
-    let initialTransform = 0;
-    let isInteractiveElement = false;
-    let swipeIntentionConfirmed = false;
-
-    // Enhanced helper to check for interactive elements
-    this._isInteractiveOrScrollable = (element) => {
-      if (!element || element === this.cardContainer || element === this.sliderElement) return false;
-
-      // Check for text input elements at any level
-      let current = element;
-      let depth = 0;
-      while (current && depth < 15) {
-        try {
-          if (current.nodeType === Node.ELEMENT_NODE) {
-            const tagName = current.localName?.toLowerCase();
-            const role = current.getAttribute && current.getAttribute('role');
-            
-            // Direct interactive element check
-            const interactiveTags = [
-              'input', 'textarea', 'select', 'button', 'a', 'ha-switch', 'ha-checkbox',
-              'mwc-checkbox', 'paper-checkbox', 'ha-textfield', 'ha-slider', 'paper-slider',
-              'ha-icon-button', 'mwc-button', 'paper-button'
-            ];
-            
-            if (interactiveTags.includes(tagName)) {
-              return true;
-            }
-            
-            // Role-based check
-            if (role && ['button', 'checkbox', 'switch', 'slider', 'link', 'menuitem', 'textbox', 'input', 'combobox', 'searchbox'].includes(role)) {
-              return true;
-            }
-            
-            // Material Design text field classes
-            if (current.classList) {
-              const mdcClasses = [
-                'mdc-text-field', 'mdc-text-field__input', 'mdc-text-field__ripple',
-                'mdc-line-ripple', 'mdc-floating-label', 'mdc-text-field__affix'
-              ];
-              for (const className of mdcClasses) {
-                if (current.classList.contains(className)) {
-                  return true;
-                }
-              }
-            }
-            
-            // Check for scrollable content
-            const style = window.getComputedStyle(current);
-            const overflowY = style.overflowY;
-            if ((overflowY === 'auto' || overflowY === 'scroll') && current.scrollHeight > current.clientHeight + 1) {
-              return true;
-            }
-          }
-        } catch (e) { 
-          break;
-        }
-        
-        current = current.assignedSlot || current.parentNode || (current.getRootNode && current.getRootNode().host);
-        depth++;
-      }
-
-      return false;
-    };
-
-    this._handleSwipeStart = (e) => {
-      // Ignore if already dragging or non-primary button
-      if (isDragging || (e.type === 'mousedown' && e.button !== 0)) return;
-
-      // Check if this is an interactive element BEFORE any other processing
-      isInteractiveElement = this._isInteractiveOrScrollable(e.target);
-      
-      // If it's an interactive element, completely skip swipe handling
-      if (isInteractiveElement) {
-        return;
-      }
-
-      // Initialize swipe state
-      isDragging = false; // Don't set to true immediately
-      isScrolling = false;
-      swipeIntentionConfirmed = false;
-
-      if (e.type === 'touchstart') {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-      } else {
-        startX = e.clientX;
-        startY = e.clientY;
-      }
-      currentX = startX;
-
-      // Record initial transform but don't disable transitions yet
-      if (this.sliderElement) {
-        const style = window.getComputedStyle(this.sliderElement);
-        const matrix = new DOMMatrixReadOnly(style.transform);
-        initialTransform = matrix.m41;
-      }
-
-      // Add mouse move/up listeners to window for mouse events
-      if (e.type === 'mousedown') {
-        window.addEventListener('mousemove', this._mouseMoveHandler);
-        window.addEventListener('mouseup', this._mouseUpHandler);
-      }
-    };
-
-    this._handleSwipeMove = (e) => {
-      // Skip entirely if this started on an interactive element
-      if (isInteractiveElement) return;
-
-      let moveX, moveY, clientX, clientY;
-
-      if (e.type === 'touchmove') {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-      } else {
-        clientX = e.clientX;
-        clientY = e.clientY;
-      }
-
-      moveX = clientX - startX;
-      moveY = clientY - startY;
-
-      // Determine scroll vs swipe intention early
-      if (!isScrolling && !swipeIntentionConfirmed) {
-        if (Math.abs(moveY) > Math.abs(moveX) && Math.abs(moveY) > 15) {
-          isScrolling = true;
-          return;
-        } else if (Math.abs(moveX) > 15) {
-          swipeIntentionConfirmed = true;
-          isDragging = true;
-          
-          // NOW disable transitions and set cursor
-          if (this.sliderElement) {
-            this.sliderElement.style.transition = 'none';
-            this.sliderElement.style.cursor = 'grabbing';
-          }
-          
-          // NOW prevent default only after confirming swipe intention
-          if (e.cancelable) {
-            e.preventDefault();
-          }
-        } else {
-          // Movement too small, don't interfere yet
-          return;
-        }
-      }
-
-      // Skip if we determined this is scrolling
-      if (isScrolling || !swipeIntentionConfirmed) return;
-
-      // Prevent default only for confirmed horizontal swipes
-      if (e.cancelable) {
-        e.preventDefault();
-      }
-
-      currentX = clientX;
-
-      // Calculate drag with resistance
-      let totalDragOffset = currentX - startX;
-      const atLeftEdge = this.currentIndex === 0;
-      const atRightEdge = this.currentIndex === this.cards.length - 1;
-      
-      if ((atLeftEdge && totalDragOffset > 0) || (atRightEdge && totalDragOffset < 0)) {
-        const overDrag = Math.abs(totalDragOffset);
-        const resistanceFactor = 0.3 + 0.7 / (1 + overDrag / (this.slideWidth * 0.5));
-        totalDragOffset *= resistanceFactor * 0.5;
-      }
-
-      const newTransform = initialTransform + totalDragOffset;
-
-      if (this.sliderElement) {
-        requestAnimationFrame(() => {
-          this.sliderElement.style.transform = `translateX(${newTransform}px)`;
-        });
-      }
-    };
-
-    this._handleSwipeEnd = (e) => {
-      // Remove window listeners for mouse events
-      if (e.type === 'mouseup' || e.type === 'mouseleave') {
-        window.removeEventListener('mousemove', this._mouseMoveHandler);
-        window.removeEventListener('mouseup', this._mouseUpHandler);
-      }
-
-      // Skip if this started on an interactive element
-      if (isInteractiveElement) {
-        // Reset state
-        isInteractiveElement = false;
-        return;
-      }
-
-      const wasDragging = isDragging;
-      
-      // Reset all state
-      isDragging = false;
-      isScrolling = false;
-      swipeIntentionConfirmed = false;
-      isInteractiveElement = false;
-
-      // Restore transitions and cursor
-      if (this.sliderElement) {
-        const transitionSpeed = this._transitionSpeed || '0.3s';
-        const transitionEasing = this._transitionEasing || 'ease-out';
-        this.sliderElement.style.transition = `transform ${transitionSpeed} ${transitionEasing}`;
-        this.sliderElement.style.cursor = '';
-      }
-
-      // Only process swipe if we had confirmed dragging
-      if (!wasDragging || e.type === 'touchcancel') {
-        this.updateSlider();
-        return;
-      }
-
-      // Calculate swipe distance and update slide if threshold met
-      const totalMoveX = currentX - startX;
-      const threshold = this.slideWidth * 0.20;
 
-      if (Math.abs(totalMoveX) > threshold) {
-        if (totalMoveX > 0 && this.currentIndex > 0) {
-          this.currentIndex--;
-        } else if (totalMoveX < 0 && this.currentIndex < this.cards.length - 1) {
-          this.currentIndex++;
-        }
-      }
-
-      this.updateSlider(true);
-    };
-
-    // Store bound handlers for removal
-    this._touchStartHandler = this._handleSwipeStart.bind(this);
-    this._touchMoveHandler = this._handleSwipeMove.bind(this);
-    this._touchEndHandler = this._handleSwipeEnd.bind(this);
-    this._mouseDownHandler = this._handleSwipeStart.bind(this);
-    this._mouseMoveHandler = this._handleSwipeMove.bind(this);
-    this._mouseUpHandler = this._handleSwipeEnd.bind(this);
-
-    // Add listeners
-    this.cardContainer.addEventListener('touchstart', this._touchStartHandler, { passive: true });
-    this.cardContainer.addEventListener('touchmove', this._touchMoveHandler, { passive: false });
-    this.cardContainer.addEventListener('touchend', this._touchEndHandler, { passive: true });
-    this.cardContainer.addEventListener('touchcancel', this._touchEndHandler, { passive: true });
-    this.cardContainer.addEventListener('mousedown', this._mouseDownHandler);
+  .clickable-row.expanded {
+    border-color: rgba(255, 193, 7, 0.56);
+    background: rgba(255, 193, 7, 0.1);
   }
-
-  /**
-   * Navigate to a specific slide
-   * @param {number} index - The slide index to go to
-   */
-  goToSlide(index) {
-    if (!this.cards || this.cards.length === 0 || !this.initialized) return;
-    
-    index = Math.max(0, Math.min(index, this.cards.length - 1));
-
-    if (index === this.currentIndex) return;
 
-    this.currentIndex = index;
-    this.updateSlider();
+  .clickable-row.expanded::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #ffc107;
+    border-radius: 0 2px 2px 0;
   }
-
-  /**
-   * Update slider position and pagination
-   * Optimized version with batched DOM updates
-   * @param {boolean} animate - Whether to animate the transition
-   */
-  updateSlider(animate = true) {
-    if (!this.sliderElement || !this.slideWidth || this.cards.length === 0 || !this.initialized) {
-      return;
-    }
-
-    // Batch all DOM updates
-    requestAnimationFrame(() => {
-      // Use stored transition values if available, otherwise default
-      const transitionSpeed = this._transitionSpeed || '0.3s';
-      const transitionEasing = this._transitionEasing || 'ease-out';
-
-      // Set transition based on animate parameter
-      this.sliderElement.style.transition = animate 
-        ? `transform ${transitionSpeed} ${transitionEasing}` 
-        : 'none';
-
-      // Get card spacing from config
-      const cardSpacing = this._config.card_spacing || 0;
 
-      // Update slider gap for spacing
-      this.sliderElement.style.gap = `${cardSpacing}px`;
-
-      // Calculate transform using pixel values including spacing
-      const translateX = this.currentIndex * (this.slideWidth + cardSpacing);
-      this.sliderElement.style.transform = `translateX(-${translateX}px)`;
-
-      // Get the border radius from the container and apply to all slides
-      const cardBorderRadius = getComputedStyle(this.cardContainer).borderRadius;
-      this.cards.forEach((card) => {
-        if (card.slide) {
-          card.slide.style.marginRight = '0px'; // Ensure margins are reset
-          card.slide.style.borderRadius = cardBorderRadius; // Apply border radius to slides
-        }
-      });
-
-      // Update pagination
-      if (this.paginationElement) {
-        const dots = this.paginationElement.querySelectorAll('.pagination-dot');
-        dots.forEach((dot, i) => {
-          dot.classList.toggle('active', i === this.currentIndex);
-        });
-        
-        // Apply pagination styles
-        this._applyPaginationStyles();
-      }
-    });
+  .clickable-row .card-actions {
+    cursor: default;
   }
-
-  /**
-   * Get card size for Home Assistant layout system
-   * @returns {number} Card size
-   */
-  getCardSize() {
-    return 3;
-  }
-}
-
-/**
- * Updated TodoSwipeCardEditor with compact layout similar to simple-swipe-card
- */
-class TodoSwipeCardEditor extends LitElement {
 
-  static TodoSortMode = {
-    NONE: 'none',
-    ALPHA_ASC: 'alpha_asc', 
-    ALPHA_DESC: 'alpha_desc',
-    DUEDATE_ASC: 'duedate_asc',
-    DUEDATE_DESC: 'duedate_desc'
-  };
-
-  static get properties() {
-    return {
-      hass: { type: Object },
-      _config: { type: Object },
-      _expandedEntities: { type: Set, state: true }, // Track which entities are expanded
-      _buttonFeedbackState: { type: String, state: true }, // Track button feedback state
-    };
+  .clickable-row .card-actions ha-icon-button {
+    cursor: pointer;
   }
 
-  constructor() {
-    super();
-    this._expandedEntities = new Set();
-    this._buttonFeedbackState = 'normal'; // Can be 'normal', 'blocked', or 'success'
-    this._showMigrationWarning = false; // Track migration warning visibility
-    this._legacyConfig = null; // Store legacy config detection result
-    
-    // Bind the method to ensure proper context
-    this._addEntity = this._addEntity.bind(this);
-  }
-  
-  async connectedCallback() {
-    super.connectedCallback();
-    await this._ensureComponentsLoaded();
-    this.requestUpdate();
-  }
-  
-  async _ensureComponentsLoaded() {
-    const maxAttempts = 50;
-    let attempts = 0;
-    
-    while (!customElements.get("ha-entity-picker") && attempts < maxAttempts) {
-      await this._loadCustomElements();
-      if (!customElements.get("ha-entity-picker")) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-    }
-    
-    if (!customElements.get("ha-entity-picker")) {
-      console.error("Failed to load ha-entity-picker after multiple attempts");
-    }
+  .clickable-row:focus {
+    outline: none;
+    border-color: rgba(255, 193, 7, 0.56);
+    background: rgba(255, 193, 7, 0.1);
   }
 
-  async _loadCustomElements() {
-    if (!customElements.get("ha-entity-picker")) {
-      try {
-        const attempts = [
-          () => customElements.get("hui-entities-card")?.getConfigElement?.(),
-          () => customElements.get("hui-entity-picker-card")?.getConfigElement?.(),
-        ];
-
-        for (const attempt of attempts) {
-          try {
-            await attempt();
-            if (customElements.get("ha-entity-picker")) {
-              break;
-            }
-          } catch (e) {
-            console.debug("Entity picker load attempt failed:", e);
-          }
-        }
-      } catch (e) {
-        console.warn("Could not load ha-entity-picker", e);
-      }
-    }
+  .clickable-row .card-info {
+    user-select: none;
   }
 
-  updated(changedProperties) {
-    super.updated(changedProperties);
-    
-    if (changedProperties.has('_config') && this._config) {
-      if (this._config.entities && this._config.entities.length > 0) {
-        if (this._updateRAF) {
-          cancelAnimationFrame(this._updateRAF);
-        }
-        
-        this._updateRAF = requestAnimationFrame(() => {
-          const entityPickers = this.shadowRoot.querySelectorAll('ha-entity-picker');
-          if (entityPickers.length === 0 || entityPickers.length < this._config.entities.length) {
-            this.requestUpdate();
-          }
-          this._updateRAF = null;
-        });
-      }
-    }
+  .clickable-row:hover .expand-button {
+    color: #ffc107;
+    transform: scale(1.05);
   }
 
-  /**
-   * Detect legacy configuration format in editor
-   * @param {Object} config - Configuration to check
-   * @returns {Object} Detection result with isLegacy flag and found properties
-   * @private
-   */
-  _detectLegacyConfig(config) {
-    const legacyProperties = [
-      'background_images',
-      'display_orders', 
-      'entity_titles',
-      'show_titles'
-    ];
-    
-    const foundLegacyProps = legacyProperties.filter(prop => 
-      config.hasOwnProperty(prop) && config[prop] && Object.keys(config[prop]).length > 0
-    );
-    
-    return {
-      isLegacy: foundLegacyProps.length > 0,
-      legacyProperties: foundLegacyProps
-    };
+  .expanded-content {
+    margin-top: 8px;
+    margin-bottom: 8px;
+    padding: 12px;
+    background: var(--secondary-background-color);
+    border: 1px solid var(--divider-color);
+    border-radius: var(--ha-card-border-radius, 4px);
   }
 
-  /**
-   * Migrate legacy config to new entity-centric format
-   * @param {Object} oldConfig - Legacy configuration
-   * @returns {Object} Migrated configuration
-   * @private
-   */
-  _migrateLegacyConfig(oldConfig) {
-    // Convert entities to new format
-    let migratedEntities = [];
-    if (oldConfig.entities && Array.isArray(oldConfig.entities)) {
-      migratedEntities = oldConfig.entities.map(entity => {
-        if (typeof entity === 'string') {
-          const entityConfig = { entity };
-          
-          // Migrate background image
-          if (oldConfig.background_images && oldConfig.background_images[entity]) {
-            entityConfig.background_image = oldConfig.background_images[entity];
-          }
-          
-          // Migrate display order
-          if (oldConfig.display_orders && oldConfig.display_orders[entity]) {
-            entityConfig.display_order = oldConfig.display_orders[entity];
-          }
-          
-          // Migrate show title
-          if (oldConfig.show_titles && oldConfig.show_titles[entity]) {
-            entityConfig.show_title = oldConfig.show_titles[entity];
-          }
-          
-          // Migrate entity title
-          if (oldConfig.entity_titles && oldConfig.entity_titles[entity]) {
-            entityConfig.title = oldConfig.entity_titles[entity];
-          }
-          
-          return entityConfig;
-        }
-        return entity; // Already in new format
-      });
-    }
-    
-    // Start with all properties from old config
-    const newConfig = { ...oldConfig };
-    
-    // Remove legacy properties
-    delete newConfig.background_images;
-    delete newConfig.display_orders;
-    delete newConfig.entity_titles;
-    delete newConfig.show_titles;
-    delete newConfig.custom_card_mod;
-    
-    // Update entities with migrated format
-    newConfig.entities = migratedEntities;
-    
-    // Rebuild config in desired order with type first, preserving all other properties
-    const orderedConfig = {
-      type: newConfig.type,
-      entities: newConfig.entities,
-      ...Object.fromEntries(
-        Object.entries(newConfig).filter(([key]) => key !== 'type' && key !== 'entities')
-      )
-    };
-    
-    return orderedConfig;
+  .expanded-content ha-entity-picker {
+    width: 100% !important;
+    margin-bottom: 12px !important;
+    box-sizing: border-box !important;
   }
 
-  /**
-   * Handle auto-migration button click
-   * @private
-   */
-  _handleAutoMigrate() {
-    if (!this._legacyConfig || !this._legacyConfig.isLegacy) return;
-    
-    const migratedConfig = this._migrateLegacyConfig(this._config);
-    this._config = migratedConfig;
-    this._showMigrationWarning = false;
-    this._legacyConfig = null;
-    
-    // Dispatch the migrated config
-    this.dispatchEvent(new CustomEvent('config-changed', { 
-      detail: { config: migratedConfig },
-      bubbles: true,
-      composed: true
-    }));
-    
-    this.requestUpdate();
+  .expanded-content ha-select {
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
-  /**
-   * Helper to get entity ID from entity configuration
-   * @param {string|Object} entity - Entity configuration
-   * @returns {string} Entity ID
-   * @private
-   */
-  _getEntityId(entity) {
-    if (typeof entity === 'string') {
-      return entity;
-    }
-    return entity?.entity || '';
+  .expanded-content ha-textfield {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
   }
-
-  /**
-   * Create config with proper property order
-   * @param {Object} config - Configuration object
-   * @returns {Object} Reordered configuration
-   * @private
-   */
-  _createOrderedConfig(config) {
-    const orderedConfig = {
-      type: config.type,
-      entities: config.entities,
-      card_spacing: config.card_spacing,
-      show_pagination: config.show_pagination,
-      show_create: config.show_create,
-      show_addbutton: config.show_addbutton,
-      show_completed: config.show_completed,
-      show_completed_menu: config.show_completed_menu,
-      delete_confirmation: config.delete_confirmation
-    };
-
-    // Add other properties, but exclude empty custom_card_mod
-    const excludedKeys = [
-      'type', 'entities', 'card_spacing', 'show_pagination', 
-      'show_create', 'show_addbutton', 'show_completed', 
-      'show_completed_menu', 'delete_confirmation', 'custom_card_mod'
-    ];
 
-    Object.entries(config).forEach(([key, value]) => {
-      if (!excludedKeys.includes(key)) {
-        orderedConfig[key] = value;
-      }
-    });
-
-    // Only include custom_card_mod if it exists and has meaningful content
-    if (config.custom_card_mod && 
-        typeof config.custom_card_mod === 'object' && 
-        Object.keys(config.custom_card_mod).length > 0) {
-      orderedConfig.custom_card_mod = config.custom_card_mod;
-    }
-    
-    return orderedConfig;
+  .expanded-content .toggle-option {
+    margin: 8px 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
-  setConfig(config) {
-    debugLog("Editor setConfig called with:", JSON.stringify(config));
-    
-    // Detect legacy configuration
-    this._legacyConfig = this._detectLegacyConfig(config);
-    this._showMigrationWarning = this._legacyConfig.isLegacy;
-    
-    this._config = {
-      ...TodoSwipeCard.getStubConfig()
-    };
-    
-    if (config) {
-      let entities = config.entities || [];
-      if (!Array.isArray(entities)) {
-        if (typeof entities === 'object') {
-          entities = Object.values(entities);
-        } else if (typeof entities === 'string') {
-          entities = [entities];
-        } else {
-          entities = [];
-        }
-      }
-      
-      // Normalize entities to support both string and object formats
-      entities = entities.map(entity => {
-        if (typeof entity === 'string') {
-          // Keep string format during editing for backward compatibility
-          return entity;
-        }
-        return entity; // Already object format
-      });
-      
-      // Only filter out empty entities if they're not at the end of the array
-      // This allows newly added empty entities to persist for user configuration
-      const hasTrailingEmpty = entities.length > 0 && 
-        (entities[entities.length - 1] === "" || 
-         (typeof entities[entities.length - 1] === 'object' && 
-          entities[entities.length - 1].entity === ""));
-      if (!hasTrailingEmpty) {
-        entities = entities.filter(e => {
-          if (typeof e === 'string') {
-            return e && e.trim() !== "";
-          }
-          return e && e.entity && e.entity.trim() !== "";
-        });
-      } else {
-        // Filter out empty entities except the last one
-        const nonEmptyEntities = entities.slice(0, -1).filter(e => {
-          if (typeof e === 'string') {
-            return e && e.trim() !== "";
-          }
-          return e && e.entity && e.entity.trim() !== "";
-        });
-        entities = [...nonEmptyEntities, ""];
-      }
-      
-      let cardSpacing = config.card_spacing;
-      if (cardSpacing === undefined) {
-        cardSpacing = 15;
-      } else {
-        cardSpacing = parseInt(cardSpacing);
-        if (isNaN(cardSpacing) || cardSpacing < 0) {
-          cardSpacing = 15;
-        }
-      }
-      
-      // Only include custom_card_mod if it exists and has content
-      const configUpdate = {
-        ...this._config,
-        ...config,
-        entities,
-        card_spacing: cardSpacing
-      };
-
-      // Only add custom_card_mod if it exists in the original config and has meaningful content
-      if (config.custom_card_mod && typeof config.custom_card_mod === 'object' && Object.keys(config.custom_card_mod).length > 0) {
-        configUpdate.custom_card_mod = config.custom_card_mod;
-      }
-
-      this._config = configUpdate;
-    }
-    
-    debugLog("TodoSwipeCardEditor - Config after initialization:", JSON.stringify(this._config));
-    this.requestUpdate();
+  .expanded-content .toggle-option ha-textfield {
+    width: 100% !important;
+    margin: 8px 0 0 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
   }
 
-  // Getters remain the same
-  get _show_pagination() {
-    return this._config.show_pagination !== false;
+  ha-formfield {
+    display: block;
+    padding: 8px 0;
   }
 
-  get _show_addbutton() {
-    return this._config.show_addbutton === true;
+  .expanded-content > div[style*='padding: 8px'] {
+    padding: 8px 0 !important;
   }
 
-  get _show_create() {
-    return this._config.show_create !== false;
+  .background-image-row {
+    margin-top: 8px;
+    width: 100%;
   }
 
-  get _show_completed() {
-    return this._config.show_completed === true;
+  .background-image-row ha-textfield {
+    width: 100%;
   }
 
-  get _show_completed_menu() {
-    return this._config.show_completed_menu === true;
+  .background-help-text {
+    font-size: 12px;
+    color: var(--secondary-text-color);
+    margin-top: 4px;
+    margin-bottom: 16px;
   }
-  
-  get _delete_confirmation() {
-    return this._config.delete_confirmation === true;
-  }
 
-  get _show_icons() {
-    return this._config.show_icons === true;
+  .conditional-field {
+    padding-left: 16px;
+    margin-top: 0;
+    border-left: 1px solid var(--divider-color);
+    width: calc(100% - 16px);
   }
 
-  get _card_spacing() {
-    return this._config.card_spacing !== undefined ? this._config.card_spacing : 15;
+  .add-entity-button {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
   }
 
-  get _validEntities() {
-    return (this._config.entities || []).filter(entity => {
-      const entityId = this._getEntityId(entity);
-      return entityId && entityId.trim() !== "";
-    });
+  .add-todo-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    color: var(--primary-color);
+    border: 1px solid var(--divider-color);
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
   }
 
-  get _showBackgroundImagesSection() {
-    return this._validEntities.length > 0 && this._legacyConfig && this._legacyConfig.isLegacy;
+  .add-todo-button:hover {
+    background-color: var(--secondary-background-color);
   }
 
-  get _showCompletedMenuOption() {
-    return this._show_completed;
-  }
-  
-  get _showDeleteConfirmationOption() {
-    return this._show_completed && this._show_completed_menu;
+  .add-todo-button.blocked {
+    background-color: var(--error-color);
+    color: white;
+    border-color: var(--error-color);
+    animation: shake 0.3s ease-in-out;
   }
-  
-  get _showTitleSection() {
-    return this._validEntities.length > 0;
-  }
-
-  static get styles() {
-    return css`
-      /* Card config container */
-      .card-config {
-        /* Let HA handle padding */
-      }
-
-      /* MAIN SECTION STYLES */
-      .section {
-        margin: 16px 0;
-        padding: 16px;
-        border: 1px solid var(--divider-color);
-        border-radius: var(--ha-card-border-radius, 8px);
-        background-color: var(--card-background-color, var(--primary-background-color));
-      }
-
-      .section-header {
-        font-size: 16px;
-        font-weight: 500;
-        margin-bottom: 12px;
-        color: var(--primary-text-color);
-      }
-
-      ha-switch {
-        padding: 8px 0;
-      }
-      .side-by-side {
-        display: flex;
-        align-items: center;
-      }
-      .side-by-side > * {
-        flex: 1;
-        padding-right: 8px;
-      }
-      
-      /* Card row styles similar to simple-swipe-card */
-      .card-list {
-        margin-top: 8px;
-        margin-bottom: 16px;
-      }
-
-      .card-row {
-        display: flex;
-        align-items: center;
-        padding: 8px;
-        border: 1px solid var(--divider-color);
-        border-radius: var(--ha-card-border-radius, 4px);
-        margin-bottom: 8px;
-        background: var(--secondary-background-color);
-      }
-
-      .card-info {
-        flex-grow: 1;
-        display: flex;
-        align-items: center;
-        margin-right: 8px;
-        overflow: hidden;
-      }
-
-      .card-index {
-        font-weight: bold;
-        margin-right: 10px; /* Back to original spacing since expand button is now separate */
-        color: var(--secondary-text-color);
-        flex-shrink: 0;
-      }
 
-      .card-type {
-        font-size: 14px;
-        color: var(--primary-text-color);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .card-name {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        margin-left: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .card-actions {
-        display: flex;
-        align-items: center;
-        flex-shrink: 0;
-      }
-
-      .card-actions ha-icon-button {
-        --mdc-icon-button-size: 36px;
-        color: var(--secondary-text-color);
-      }
-
-      .card-actions ha-icon-button:hover {
-        color: var(--primary-text-color);
-      }
-
-      .no-cards {
-        text-align: center;
-        color: var(--secondary-text-color);
-        padding: 16px;
-        border: 1px dashed var(--divider-color);
-        border-radius: var(--ha-card-border-radius, 4px);
-        margin-bottom: 16px;
-      }
-
-      /* Updated expand button styles for left positioning */
-      .expand-button {
-        --mdc-icon-button-size: 32px;
-        color: var(--secondary-text-color);
-        margin: 0 8px 0 0; /* Right margin to separate from number */
-        flex-shrink: 0;
-        order: -1; /* Ensure it's always first */
-        transition: color 0.2s ease, transform 0.2s ease;
-      }
-
-      .expand-button:hover {
-        color: #ffc107; /* Amber color on hover */
-        background-color: rgba(255, 193, 7, 0.1);
-      }
-
-      /* Visual feedback for expanded state - amber color */
-      .expand-button[aria-label*="Collapse"] {
-        color: #ffc107; /* Amber color when expanded */
-      }
-
-      /* Optional: Enhanced hover effect for entire row */
-      .card-row:hover .expand-button {
-        color: #ffc107; /* Amber color when row is hovered */
-      }
-
-      .clickable-row {
-        cursor: pointer;
-        transition: all 0.2s ease;
-        position: relative;
-      }
-
-      .clickable-row:hover {
-        background: rgba(255, 193, 7, 0.1); /* Light amber background */
-        border-color: rgba(255, 193, 7, 0.56); /* Semi-transparent amber border */
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      /* Amber left border indicator on hover */
-      .clickable-row:hover::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background: #ffc107; /* Amber left border */
-        border-radius: 0 2px 2px 0;
-      }
-
-      /* Enhanced visual feedback for expanded rows - SAME amber colors */
-      .clickable-row.expanded {
-        border-color: rgba(255, 193, 7, 0.56); /* Same amber border as hover */
-        background: rgba(255, 193, 7, 0.1); /* Same amber background as hover */
-      }
-
-      .clickable-row.expanded::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background: #ffc107; /* Amber left border when expanded */
-        border-radius: 0 2px 2px 0;
-      }
-
-      /* Ensure buttons maintain their cursor */
-      .clickable-row .card-actions {
-        cursor: default; /* Reset cursor for button area */
-      }
-
-      .clickable-row .card-actions ha-icon-button {
-        cursor: pointer; /* Ensure buttons still show pointer cursor */
-      }
-
-      .clickable-row:focus {
-        outline: none; /* Remove default browser outline */
-        border-color: rgba(255, 193, 7, 0.56); /* Same amber border as expanded */
-        background: rgba(255, 193, 7, 0.1); /* Same amber background as expanded */
-      }
-
-      /* Visual hint that the row is interactive */
-      .clickable-row .card-info {
-        user-select: none; /* Prevent text selection on click */
-      }
-
-      /* Optional: Add a subtle animation for expand button when row is hovered */
-      .clickable-row:hover .expand-button {
-        color: #ffc107; /* Amber expand button on hover */
-        transform: scale(1.05);
-      }
-
-      /* UPDATED: Expanded content styles with consistent width */
-      .expanded-content {
-        margin-top: 8px;
-        margin-bottom: 8px;
-        padding: 12px;
-        background: var(--secondary-background-color);
-        border: 1px solid var(--divider-color);
-        border-radius: var(--ha-card-border-radius, 4px);
-      }
-
-      /* Ensure all form elements have consistent width */
-      .expanded-content ha-entity-picker {
-        width: 100% !important;
-        margin-bottom: 12px !important;
-        box-sizing: border-box !important;
-      }
-
-      .expanded-content ha-select {
-        width: 100% !important;
-        box-sizing: border-box !important;
-      }
-
-      /* Target all textfields in expanded content */
-      .expanded-content ha-textfield {
-        width: 100% !important;
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        padding: 0 !important;
-        box-sizing: border-box !important;
-      }
-
-      /* Make sure the toggle option container doesn't interfere */
-      .expanded-content .toggle-option {
-        margin: 8px 0 !important;
-        padding: 0 !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-      }
-
-      /* Ensure the title textfield inside toggle-option takes full width */
-      .expanded-content .toggle-option ha-textfield {
-        width: 100% !important;
-        margin: 8px 0 0 0 !important;
-        padding: 0 !important;
-        box-sizing: border-box !important;
-      }
-      
-      ha-formfield {
-        display: block;
-        padding: 8px 0;
-      }
-      
-      .expanded-content > div[style*="padding: 8px"] {
-        padding: 8px 0 !important;
-      }
-
-      .background-image-row {
-        margin-top: 8px;
-        width: 100%;
-      }
-      
-      .background-image-row ha-textfield {
-        width: 100%;
-      }
-      
-      .background-help-text {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        margin-top: 4px;
-        margin-bottom: 16px;
-      }
-      
-      .conditional-field {
-        padding-left: 16px;
-        margin-top: 0;
-        border-left: 1px solid var(--divider-color);
-        width: calc(100% - 16px);
-      }
-      
-      .add-entity-button {
-        display: flex;
-        justify-content: center;
-        margin-top: 16px;
-      }
-      
-      .add-todo-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: transparent;
-        color: var(--primary-color);
-        border: 1px solid var(--divider-color);
-        border-radius: 4px;
-        padding: 8px 16px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.3s ease;
-      }
-      
-      .add-todo-button:hover {
-        background-color: var(--secondary-background-color);
-      }
-
-      .add-todo-button.blocked {
-        background-color: var(--error-color);
-        color: white;
-        border-color: var(--error-color);
-        animation: shake 0.3s ease-in-out;
-      }
-
-      .add-todo-button.success {
-        background-color: var(--success-color, #4caf50);
-        color: white;
-        border-color: var(--success-color, #4caf50);
-      }
-
-      @keyframes shake {
-        0%, 20%, 40%, 60%, 80% {
-          transform: translateX(0);
-        }
-        10%, 30%, 50%, 70%, 90% {
-          transform: translateX(-3px);
-        }
-      }
-      
-      .info-panel {
-        display: flex;
-        align-items: flex-start;
-        padding: 12px;
-        margin: 8px 0 24px 0;
-        background-color: var(--primary-background-color);
-        border-radius: 8px;
-        border: 1px solid var(--divider-color);
-      }
-      
-      .info-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background-color: var(--info-color, #4a90e2);
-        color: white;
-        margin-right: 12px;
-        flex-shrink: 0;
-      }
-      
-      .info-text {
-        flex-grow: 1;
-        color: var(--primary-text-color);
-        font-size: 14px;
-      }
-      
-      .version-display {
-        margin-top: 24px;
-        padding-top: 16px;
-        border-top: 1px solid var(--divider-color);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      
-      .version-text {
-        color: var(--secondary-text-color);
-        font-size: 14px;
-        font-weight: 500;
-      }
-      
-      .version-badges {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      
-      .version-badge {
-        background-color: var(--primary-color);
-        color: var(--text-primary-color);
-        border-radius: 16px;
-        padding: 4px 12px;
-        font-size: 14px;
-        font-weight: 500;
-      }
-      
-      .github-badge {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        background-color: #24292e;
-        color: white;
-        border-radius: 16px;
-        padding: 4px 12px;
-        text-decoration: none;
-        font-size: 14px;
-        font-weight: 500;
-        transition: background-color 0.2s ease;
-      }
-      
-      .github-badge:hover {
-        background-color: #444d56;
-      }
-      
-      .github-badge ha-icon {
-        --mdc-icon-size: 16px;
-        width: 16px;
-        height: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      
-      .spacing-field {
-        margin-top: 16px;
-        margin-bottom: 16px;
-        width: 100%;
-      }
-      
-      .spacing-field ha-textfield {
-        width: 100%;
-        display: block;
-      }
-      
-      .spacing-help-text {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-        margin-top: 4px;
-        margin-bottom: 16px;
-      }
-      
-      .toggle-option {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: 8px 0;
-        width: 100%;
-      }
-      
-      .toggle-option-label {
-        font-size: 14px;
-      }
-      
-      .version-info {
-        font-size: 12px;
-        color: var(--primary-color);
-        margin-top: 4px;
-      }
-      
-      .nested-toggle-option {
-        margin-left: 16px;
-        padding-left: 8px;
-        border-left: 1px solid var(--divider-color);
-      }
-
-      /* Migration warning styles */
-      .migration-warning {
-        margin-bottom: 16px;
-        padding: 16px;
-        background: var(--error-color);
-        color: white;
-        border-radius: var(--ha-card-border-radius, 4px);
-        border: 1px solid var(--error-color);
-      }
-
-      .migration-warning-title {
-        font-weight: bold;
-        font-size: 16px;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-      }
-
-      .migration-warning-icon {
-        margin-right: 8px;
-        font-size: 20px;
-      }
-
-      .migration-warning-text {
-        margin-bottom: 12px;
-        line-height: 1.4;
-      }
-
-      .migration-warning-properties {
-        margin: 8px 0;
-        padding: 8px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-        font-family: monospace;
-        font-size: 14px;
-      }
-
-      .migration-warning-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 12px;
-      }
-
-      .migration-button {
-        padding: 8px 16px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-weight: bold;
-        transition: all 0.2s ease;
-      }
-
-      .migration-button.primary {
-        background: white;
-        color: var(--error-color);
-      }
-
-      .migration-button.primary:hover {
-        background: #f0f0f0;
-      }
-
-      .migration-button.secondary {
-        background: transparent;
-        color: white;
-        border: 1px solid white;
-      }
-
-      .migration-button.secondary:hover {
-        background: rgba(255, 255, 255, 0.1);
-      }
-    `;
+  .add-todo-button.success {
+    background-color: var(--success-color, #4caf50);
+    color: white;
+    border-color: var(--success-color, #4caf50);
   }
 
-  // New methods for entity management
-  _moveEntity(index, direction) {
-    if (!this._config?.entities) return;
-    const entities = [...this._config.entities];
-  
-    const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= entities.length) return;
-  
-    // Swap the entities (preserving their full configuration)
-    [entities[index], entities[newIndex]] = [entities[newIndex], entities[index]];
-  
-    // Update expanded state for moved entities
-    if (this._expandedEntities.has(index)) {
-      this._expandedEntities.delete(index);
-      this._expandedEntities.add(newIndex);
+  @keyframes shake {
+    0%,
+    20%,
+    40%,
+    60%,
+    80% {
+      transform: translateX(0);
     }
-    if (this._expandedEntities.has(newIndex)) {
-      this._expandedEntities.delete(newIndex);
-      this._expandedEntities.add(index);
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+      transform: translateX(-3px);
     }
-  
-    const newConfig = { 
-      ...this._config, 
-      entities
-    };
-    
-    this._config = newConfig;
-    debugLog(`Moving entity at index ${index} to ${newIndex}`, newConfig);
-    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: newConfig } }));
-    this.requestUpdate();
   }
 
-  _toggleExpanded(index) {
-    if (this._expandedEntities.has(index)) {
-      // If clicking on already expanded item, collapse it
-      this._expandedEntities.delete(index);
-    } else {
-      // Close all other expanded items first (accordion behavior)
-      this._expandedEntities.clear();
-      // Then expand the clicked item
-      this._expandedEntities.add(index);
-    }
-    this.requestUpdate();
-  }
-
-  _triggerButtonFeedback(state) {
-    this._buttonFeedbackState = state;
-    this.requestUpdate();
-    
-    // Reset to normal state after a brief period
-    setTimeout(() => {
-      this._buttonFeedbackState = 'normal';
-      this.requestUpdate();
-    }, state === 'blocked' ? 1000 : 500); // Blocked state lasts longer for better visibility
-  }
-
-  _getAvailableEntities(currentIndex = -1) {
-    if (!this.hass) return [];
-    
-    // Get all todo domain entities
-    const allTodoEntities = Object.keys(this.hass.states).filter(entityId => 
-      entityId.startsWith('todo.') && this.hass.states[entityId]
-    );
-    
-    // Get currently selected entities (excluding the current index being edited)
-    const selectedEntities = (this._config.entities || [])
-      .map((entity, index) => {
-        if (index === currentIndex) return null;
-        return this._getEntityId(entity);
-      })
-      .filter(entityId => entityId && entityId.trim() !== "");
-    
-    // Return entities that are not already selected
-    return allTodoEntities.filter(entityId => !selectedEntities.includes(entityId));
+  .info-panel {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px;
+    margin: 8px 0 24px 0;
+    background-color: var(--primary-background-color);
+    border-radius: 8px;
+    border: 1px solid var(--divider-color);
   }
 
-  _getEntityDescriptor(entity) {
-    const entityId = this._getEntityId(entity);
-    
-    if (!entityId || entityId.trim() === "") {
-      return { displayName: "Empty Entity", friendlyName: "" };
-    }
-    
-    const entityState = this.hass?.states?.[entityId];
-    const friendlyName = entityState?.attributes?.friendly_name || entityId.split('.').pop().replace(/_/g, ' ');
-    const displayName = friendlyName;
-    
-    return { displayName, friendlyName };
-  }
-
-  // Existing methods with minor updates
-  _valueChanged(ev) {
-    if (!this._config || !this.hass) {
-      return;
-    }
-  
-    const target = ev.target;
-    const value = target.checked !== undefined ? target.checked : target.value;
-    const configValue = target.configValue || target.getAttribute('data-config-value');
-    
-    if (configValue) {
-      // Maintain property order with type first
-      const newConfig = this._createOrderedConfig({ ...this._config, [configValue]: value });
-      this._config = newConfig;
-      this._debounceDispatch(newConfig);
-    }
+  .info-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: var(--info-color, #4a90e2);
+    color: white;
+    margin-right: 12px;
+    flex-shrink: 0;
   }
 
-  _debounceDispatch(newConfig) {
-    if (this._debounceTimeout) {
-      clearTimeout(this._debounceTimeout);
-    }
-    
-    this._debounceTimeout = setTimeout(() => {
-      // Ensure proper order before dispatching
-      const orderedConfig = this._createOrderedConfig(newConfig);
-      debugLog(`Dispatching config-changed event`, orderedConfig);
-      this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: orderedConfig } }));
-    }, 150);
+  .info-text {
+    flex-grow: 1;
+    color: var(--primary-text-color);
+    font-size: 14px;
   }
 
-  _cardSpacingChanged(ev) {
-    if (!this._config) return;
-    
-    const value = parseInt(ev.target.value);
-    if (!isNaN(value) && value >= 0) {
-      const newConfig = this._createOrderedConfig({ ...this._config, card_spacing: value });
-      this._config = newConfig;
-      debugLog(`Card spacing changed to: ${value}`, newConfig);
-      this._debounceDispatch(newConfig);
-    }
+  .version-display {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--divider-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
-  _addEntity(e) {
-    console.log("[TodoSwipeCard] _addEntity method called");
-    
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    if (!this._config) {
-      console.log("[TodoSwipeCard] No config available");
-      return;
-    }
-    
-    // Check if there's already an empty entity at the end - prevent multiple empty entries
-    const currentEntities = Array.isArray(this._config.entities) ? [...this._config.entities] : [];
-    const hasTrailingEmpty = currentEntities.length > 0 && 
-      (currentEntities[currentEntities.length - 1] === "" || 
-       (typeof currentEntities[currentEntities.length - 1] === 'object' && 
-        currentEntities[currentEntities.length - 1].entity === ""));
-    
-    if (hasTrailingEmpty) {
-      console.log("[TodoSwipeCard] Already has trailing empty entity, skipping add");
-      
-      // Trigger visual feedback for blocked action
-      this._triggerButtonFeedback('blocked');
-      return;
-    }
-    
-    // Add new empty entity - use object format for new entities
-    currentEntities.push({ entity: "" });
-    
-    const newConfig = {
-      ...this._config,
-      entities: currentEntities
-    };
-    
-    // Update internal state
-    this._config = newConfig;
-    
-    debugLog("Adding new entity", newConfig);
-    
-    // Trigger visual feedback for successful action
-    this._triggerButtonFeedback('success');
-    
-    // Dispatch the event immediately
-    this.dispatchEvent(new CustomEvent('config-changed', { 
-      detail: { config: newConfig },
-      bubbles: true,
-      composed: true
-    }));
-    
-    // Force update after a brief delay to ensure the change is processed
-    setTimeout(() => {
-      this.requestUpdate();
-    }, 0);
+  .version-text {
+    color: var(--secondary-text-color);
+    font-size: 14px;
+    font-weight: 500;
   }
 
-  _removeEntity(index) {
-    if (!this._config || !Array.isArray(this._config.entities)) return;
-    
-    const entities = [...this._config.entities];
-    
-    entities.splice(index, 1);
-  
-    // Update expanded state
-    this._expandedEntities.delete(index);
-    // Shift down expanded indices that are greater than removed index
-    const newExpandedEntities = new Set();
-    this._expandedEntities.forEach(expandedIndex => {
-      if (expandedIndex > index) {
-        newExpandedEntities.add(expandedIndex - 1);
-      } else if (expandedIndex < index) {
-        newExpandedEntities.add(expandedIndex);
-      }
-    });
-    this._expandedEntities = newExpandedEntities;
-  
-    const newConfig = { 
-      ...this._config, 
-      entities
-    };
-    
-    this._config = newConfig;
-    debugLog(`Removing entity at index ${index}`, newConfig);
-    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: newConfig } }));
-    this.requestUpdate();
+  .version-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  _entityChanged(ev) {
-    const index = parseInt(ev.target.getAttribute('data-index'));
-    if (isNaN(index)) return;
-    
-    const newValue = ev.detail?.value || ev.target.value || "";
-    const entities = [...this._config.entities];
-    const currentEntity = entities[index];
-    
-    // Preserve existing entity configuration when changing entity ID
-    if (typeof currentEntity === 'object') {
-      entities[index] = { ...currentEntity, entity: newValue };
-    } else {
-      // Convert string to object format
-      entities[index] = { entity: newValue };
-    }
-
-    const newConfig = { 
-      ...this._config, 
-      entities
-    };
-    
-    this._config = newConfig;
-    debugLog(`Entity at index ${index} changed to "${newValue}"`, newConfig);
-    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: newConfig } }));
-    this.requestUpdate();
+  .version-badge {
+    background-color: var(--primary-color);
+    color: var(--text-primary-color);
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 14px;
+    font-weight: 500;
   }
 
-  _entityDisplayOrderChanged(ev) {
-    const index = parseInt(ev.target.getAttribute('data-index'));
-    if (isNaN(index)) return;
-    
-    const newValue = ev.target.value || 'none';
-    const entities = [...this._config.entities];
-    const currentEntity = entities[index];
-    
-    // Ensure entity is in object format
-    if (typeof currentEntity === 'string') {
-      entities[index] = { entity: currentEntity, display_order: newValue };
-    } else {
-      entities[index] = { ...currentEntity, display_order: newValue };
-    }
-
-    const newConfig = { ...this._config, entities };
-    this._config = newConfig;
-    this._debounceDispatch(newConfig);
+  .github-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background-color: #24292e;
+    color: white;
+    border-radius: 16px;
+    padding: 4px 12px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
   }
-
-  _entityBackgroundImageChanged(ev) {
-    const index = parseInt(ev.target.getAttribute('data-index'));
-    if (isNaN(index)) return;
-    
-    const newValue = ev.target.value || "";
-    const entities = [...this._config.entities];
-    const currentEntity = entities[index];
-    
-    // Ensure entity is in object format
-    if (typeof currentEntity === 'string') {
-      const entityConfig = { entity: currentEntity };
-      if (newValue) {
-        entityConfig.background_image = newValue;
-      }
-      entities[index] = entityConfig;
-    } else {
-      if (newValue) {
-        entities[index] = { ...currentEntity, background_image: newValue };
-      } else {
-        const updatedEntity = { ...currentEntity };
-        delete updatedEntity.background_image;
-        entities[index] = updatedEntity;
-      }
-    }
 
-    const newConfig = { ...this._config, entities };
-    this._config = newConfig;
-    this._debounceDispatch(newConfig);
+  .github-badge:hover {
+    background-color: #444d56;
   }
-
-  _entityTitleEnabledChanged(ev) {
-    const index = parseInt(ev.target.getAttribute('data-index'));
-    if (isNaN(index)) return;
-    
-    const enabled = ev.target.checked;
-    const entities = [...this._config.entities];
-    const currentEntity = entities[index];
-    
-    // Ensure entity is in object format
-    if (typeof currentEntity === 'string') {
-      entities[index] = { entity: currentEntity, show_title: enabled };
-    } else {
-      entities[index] = { ...currentEntity, show_title: enabled };
-    }
 
-    const newConfig = { ...this._config, entities };
-    this._config = newConfig;
-    this._debounceDispatch(newConfig);
+  .github-badge ha-icon {
+    --mdc-icon-size: 16px;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-
-  _entityTitleTextChanged(ev) {
-    const index = parseInt(ev.target.getAttribute('data-index'));
-    if (isNaN(index)) return;
-    
-    const titleText = ev.target.value || "";
-    const entities = [...this._config.entities];
-    const currentEntity = entities[index];
-    
-    // Ensure entity is in object format
-    if (typeof currentEntity === 'string') {
-      const entityConfig = { entity: currentEntity };
-      if (titleText) {
-        entityConfig.title = titleText;
-      }
-      entities[index] = entityConfig;
-    } else {
-      if (titleText) {
-        entities[index] = { ...currentEntity, title: titleText };
-      } else {
-        const updatedEntity = { ...currentEntity };
-        delete updatedEntity.title;
-        entities[index] = updatedEntity;
-      }
-    }
 
-    const newConfig = { ...this._config, entities };
-    this._config = newConfig;
-    this._debounceDispatch(newConfig);
+  .spacing-field {
+    margin-top: 16px;
+    margin-bottom: 16px;
+    width: 100%;
   }
 
-  _entityIconChanged(ev) {
-    const index = parseInt(ev.target.getAttribute('data-index'));
-    if (isNaN(index)) return;
-    
-    const iconName = ev.target.value || "";
-    const entities = [...this._config.entities];
-    const currentEntity = entities[index];
-    
-    // Ensure entity is in object format
-    if (typeof currentEntity === 'string') {
-      const entityConfig = { entity: currentEntity };
-      if (iconName) {
-        entityConfig.icon = iconName;
-      }
-      entities[index] = entityConfig;
-    } else {
-      if (iconName) {
-        entities[index] = { ...currentEntity, icon: iconName };
-      } else {
-        const updatedEntity = { ...currentEntity };
-        delete updatedEntity.icon;
-        entities[index] = updatedEntity;
-      }
-    }
-  
-    const newConfig = { ...this._config, entities };
-    this._config = newConfig;
-    this._debounceDispatch(newConfig);
+  .spacing-field ha-textfield {
+    width: 100%;
+    display: block;
   }
 
-  /**
-   * Get entity configuration at index
-   * @param {number} index - Entity index
-   * @returns {Object} Entity configuration
-   * @private
-   */
-  _getEntityConfigAtIndex(index) {
-    const entity = this._config.entities[index];
-    if (typeof entity === 'string') {
-      return { entity, display_order: 'none', show_title: false, title: '', background_image: '' };
-    }
-    return {
-      entity: entity?.entity || '',
-      display_order: entity?.display_order || 'none',
-      show_title: entity?.show_title || false,
-      title: entity?.title || '',
-      background_image: entity?.background_image || '',
-      icon: entity?.icon || ''
-    };
+  .spacing-help-text {
+    font-size: 12px;
+    color: var(--secondary-text-color);
+    margin-top: 4px;
+    margin-bottom: 16px;
   }
-
-  // Legacy support methods (for backward compatibility during migration)
-  _backgroundImageChanged(ev) {
-    if (!ev.target) return;
-    
-    const entityId = ev.target.getAttribute('data-entity');
-    if (!entityId) return;
-    
-    const imageUrl = ev.target.value || "";
-    const backgroundImages = { ...this._config.background_images };
-
-    if (imageUrl) {
-      backgroundImages[entityId] = imageUrl;
-    } else {
-      delete backgroundImages[entityId];
-    }
 
-    const newConfig = { ...this._config, background_images: backgroundImages };
-    this._config = newConfig;
-    this._debounceDispatch(newConfig);
+  .toggle-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 8px 0;
+    width: 100%;
   }
 
-  _displayOrderChanged(ev) {
-    if (!ev.target) return;
-    
-    const entityId = ev.target.getAttribute('data-entity');
-    if (!entityId) return;
-    
-    const sortOrder = ev.target.value || 'none';
-    const displayOrders = { ...this._config.display_orders };
-    displayOrders[entityId] = sortOrder;
-
-    const newConfig = { ...this._config, display_orders: displayOrders };
-    this._config = newConfig;
-    this._debounceDispatch(newConfig);
+  .toggle-option-label {
+    font-size: 14px;
   }
 
-  _titleEnabledChanged(ev) {
-    if (!ev.target) return;
-    
-    const entityId = ev.target.getAttribute('data-entity');
-    if (!entityId) return;
-    
-    const enabled = ev.target.checked;
-    const showTitles = { ...this._config.show_titles };
-    showTitles[entityId] = enabled;
-  
-    const newConfig = { ...this._config, show_titles: showTitles };
-    this._config = newConfig;
-    this._debounceDispatch(newConfig);
-  }
-  
-  _titleTextChanged(ev) {
-    if (!ev.target) return;
-    
-    const entityId = ev.target.getAttribute('data-entity');
-    if (!entityId) return;
-    
-    const titleText = ev.target.value || "";
-    const entityTitles = { ...this._config.entity_titles };
-    entityTitles[entityId] = titleText;
-  
-    const newConfig = { ...this._config, entity_titles: entityTitles };
-    this._config = newConfig;
-    this._debounceDispatch(newConfig);
+  .version-info {
+    font-size: 12px;
+    color: var(--primary-color);
+    margin-top: 4px;
   }
-
 
-  _getSortModeOptions() {
-    return [
-      { value: TodoSwipeCardEditor.TodoSortMode.NONE, label: 'Default' },
-      { value: TodoSwipeCardEditor.TodoSortMode.ALPHA_ASC, label: 'Alphabetical A-Z' },
-      { value: TodoSwipeCardEditor.TodoSortMode.ALPHA_DESC, label: 'Alphabetical Z-A' },
-      { value: TodoSwipeCardEditor.TodoSortMode.DUEDATE_ASC, label: 'Due Date (Earliest First)' },
-      { value: TodoSwipeCardEditor.TodoSortMode.DUEDATE_DESC, label: 'Due Date (Latest First)' }
-    ];
+  .nested-toggle-option {
+    margin-left: 16px;
+    padding-left: 8px;
+    border-left: 1px solid var(--divider-color);
   }
-
-    /**
-   * Handle expand button click with proper event handling
-   * @param {Event} e - Click event
-   * @param {number} index - Row index
-   */
-    _handleExpandClick(e, index) {
-      e.stopPropagation(); // Prevent row click from firing
-      this._toggleExpanded(index);
-    }
-  
-    /**
-     * Handle action button clicks (move up/down, delete) with proper event handling
-     * @param {Event} e - Click event
-     * @param {Function} action - Action to perform
-     */
-    _handleActionClick(e, action) {
-      e.stopPropagation(); // Prevent row click from firing
-      action(); // Execute the specific action (move or delete)
-    }
-  
-    /**
-     * Handle keyboard navigation for clickable rows
-     * @param {KeyboardEvent} e - Keyboard event
-     * @param {number} index - Row index
-     */
-    _handleRowKeydown(e, index) {
-      // Handle Enter or Space key to toggle expansion
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        e.stopPropagation();
-        this._toggleExpanded(index);
-      }
-    }
-  
-    /**
-     * Enhanced stop propagation method
-     * @param {Event} e - Event to stop
-     */
-    _stopPropagation(e) {
-      e.stopPropagation();
-      e.preventDefault(); // Also prevent default to be extra safe
-    }
-
-  render() {
-    if (!this.hass || !this._config) {
-      return html`<div>Loading...</div>`;
-    }
-
-    const entities = Array.isArray(this._config.entities) ? this._config.entities : [];
-    debugLog("Rendering editor with config:", JSON.stringify(this._config));
-    debugLog("Current entities:", entities);
-
-    return html`
+`}
+    `}Oi(t,i){if(!this.kt?.entities)return;const e=[...this.kt.entities],o=t+i;if(o<0||o>=e.length)return;[e[t],e[o]]=[e[o],e[t]],this.ui.has(t)&&(this.ui.delete(t),this.ui.add(o)),this.ui.has(o)&&(this.ui.delete(o),this.ui.add(t));const n={...this.kt,entities:e};this.kt=n,this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:n}})),this.requestUpdate()}Ii(t){this.ui.has(t)?this.ui.delete(t):(this.ui.clear(),this.ui.add(t)),this.requestUpdate()}ji(t){this.gi=t,this.requestUpdate(),setTimeout(()=>{this.gi="normal",this.requestUpdate()},"blocked"===t?1e3:500)}Li(t=-1){if(!this.hass)return[];const i=Object.keys(this.hass.states).filter(t=>t.startsWith("todo.")&&this.hass.states[t]),e=(this.kt.entities||[]).map((i,e)=>e===t?null:this.St(i)).filter(t=>t&&""!==t.trim());return i.filter(t=>!e.includes(t))}Hi(t){const i=this.St(t);if(!i||""===i.trim())return{displayName:"Empty Entity",friendlyName:""};const e=this.hass?.states?.[i],o=e?.attributes?.friendly_name||i.split(".").pop().replace(/_/g," ");return{displayName:o,friendlyName:o}}Vi(t){if(!this.kt||!this.hass)return;const i=t.target,e=void 0!==i.checked?i.checked:i.value,o=i.configValue||i.getAttribute("data-config-value");if(o){const t=this.xi({...this.kt,[o]:e});this.kt=t,this.Pi(t)}}Pi(t){this.Ri&&clearTimeout(this.Ri),this.Ri=setTimeout(()=>{const i=this.xi(t);this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:i}}))},150)}Fi(t){if(!this.kt)return;const i=parseInt(t.target.value);if(!isNaN(i)&&i>=0){const t=this.xi({...this.kt,card_spacing:i});this.kt=t,this.Pi(t)}}mi(t){if(t&&(t.preventDefault(),t.stopPropagation()),!this.kt)return;const i=Array.isArray(this.kt.entities)?[...this.kt.entities]:[];if(i.length>0&&(""===i[i.length-1]||"object"==typeof i[i.length-1]&&""===i[i.length-1].entity))return void this.ji("blocked");i.push({entity:""});const e={...this.kt,entities:i};this.kt=e,this.ji("success"),this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:e},bubbles:!0,composed:!0})),setTimeout(()=>{this.requestUpdate()},0)}Ji(t){if(!this.kt||!Array.isArray(this.kt.entities))return;const i=[...this.kt.entities];i.splice(t,1),this.ui.delete(t);const e=new Set;this.ui.forEach(i=>{i>t?e.add(i-1):i<t&&e.add(i)}),this.ui=e;const o={...this.kt,entities:i};this.kt=o,this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:o}})),this.requestUpdate()}Ui(t){const i=parseInt(t.target.getAttribute("data-index"));if(isNaN(i))return;const e=t.detail?.value||t.target.value||"",o=[...this.kt.entities],n=o[i];o[i]="object"==typeof n?{...n,entity:e}:{entity:e};const r={...this.kt,entities:o};this.kt=r,this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:r}})),this.requestUpdate()}Bi(t){const i=parseInt(t.target.getAttribute("data-index"));if(isNaN(i))return;const e=t.target.value||"none",o=[...this.kt.entities],n=o[i];o[i]="string"==typeof n?{entity:n,display_order:e}:{...n,display_order:e};const r={...this.kt,entities:o};this.kt=r,this.Pi(r)}Zi(t){const i=parseInt(t.target.getAttribute("data-index"));if(isNaN(i))return;const e=t.target.value||"",o=[...this.kt.entities],n=o[i];if("string"==typeof n){const t={entity:n};e&&(t.background_image=e),o[i]=t}else if(e)o[i]={...n,background_image:e};else{const t={...n};delete t.background_image,o[i]=t}const r={...this.kt,entities:o};this.kt=r,this.Pi(r)}qi(t){const i=parseInt(t.target.getAttribute("data-index"));if(isNaN(i))return;const e=t.target.checked,o=[...this.kt.entities],n=o[i];o[i]="string"==typeof n?{entity:n,show_title:e}:{...n,show_title:e};const r={...this.kt,entities:o};this.kt=r,this.Pi(r)}Wi(t){const i=parseInt(t.target.getAttribute("data-index"));if(isNaN(i))return;const e=t.target.value||"",o=[...this.kt.entities],n=o[i];if("string"==typeof n){const t={entity:n};e&&(t.title=e),o[i]=t}else if(e)o[i]={...n,title:e};else{const t={...n};delete t.title,o[i]=t}const r={...this.kt,entities:o};this.kt=r,this.Pi(r)}Xi(t){const i=parseInt(t.target.getAttribute("data-index"));if(isNaN(i))return;const e=t.target.value||"",o=[...this.kt.entities],n=o[i];if("string"==typeof n){const t={entity:n};e&&(t.icon=e),o[i]=t}else if(e)o[i]={...n,icon:e};else{const t={...n};delete t.icon,o[i]=t}const r={...this.kt,entities:o};this.kt=r,this.Pi(r)}Ki(t){const i=this.kt.entities[t];return"string"==typeof i?{entity:i,display_order:"none",show_title:!1,title:"",background_image:""}:{entity:i?.entity||"",display_order:i?.display_order||"none",show_title:i?.show_title||!1,title:i?.title||"",background_image:i?.background_image||"",icon:i?.icon||""}}Gi(){return[{value:i,label:"Default"},{value:e,label:"Alphabetical A-Z"},{value:o,label:"Alphabetical Z-A"},{value:n,label:"Due Date (Earliest First)"},{value:r,label:"Due Date (Latest First)"}]}Yi(t,i){t.stopPropagation(),this.Ii(i)}Qi(t,i){t.stopPropagation(),i()}te(t,i){"Enter"!==t.key&&" "!==t.key||(t.preventDefault(),t.stopPropagation(),this.Ii(i))}ie(t){t.stopPropagation(),t.preventDefault()}render(){if(!this.hass||!this.kt)return W`<div>Loading...</div>`;const i=Array.isArray(this.kt.entities)?this.kt.entities:[];return JSON.stringify(this.kt),W`
       <div class="card-config">
-        ${this._showMigrationWarning ? html`
-          <div class="migration-warning">
-            <div class="migration-warning-title">
-              <span class="migration-warning-icon">⚠️</span>
-              Configuration Update Required
-            </div>
-            <div class="migration-warning-text">
-              Your configuration uses deprecated properties that will be removed in a future version. 
-              The new format organizes settings per todo list for better maintainability.
-            </div>
-            <div class="migration-warning-properties">
-              Deprecated properties found: ${this._legacyConfig.legacyProperties.join(', ')}
-            </div>
-            <div class="migration-warning-actions">
-              <button 
-                class="migration-button primary"
-                @click=${this._handleAutoMigrate}
-              >
-                Auto-Migrate Configuration
-              </button>
-              <button 
-                class="migration-button secondary"
-                @click=${() => window.open('https://github.com/nutteloost/todo-swipe-card', '_blank')}
-              >
-                Go To README
-              </button>
-            </div>
-          </div>
-        ` : ''}
-
-        <div class="info-panel">
-          <div class="info-icon">i</div>
-          <div class="info-text">
-            Click the arrow button next to each todo list to expand and configure entity selection and sorting options.
-          </div>
-        </div>
-
         <!-- Todo Lists Section -->
         <div class="section">
           <div class="section-header">Todo Lists</div>
-          
+
           <div class="card-list">
-            ${entities.length === 0 ?
-              html`<div class="no-cards">No todo lists added yet. Click "+ ADD TODO LIST" below to add your first list.</div>` :
-              entities.map((entity, index) => {
-                const descriptor = this._getEntityDescriptor(entity);
-                const isExpanded = this._expandedEntities.has(index);
-                const entityConfig = this._getEntityConfigAtIndex(index);
-                
-                return html`
-                  <div 
-                    class="card-row clickable-row ${isExpanded ? 'expanded' : ''}" 
-                    data-index=${index} 
-                    @click=${() => this._toggleExpanded(index)}
-                    role="button"
-                    tabindex="0"
-                    aria-expanded=${isExpanded}
-                    aria-label="Todo list ${index + 1}: ${descriptor.displayName}. Click to ${isExpanded ? 'collapse' : 'expand'}"
-                    @keydown=${(e) => this._handleRowKeydown(e, index)}
-                  >
-                    <div class="card-info">
-                      <ha-icon-button
-                        class="expand-button leading"
-                        label=${isExpanded ? "Collapse" : "Expand"}
-                        path=${isExpanded ? "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" : "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"}
-                        @click=${(e) => this._handleExpandClick(e, index)}
-                      ></ha-icon-button>
-                      <span class="card-index">${index + 1}</span>
-                      <span class="card-type">${descriptor.displayName}</span>
-                      ${entityConfig.entity && entityConfig.entity.trim() !== "" ? 
-                        html`<span class="card-name">(${entityConfig.entity})</span>` : 
-                        html`<span class="card-name" style="color: var(--error-color);">(Not configured)</span>`
-                      }
+            ${0===i.length?W`<div class="no-cards">
+                  No todo lists added yet. Click "+ ADD TODO LIST" below to add your first list.
+                </div>`:i.map((t,e)=>{const o=this.Hi(t),n=this.ui.has(e),r=this.Ki(e);return W`
+                    <div
+                      class="card-row clickable-row ${n?"expanded":""}"
+                      data-index=${e}
+                      @click=${()=>this.Ii(e)}
+                      role="button"
+                      tabindex="0"
+                      aria-expanded=${n}
+                      aria-label="Todo list ${e+1}: ${o.displayName}. Click to ${n?"collapse":"expand"}"
+                      @keydown=${t=>this.te(t,e)}
+                    >
+                      <div class="card-info">
+                        <ha-icon-button
+                          class="expand-button leading"
+                          label=${n?"Collapse":"Expand"}
+                          path=${n?"M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z":"M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"}
+                          @click=${t=>this.Yi(t,e)}
+                        ></ha-icon-button>
+                        <span class="card-index">${e+1}</span>
+                        <span class="card-type">${o.displayName}</span>
+                        ${r.entity&&""!==r.entity.trim()?W`<span class="card-name">(${r.entity})</span>`:W`<span class="card-name" style="color: var(--error-color);"
+                              >(Not configured)</span
+                            >`}
+                      </div>
+                      <div class="card-actions" @click=${this.ie}>
+                        <ha-icon-button
+                          label="Move Up"
+                          ?disabled=${0===e}
+                          path="M7,15L12,10L17,15H7Z"
+                          @click=${t=>this.Qi(t,()=>this.Oi(e,-1))}
+                        ></ha-icon-button>
+                        <ha-icon-button
+                          label="Move Down"
+                          ?disabled=${e===i.length-1}
+                          path="M7,9L12,14L17,9H7Z"
+                          @click=${t=>this.Qi(t,()=>this.Oi(e,1))}
+                        ></ha-icon-button>
+                        <ha-icon-button
+                          label="Delete Todo List"
+                          path="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"
+                          @click=${t=>this.Qi(t,()=>this.Ji(e))}
+                          style="color: var(--error-color);"
+                        ></ha-icon-button>
+                      </div>
                     </div>
-                    <div class="card-actions" @click=${this._stopPropagation}>
-                      <ha-icon-button
-                        label="Move Up"
-                        ?disabled=${index === 0}
-                        path="M7,15L12,10L17,15H7Z"
-                        @click=${(e) => this._handleActionClick(e, () => this._moveEntity(index, -1))}
-                      ></ha-icon-button>
-                      <ha-icon-button
-                        label="Move Down"
-                        ?disabled=${index === entities.length - 1}
-                        path="M7,9L12,14L17,9H7Z"
-                        @click=${(e) => this._handleActionClick(e, () => this._moveEntity(index, 1))}
-                      ></ha-icon-button>
-                      <ha-icon-button
-                        label="Delete Todo List"
-                        path="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"
-                        @click=${(e) => this._handleActionClick(e, () => this._removeEntity(index))}
-                        style="color: var(--error-color);"
-                      ></ha-icon-button>
-                    </div>
-                  </div>
-                  ${isExpanded ? html`
-                    <div class="expanded-content">
-                      <ha-entity-picker
-                        .hass=${this.hass}
-                        .value=${entityConfig.entity}
-                        .includeDomains=${['todo']}
-                        .includeEntities=${this._getAvailableEntities(index)}
-                        data-index=${index}
-                        @value-changed=${this._entityChanged}
-                        allow-custom-entity
-                        label="Todo Entity"
-                      ></ha-entity-picker>
-                      
-                      ${entityConfig.entity && entityConfig.entity.trim() !== "" ? html`
-                        <div style="margin: 8px 0; background: var(--secondary-background-color); border-radius: 4px;">
-                          <div class="toggle-option" style="margin: 8px 0;">
-                            <div class="toggle-option-label">Show Title</div>
-                            <ha-switch
-                              .checked=${entityConfig.show_title}
-                              data-index=${index}
-                              @change=${this._entityTitleEnabledChanged}
-                            ></ha-switch>
+                    ${n?W`
+                          <div class="expanded-content">
+                            <ha-entity-picker
+                              .hass=${this.hass}
+                              .value=${r.entity}
+                              .includeDomains=${["todo"]}
+                              .includeEntities=${this.Li(e)}
+                              data-index=${e}
+                              @value-changed=${this.Ui}
+                              allow-custom-entity
+                              label="Todo Entity"
+                            ></ha-entity-picker>
+
+                            ${r.entity&&""!==r.entity.trim()?W`
+                                  <div
+                                    style="margin: 8px 0; background: var(--secondary-background-color); border-radius: 4px;"
+                                  >
+                                    <div class="toggle-option" style="margin: 8px 0;">
+                                      <div class="toggle-option-label">Show Title</div>
+                                      <ha-switch
+                                        .checked=${r.show_title}
+                                        data-index=${e}
+                                        @change=${this.qi}
+                                      ></ha-switch>
+                                    </div>
+
+                                    ${r.show_title?W`
+                                          <ha-textfield
+                                            label="Title Text"
+                                            .value=${r.title}
+                                            data-index=${e}
+                                            @input=${this.Wi}
+                                            style="width: 100%; margin-top: 8px;"
+                                          ></ha-textfield>
+                                        `:""}
+                                  </div>
+
+                                  <ha-select
+                                    .label=${"Display Order"}
+                                    .value=${r.display_order}
+                                    data-index=${e}
+                                    @selected=${this.Bi}
+                                    @closed=${this.ie}
+                                    style="margin-bottom: 4px;"
+                                  >
+                                    ${this.Gi().map(t=>W`
+                                        <mwc-list-item .value=${t.value}>
+                                          ${t.label}
+                                        </mwc-list-item>
+                                      `)}
+                                  </ha-select>
+
+                                  <ha-textfield
+                                    label="Background Image URL"
+                                    .value=${r.background_image}
+                                    data-index=${e}
+                                    @input=${this.Zi}
+                                    style="width: 100%; margin-top: 4px;"
+                                    placeholder="Optional: e.g. /local/images/background.jpg"
+                                  ></ha-textfield>
+
+                                  ${this.Ci?W`
+                                        <ha-textfield
+                                          label="Custom Icon"
+                                          .value=${r.icon}
+                                          data-index=${e}
+                                          @input=${this.Xi}
+                                          style="width: 100%; margin-top: 8px;"
+                                          placeholder="Optional: e.g. mdi:cart-variant"
+                                        ></ha-textfield>
+                                      `:""}
+                                `:""}
                           </div>
-                          
-                          ${entityConfig.show_title ? html`
-                            <ha-textfield
-                              label="Title Text"
-                              .value=${entityConfig.title}
-                              data-index=${index}
-                              @input=${this._entityTitleTextChanged}
-                              style="width: 100%; margin-top: 8px;"
-                            ></ha-textfield>
-                          ` : ''}
-                        </div>
-
-                        <ha-select
-                          .label=${"Display Order"}
-                          .value=${entityConfig.display_order}
-                          data-index=${index}
-                          @selected=${this._entityDisplayOrderChanged}
-                          @closed=${this._stopPropagation}
-                          style="margin-bottom: 4px;"
-                        >
-                          ${this._getSortModeOptions().map(option => html`
-                            <mwc-list-item .value=${option.value}>
-                              ${option.label}
-                            </mwc-list-item>
-                          `)}
-                        </ha-select>
-
-                        <ha-textfield
-                          label="Background Image URL"
-                          .value=${entityConfig.background_image}
-                          data-index=${index}
-                          @input=${this._entityBackgroundImageChanged}
-                          style="width: 100%; margin-top: 4px;"
-                          placeholder="Optional: e.g. /local/images/background.jpg"
-                        ></ha-textfield>
-
-                        ${this._show_icons ? html`
-                          <ha-textfield
-                            label="Custom Icon"
-                            .value=${entityConfig.icon}
-                            data-index=${index}
-                            @input=${this._entityIconChanged}
-                            style="width: 100%; margin-top: 8px;"
-                            placeholder="Optional: e.g. mdi:cart-variant"
-                          ></ha-textfield>
-                        ` : ''}
-                      ` : ''}
-                    </div>
-                  ` : ''}
-                `;
-              })
-            }
+                        `:""}
+                  `})}
           </div>
-          
+
           <div class="add-entity-button">
-            <button 
-              class="add-todo-button ${this._buttonFeedbackState !== 'normal' ? this._buttonFeedbackState : ''}"
-              @click=${(e) => this._addEntity(e)}
+            <button
+              class="add-todo-button ${"normal"!==this.gi?this.gi:""}"
+              @click=${t=>this.mi(t)}
             >
               <svg style="width:20px;height:20px;margin-right:8px" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
@@ -4270,161 +601,114 @@ class TodoSwipeCardEditor extends LitElement {
               min="0"
               max="100"
               label="Card Spacing (px)"
-              .value=${this._card_spacing}
-              @change=${this._cardSpacingChanged}
+              .value=${this.Ei}
+              @change=${this.Fi}
               data-config-value="card_spacing"
               suffix="px"
             ></ha-textfield>
-            <div class="spacing-help-text">
-              Visual gap between cards when swiping (in pixels)
-            </div>
+            <div class="spacing-help-text">Visual gap between cards when swiping (in pixels)</div>
           </div>
 
           <div class="toggle-option">
             <div class="toggle-option-label">Show pagination dots</div>
             <ha-switch
-              .checked=${this._show_pagination}
+              .checked=${this.yi}
               data-config-value="show_pagination"
-              @change=${this._valueChanged}
+              @change=${this.Vi}
             ></ha-switch>
           </div>
 
           <div class="toggle-option">
             <div class="toggle-option-label">Show icons</div>
             <ha-switch
-              .checked=${this._show_icons}
+              .checked=${this.Ci}
               data-config-value="show_icons"
-              @change=${this._valueChanged}
+              @change=${this.Vi}
             ></ha-switch>
           </div>
 
           <div class="toggle-option">
             <div class="toggle-option-label">Show 'Add item' field</div>
             <ha-switch
-              .checked=${this._show_create}
+              .checked=${this._i}
               data-config-value="show_create"
-              @change=${this._valueChanged}
+              @change=${this.Vi}
             ></ha-switch>
           </div>
 
-          ${this._show_create ? html`
-            <div class="nested-toggle-option">
-              <div class="toggle-option">
-                <div class="toggle-option-label">Show '+' add button next to field</div>
-                <ha-switch
-                  .checked=${this._show_addbutton}
-                  data-config-value="show_addbutton"
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </div>
-            </div>
-          ` : ''}
+          ${this._i?W`
+                <div class="nested-toggle-option">
+                  <div class="toggle-option">
+                    <div class="toggle-option-label">Show '+' add button next to field</div>
+                    <ha-switch
+                      .checked=${this.ki}
+                      data-config-value="show_addbutton"
+                      @change=${this.Vi}
+                    ></ha-switch>
+                  </div>
+
+                  <div class="toggle-option">
+                    <div class="toggle-option-label">Enable search functionality</div>
+                    <ha-switch
+                      .checked=${this.Ti}
+                      data-config-value="enable_search"
+                      @change=${this.Vi}
+                    ></ha-switch>
+                  </div>
+                </div>
+              `:""}
 
           <div class="toggle-option">
             <div class="toggle-option-label">Show completed items</div>
             <ha-switch
-              .checked=${this._show_completed}
+              .checked=${this.$i}
               data-config-value="show_completed"
-              @change=${this._valueChanged}
+              @change=${this.Vi}
             ></ha-switch>
           </div>
 
-          ${this._show_completed ? html`
-            <div class="nested-toggle-option">
-              <div class="toggle-option">
-                <div class="toggle-option-label">Show 'Delete completed' button</div>
-                <ha-switch
-                  .checked=${this._show_completed_menu}
-                  data-config-value="show_completed_menu"
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </div>
-              
-              ${this._show_completed_menu ? html`
+          ${this.$i?W`
                 <div class="nested-toggle-option">
                   <div class="toggle-option">
-                    <div class="toggle-option-label">Show delete confirmation dialog</div>
+                    <div class="toggle-option-label">Show 'Delete completed' button</div>
                     <ha-switch
-                      .checked=${this._delete_confirmation}
-                      data-config-value="delete_confirmation"
-                      @change=${this._valueChanged}
+                      .checked=${this.zi}
+                      data-config-value="show_completed_menu"
+                      @change=${this.Vi}
                     ></ha-switch>
                   </div>
-                </div>
-              ` : ''}
-            </div>
-          ` : ''}
-        </div>
 
-        <!-- Background images - only show for legacy configs -->
-        ${this._showBackgroundImagesSection ? html`
-          <div class="section">
-            <div class="section-header">Background Images (Legacy)</div>
-            <div class="background-help-text">
-              ⚠️ This section is deprecated. Use the background image field in each entity's expanded configuration instead.
-            </div>
-            ${this._validEntities.map(entity => {
-              const entityId = this._getEntityId(entity);
-              const entityName = this.hass.states[entityId]?.attributes?.friendly_name ||
-                                entityId.split('.').pop().replace(/_/g, ' ');
-              return html`
-                <div class="background-image-row">
-                  <ha-textfield
-                    label="${entityName}"
-                    .value=${this._config.background_images && this._config.background_images[entityId] || ""}
-                    data-entity=${entityId}
-                    @input=${this._backgroundImageChanged}
-                  ></ha-textfield>
+                  ${this.zi?W`
+                        <div class="nested-toggle-option">
+                          <div class="toggle-option">
+                            <div class="toggle-option-label">Show delete confirmation dialog</div>
+                            <ha-switch
+                              .checked=${this.Si}
+                              data-config-value="delete_confirmation"
+                              @change=${this.Vi}
+                            ></ha-switch>
+                          </div>
+                        </div>
+                      `:""}
                 </div>
-              `;
-            })}
-          </div>
-        ` : ''}
+              `:""}
+        </div>
 
         <!-- Version Display with GitHub Link -->
         <div class="version-display">
           <div class="version-text">Todo Swipe Card</div>
           <div class="version-badges">
-            <div class="version-badge">v${VERSION}</div>
-            <a href="https://github.com/nutteloost/todo-swipe-card" 
-               target="_blank" 
-               rel="noopener noreferrer"
-               class="github-badge">
+            <div class="version-badge">v${t}</div>
+            <a
+              href="https://github.com/nutteloost/todo-swipe-card"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="github-badge"
+            >
               <ha-icon icon="mdi:github"></ha-icon>
               <span>GitHub</span>
             </a>
           </div>
         </div>
       </div>
-    `;
-  }
-}
-
-// Define custom elements
-customElements.define('todo-swipe-card', TodoSwipeCard);
-customElements.define('todo-swipe-card-editor', TodoSwipeCardEditor);
-
-// Add card to UI picker
-if (!window.customCards) {
-  window.customCards = [];
-}
-
-// Ensure registration happens only once
-let registered = window.customCards.some(card => card.type === "todo-swipe-card");
-if (!registered) {
-  window.customCards.push({
-    type: "todo-swipe-card",
-    name: "Todo Swipe Card",
-    preview: true, // Enable preview
-    description: "A specialized swipe card for to-do lists with built-in styling (requires card-mod)",
-  });
-  debugLog("Todo Swipe Card registered in customCards");
-}
-
-// Version logging
-console.info(
-  `%c TODO-SWIPE-CARD %c v${VERSION} %c - A swipeable card for to-do lists`,
-  "color: white; background: #4caf50; font-weight: 700;",
-  "color: #4caf50; background: white; font-weight: 700;",
-  "color: grey; background: white; font-weight: 400;"
-);
+    `}}function Ot(t,i,e,o,n,r,s,a,d){t.addEventListener("dragover",i=>{i.preventDefault(),i.dataTransfer.dropEffect="move";const n=o.querySelector(".dragging");if(!n||n===t)return;const r=t.getBoundingClientRect(),s=r.top+r.height/2,a=i.clientY<s?"top":"bottom";e.forEach(t=>t.classList.remove("drag-over-top","drag-over-bottom")),"top"===a?t.classList.add("drag-over-top"):t.classList.add("drag-over-bottom")}),t.addEventListener("drop",async n=>{n.preventDefault(),n.stopPropagation();const r=o.querySelector(".dragging");if(!r||r===t)return void e.forEach(t=>t.classList.remove("drag-over-top","drag-over-bottom"));const c=n.dataTransfer.getData("text/plain"),h=a.find(t=>t.uid===c);if(!h)return void e.forEach(t=>t.classList.remove("drag-over-top","drag-over-bottom"));const l=t.getBoundingClientRect(),p=l.top+l.height/2,u=n.clientY<p;let g=null;if(u){const t=a.findIndex(t=>t.uid===i.uid);t>0&&(g=a[t-1].uid)}else g=i.uid;const m=a.findIndex(t=>t.uid===c),f=a.findIndex(t=>t.uid===i.uid);if(u&&f===m+1||!u&&f===m-1)return void e.forEach(t=>t.classList.remove("drag-over-top","drag-over-bottom"));e.forEach(t=>t.classList.remove("drag-over-top","drag-over-bottom")),h.summary;const{moveItem:v}=await Promise.resolve().then(function(){return At});await v(s,c,g,d)})}customElements.define("todo-swipe-card",TodoSwipeCard),customElements.define("todo-swipe-card-editor",TodoSwipeCardEditor),window.customCards||(window.customCards=[]),window.customCards.some(t=>"todo-swipe-card"===t.type)||window.customCards.push({type:"todo-swipe-card",name:"Todo Swipe Card",preview:!0,description:"A specialized swipe card for to-do lists"}),console.info(`%c TODO-SWIPE-CARD %c v${t} %c - A swipeable card for to-do lists`,"color: white; background: #4caf50; font-weight: 700;","color: #4caf50; background: white; font-weight: 700;","color: grey; background: white; font-weight: 400;");var It=/*#__PURE__*/Object.freeze({__proto__:null,setupDragAndDrop:function(t,i,e,o){const n=t.querySelectorAll('.todo-item[data-supports-drag="true"]');let r=null,s=null;if("ontouchstart"in window||navigator.maxTouchPoints>0)return void n.forEach((a,d)=>{const c=e[d];c&&(a.setAttribute("draggable","true"),function(t,i,e,o,n,r,s,a,d){t.addEventListener("dragstart",e=>{if(e.target.closest("ha-checkbox")||e.target.closest(".todo-checkbox"))return void e.preventDefault();t.classList.add("dragging"),e.dataTransfer.effectAllowed="move",e.dataTransfer.setData("text/plain",i.uid);const o=document.createElement("div");o.style.cssText="position: absolute; top: -1000px; width: 1px; height: 1px; opacity: 0;",document.body.appendChild(o),e.dataTransfer.setDragImage(o,0,0),setTimeout(()=>{document.body.removeChild(o)},0),i.summary}),t.addEventListener("dragend",()=>{t.classList.remove("dragging"),e.forEach(t=>t.classList.remove("drag-over-top","drag-over-bottom")),i.summary}),Ot(t,i,e,o,n,r,s,a,d)}(a,c,n,t,r,s,i,e,o))});n.forEach((a,d)=>{const c=e[d];if(!c)return;a.setAttribute("draggable","false");let h=null,l=0,p=0,u=!1,g=!1;const m=t=>{const i="mouseleave"===t.type,e="mouseup"===t.type;if(g&&h){if(i)return void c.summary;if(e)return clearTimeout(h),h=null,g=!1,void c.summary}if(a.classList.contains("dragging"))c.summary;else{if(u){if(i)return void c.summary;if(e)return c.summary,a.setAttribute("draggable","false"),a.classList.remove("drag-ready"),u=!1,void(g=!1)}setTimeout(()=>{a.classList.contains("dragging")||u||(a.setAttribute("draggable","false"),a.classList.remove("drag-ready"),u=!1,g=!1)},100)}};a.addEventListener("mousedown",t=>{t.target.closest("ha-checkbox")||t.target.closest(".todo-checkbox")||(l=t.clientX,p=t.clientY,u=!1,g=!0,h=setTimeout(()=>{u=!0,g=!1,a.setAttribute("draggable","true"),a.classList.add("drag-ready"),navigator.vibrate&&navigator.vibrate(50),c.summary},200),c.summary)}),a.addEventListener("mousemove",t=>{if(!g||!h)return;const i=Math.abs(t.clientX-l),e=Math.abs(t.clientY-p);(i>8||e>8)&&(clearTimeout(h),h=null,g=!1,c.summary)}),a.addEventListener("mouseup",m),a.addEventListener("mouseleave",m),a.addEventListener("dragstart",t=>{if(t.target.closest("ha-checkbox")||t.target.closest(".todo-checkbox"))return void t.preventDefault();if(!u)return t.preventDefault(),void c.summary;a.classList.add("dragging"),a.classList.remove("drag-ready"),t.dataTransfer.effectAllowed="move",t.dataTransfer.setData("text/plain",c.uid);const i=document.createElement("div");i.style.cssText="position: absolute; top: -1000px; width: 1px; height: 1px; opacity: 0;",document.body.appendChild(i),t.dataTransfer.setDragImage(i,0,0),setTimeout(()=>{document.body.removeChild(i)},0),c.summary}),a.addEventListener("dragend",()=>{a.classList.remove("dragging","drag-ready"),a.setAttribute("draggable","false"),u=!1,g=!1,n.forEach(t=>t.classList.remove("drag-over-top","drag-over-bottom")),r=null,s=null,c.summary}),Ot(a,c,n,t,r,s,i,e,o)})}});export{TodoSwipeCard,TodoSwipeCardEditor};

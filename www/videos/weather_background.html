@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全屏动态天气背景展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+        }
+        
+        /* 全屏天气背景 */
+        .weather-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: background 1.5s ease;
+            z-index: -1;
+        }
+        
+        /* 天气信息显示 */
+        .weather-info {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            z-index: 5;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            padding: 20px;
+        }
+        
+        .temperature {
+            font-size: 6rem;
+            font-weight: 300;
+            line-height: 1;
+        }
+        
+        .condition {
+            font-size: 2rem;
+            font-weight: 400;
+            margin-top: 10px;
+        }
+        
+        .location {
+            font-size: 1.5rem;
+            font-weight: 300;
+            margin-top: 5px;
+            opacity: 0.9;
+        }
+        
+        /* 天气控制面板 */
+        .weather-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 50px;
+            padding: 10px;
+            z-index: 10;
+        }
+        
+        .weather-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .weather-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+        }
+        
+        .weather-btn.active {
+            background: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+        
+        /* 粒子基础样式 */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+        }
+        
+        /* ------------------------- */
+        /* 晴天效果 */
+        /* ------------------------- */
+        .sunny {
+            background: linear-gradient(to bottom, #1a2a6c, #2c3e50);
+        }
+        
+        .sun {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffd700 0%, #ff8c00 70%, transparent 85%);
+            box-shadow: 0 0 150px 60px rgba(255, 215, 0, 0.5);
+            position: absolute;
+            top: 10%;
+            left: 15%;
+            animation: sunGlow 3s infinite alternate;
+        }
+        
+        @keyframes sunGlow {
+            0% { box-shadow: 0 0 150px 60px rgba(255, 215, 0, 0.5); }
+            100% { box-shadow: 0 0 180px 70px rgba(255, 215, 0, 0.7); }
+        }
+        
+        /* ------------------------- */
+        /* 雨天效果 */
+        /* ------------------------- */
+        .rainy {
+            background: linear-gradient(to bottom, #2c3e50, #1a2a6c);
+        }
+        
+        .rain {
+            width: 2px;
+            height: 30px;
+            background: linear-gradient(to bottom, rgba(135, 206, 235, 0.8), transparent);
+            animation: rainFall linear infinite;
+        }
+        
+        @keyframes rainFall {
+            to { transform: translateY(100vh); }
+        }
+        
+        /* ------------------------- */
+        /* 多云效果 */
+        /* ------------------------- */
+        .cloudy {
+            background: linear-gradient(to bottom, #4b6cb7, #182848);
+        }
+        
+        .cloud {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            filter: blur(5px);
+            animation: cloudMove linear infinite;
+        }
+        
+        @keyframes cloudMove {
+            to { transform: translateX(20vw); }
+        }
+        
+        /* ------------------------- */
+        /* 雪天效果 */
+        /* ------------------------- */
+        .snowy {
+            background: linear-gradient(to bottom, #1e3c72, #2a5298);
+        }
+        
+        .snow {
+            background: white;
+            border-radius: 50%;
+            filter: blur(1px);
+            animation: snowFall linear infinite;
+        }
+        
+        @keyframes snowFall {
+            to { transform: translateY(100vh); }
+        }
+        
+        /* ------------------------- */
+        /* 雾天效果 */
+        /* ------------------------- */
+        .foggy {
+            background: linear-gradient(to bottom, #616161, #9bc5c3);
+        }
+        
+        .fog {
+            background: rgba(200, 200, 200, 0.3);
+            border-radius: 50%;
+            filter: blur(10px);
+            animation: fogMove linear infinite;
+        }
+        
+        @keyframes fogMove {
+            to { transform: translateX(20vw); }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .temperature {
+                font-size: 4rem;
+            }
+            
+            .condition {
+                font-size: 1.5rem;
+            }
+            
+            .location {
+                font-size: 1.2rem;
+            }
+            
+            .weather-controls {
+                bottom: 20px;
+            }
+            
+            .weather-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            .sun {
+                width: 120px;
+                height: 120px;
+                top: 5%;
+                left: 10%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .temperature {
+                font-size: 3rem;
+            }
+            
+            .condition {
+                font-size: 1.2rem;
+            }
+            
+            .location {
+                font-size: 1rem;
+            }
+            
+            .weather-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 天气背景 -->
+    <div class="weather-background sunny" id="weather-bg">
+        <!-- 太阳 -->
+        <div class="particle sun"></div>
+    </div>
+    
+    <!-- 天气信息 -->
+    <div class="weather-info">
+        <div class="temperature" id="temperature">24°</div>
+        <div class="condition" id="condition">晴天</div>
+        <div class="location" id="location">北京, 中国</div>
+    </div>
+    
+    <!-- 天气控制 -->
+    <div class="weather-controls">
+        <button class="weather-btn active" data-weather="sunny">☀️</button>
+        <button class="weather-btn" data-weather="rainy">🌧️</button>
+        <button class="weather-btn" data-weather="cloudy">☁️</button>
+        <button class="weather-btn" data-weather="snowy">❄️</button>
+        <button class="weather-btn" data-weather="foggy">🌫️</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const weatherBg = document.getElementById('weather-bg');
+            const weatherBtns = document.querySelectorAll('.weather-btn');
+            const temperature = document.getElementById('temperature');
+            const condition = document.getElementById('condition');
+            const location = document.getElementById('location');
+            
+            // 天气数据
+            const weatherData = {
+                sunny: {
+                    temp: "24°",
+                    condition: "晴天",
+                    location: "北京, 中国",
+                    particles: createSunParticles
+                },
+                rainy: {
+                    temp: "18°",
+                    condition: "雨天",
+                    location: "上海, 中国",
+                    particles: createRainParticles
+                },
+                cloudy: {
+                    temp: "21°",
+                    condition: "多云",
+                    location: "广州, 中国",
+                    particles: createCloudParticles
+                },
+                snowy: {
+                    temp: "-2°",
+                    condition: "雪天",
+                    location: "哈尔滨, 中国",
+                    particles: createSnowParticles
+                },
+                foggy: {
+                    temp: "15°",
+                    condition: "雾天",
+                    location: "重庆, 中国",
+                    particles: createFogParticles
+                }
+            };
+            
+            // 初始化晴天粒子
+            createSunParticles();
+            
+            // 天气切换功能
+            weatherBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const weatherType = this.dataset.weather;
+                    
+                    // 更新按钮状态
+                    weatherBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 更新天气背景
+                    weatherBg.className = 'weather-background ' + weatherType;
+                    
+                    // 更新天气信息
+                    temperature.textContent = weatherData[weatherType].temp;
+                    condition.textContent = weatherData[weatherType].condition;
+                    location.textContent = weatherData[weatherType].location;
+                    
+                    // 清除现有粒子
+                    const particles = document.querySelectorAll('.particle');
+                    particles.forEach(particle => particle.remove());
+                    
+                    // 创建新粒子
+                    weatherData[weatherType].particles();
+                });
+            });
+            
+            // 创建太阳粒子
+            function createSunParticles() {
+                const sun = document.createElement('div');
+                sun.className = 'particle sun';
+                weatherBg.appendChild(sun);
+            }
+            
+            // 创建雨滴粒子
+            function createRainParticles() {
+                for (let i = 0; i < 100; i++) {
+                    const rain = document.createElement('div');
+                    rain.className = 'particle rain';
+                    rain.style.left = `${Math.random() * 100}%`;
+                    rain.style.top = `${-Math.random() * 100}%`;
+                    rain.style.animationDuration = `${0.5 + Math.random() * 0.5}s`;
+                    rain.style.animationDelay = `${Math.random() * 5}s`;
+                    rain.style.opacity = 0.7 + Math.random() * 0.3;
+                    weatherBg.appendChild(rain);
+                }
+            }
+            
+            // 创建云粒子
+            function createCloudParticles() {
+                for (let i = 0; i < 8; i++) {
+                    const cloud = document.createElement('div');
+                    cloud.className = 'particle cloud';
+                    cloud.style.width = `${100 + Math.random() * 100}px`;
+                    cloud.style.height = `${60 + Math.random() * 40}px`;
+                    cloud.style.top = `${20 + Math.random() * 60}%`;
+                    cloud.style.left = `${Math.random() * 100}%`;
+                    cloud.style.animationDuration = `${30 + Math.random() * 30}s`;
+                    cloud.style.animationDelay = `${Math.random() * 10}s`;
+                    cloud.style.opacity = 0.3 + Math.random() * 0.4;
+                    weatherBg.appendChild(cloud);
+                }
+            }
+            
+            // 创建雪花粒子
+            function createSnowParticles() {
+                for (let i = 0; i < 150; i++) {
+                    const snow = document.createElement('div');
+                    snow.className = 'particle snow';
+                    snow.style.left = `${Math.random() * 100}%`;
+                    snow.style.top = `${-Math.random() * 100}%`;
+                    snow.style.width = `${3 + Math.random() * 5}px`;
+                    snow.style.height = snow.style.width;
+                    snow.style.animationDuration = `${5 + Math.random() * 10}s`;
+                    snow.style.animationDelay = `${Math.random() * 5}s`;
+                    snow.style.opacity = 0.8 + Math.random() * 0.2;
+                    weatherBg.appendChild(snow);
+                }
+            }
+            
+            // 创建雾粒子
+            function createFogParticles() {
+                for (let i = 0; i < 10; i++) {
+                    const fog = document.createElement('div');
+                    fog.className = 'particle fog';
+                    fog.style.width = `${150 + Math.random() * 200}px`;
+                    fog.style.height = `${80 + Math.random() * 100}px`;
+                    fog.style.top = `${Math.random() * 100}%`;
+                    fog.style.left = `${Math.random() * 100}%`;
+                    fog.style.animationDuration = `${40 + Math.random() * 40}s`;
+                    fog.style.animationDelay = `${Math.random() * 10}s`;
+                    fog.style.opacity = 0.2 + Math.random() * 0.2;
+                    weatherBg.appendChild(fog);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

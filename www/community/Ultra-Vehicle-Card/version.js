@@ -1,10 +1,6 @@
 /**
  * Ultra Vehicle Card Version
-<<<<<<< HEAD
- * v2.7.0
-=======
- * v2.9.1
->>>>>>> 4a04363 (新增灯的卡片控制相关)
+ * v3.0.0
  * 
  * This file is auto-generated from src/version.ts
  * DO NOT MODIFY DIRECTLY
@@ -17,10 +13,6 @@ function setVersion(value) {
 }
 
 // Set default version (will be overridden by card)
-<<<<<<< HEAD
-setVersion('2.7.0');
-=======
-setVersion('2.9.1');
->>>>>>> 4a04363 (新增灯的卡片控制相关)
+setVersion('3.0.0');
 
 export { version, setVersion };

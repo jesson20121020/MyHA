@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { LitElement } from 'lit';
-=======
 import { LitElement, TemplateResult } from 'lit';
->>>>>>> 4a04363 (新增灯的卡片控制相关)
 import { HomeAssistant } from 'custom-card-helpers';
 import { UltraVehicleCardConfig } from '../types';
 declare module 'custom-card-helpers' {
@@ -16,6 +12,11 @@ export declare class UltraVehicleCard extends LitElement {
     hass: HomeAssistant;
     private config;
     private _templateService?;
+    private _dynamicColorService?;
+    private _dynamicIconService?;
+    private _highlightService;
+    private static _versionLogged;
+    constructor();
     private static readonly DEFAULT_ACTIVE_STATES;
     private static readonly DEFAULT_INACTIVE_STATES;
     private _lastRenderTime;
@@ -23,19 +24,32 @@ export declare class UltraVehicleCard extends LitElement {
     private _mapPopupData;
     private _iconActiveStates;
     private _iconsAwaitingConfirmation;
+    private _currentTimedImage;
+    private _timedImageStartTime;
+    private _imageConditionStates;
+    private _imageTriggerTimes;
+    private _imageTriggerResults;
+    private _cardInstanceId;
+    private _stateRestored;
     private _templateSubscriptions;
     private _templateResults;
     private _confirmationCancelListeners;
-<<<<<<< HEAD
-=======
-    private _iconStateDebounceTimers;
-    private _highlightedSections;
->>>>>>> 4a04363 (新增灯的卡片控制相关)
+    private _holdTimer;
+    private _currentHoldIcon;
+    private _singleClickTimers;
+    private _pendingSingleClicks;
+    private _touchStartTimes;
+    private _lastTouchEndTime;
+    private _currentHoldImage;
+    private _pendingSingleImageClicks;
+    private _imageHoldTimer;
+    private _timedImageTimer;
     static getConfigElement(): HTMLElement;
     static getStubConfig(): {
         title: string;
         title_alignment: string;
         title_size: number;
+        title_bold: boolean;
         formatted_entities: boolean;
         show_units: boolean;
         vehicle_image_type: string;
@@ -48,30 +62,20 @@ export declare class UltraVehicleCard extends LitElement {
     static get styles(): import("lit").CSSResult;
     setConfig(config: UltraVehicleCardConfig): void;
     private _migrateBarsToIndividual;
-<<<<<<< HEAD
-    private _saveConfigChanges;
-    private _checkForGradientOrAnimationChanges;
-    private _forceFullRender;
-    protected render(): import("lit").TemplateResult<1>;
-    private _renderImage;
-    private _getFriendlyName;
-=======
     private _cleanupInfoSections;
     private _saveConfigChanges;
     private _checkForGradientOrAnimationChanges;
     private _forceFullRender;
     protected render(): TemplateResult<1>;
     private _renderImage;
+    private _selectImageFromNewSystem;
+    private _imageMatchesConditions;
+    private _selectImageFromLegacySystem;
+    private _processSelectedImage;
+    private _startTimedImage;
+    private _clearTimedImage;
     private _getFriendlyName;
-    /**
-     * Check if an entity is a location tracking entity with coordinate data
-     */
-    private _isLocationTrackingEntity;
-    /**
-     * Render a map view for location tracking entities
-     */
-    private _renderMapImage;
->>>>>>> 4a04363 (新增灯的卡片控制相关)
+    private _getFormattingStyles;
     private _formatValue;
     private _handleImageError;
     private _renderBar;
@@ -81,11 +85,28 @@ export declare class UltraVehicleCard extends LitElement {
     private _renderIconRows;
     private _renderIconRow;
     private _renderCardIcon;
-<<<<<<< HEAD
-=======
-    private _debouncedIconStateUpdate;
->>>>>>> 4a04363 (新增灯的卡片控制相关)
+    private _handlePointerDown;
+    private _handlePointerUp;
+    private _handlePointerLeave;
+    private _handleTouchStart;
+    private _handleTouchEnd;
+    private _handleTouchCancel;
+    private _handleIconTap;
+    private _handleIconClickWithDelay;
     private _handleIconClick;
+    private _startHoldTimer;
+    private _clearHoldTimer;
+    private _handleImageClickWithDelay;
+    private _handleImageClick;
+    private _startImageHoldTimer;
+    private _clearImageHoldTimer;
+    private _handleImageTouchStart;
+    private _handleImageTouchEnd;
+    private _handleImageTouchCancel;
+    private _handleImageTap;
+    private _handleImagePointerDown;
+    private _handleImagePointerUp;
+    private _handleImagePointerLeave;
     /**
      * Shows a toast notification
      * @param message The message to display
@@ -99,11 +120,7 @@ export declare class UltraVehicleCard extends LitElement {
     private _handleDragStart;
     private _handleDragEnd;
     private _hexToRgb;
-<<<<<<< HEAD
-=======
-    private _hsToRgb;
-    private _colorTempToRgb;
->>>>>>> 4a04363 (新增灯的卡片控制相关)
+    private _hashString;
     private _getZoneInfo;
     private _renderVehicleInfo;
     private _computeImageStyle;
@@ -128,28 +145,24 @@ export declare class UltraVehicleCard extends LitElement {
     private _subscribeToTemplate;
     private _parseTemplateResult;
     private _unsubscribeAllTemplates;
+    private _subscribeToDynamicTemplates;
     private _renderMapPopup;
     private _formatCoordinates;
     private _getEntityForCoordinates;
     private _isDarkMode;
     private _closeMapPopup;
+    private _isHighlighted;
+    private _getHighlightClass;
+    private _onHighlightChange;
+    private _getStorageKey;
+    private _restoreStateFromStorage;
+    private _saveStateToStorage;
     private _shouldRenderSection;
     private _cancelConfirmation;
     private _checkBarSideCondition;
     private _processPercentageTemplate;
-<<<<<<< HEAD
-=======
     private _renderInfoRowsFromConfig;
     private _renderSingleInfoRow;
     private _renderSingleInfoEntity;
     private _handleInfoEntityClick;
-    private _getDisplaySections;
-    private _cleanupSectionsOrder;
-    private _ensureInfoAndIconRowsInSectionsOrder;
-    private _handleHighlightSections;
-    private _isHighlighted;
-    private _getHighlightClass;
-    private _getImageHighlightStyle;
-    private _handleClearHighlight;
->>>>>>> 4a04363 (新增灯的卡片控制相关)
 }

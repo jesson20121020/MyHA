@@ -3,43 +3,168 @@ type: "custom:layout-card"
 layout_type: "custom:grid-layout"
 layout:
   # Tablet portrait
-  grid-template-columns: "1fr 1fr 1fr 1fr 1fr 1fr"
+  grid-template-columns: "1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr"
   grid-template-areas: |
-    "text text text weather weather weather"
-    "welcome welcome welcome welcome welcome welcome"
-    "title1 title1 title1 title1 title1 title1"
-    "card1 card1 card2 card2 card3 card3"
-    "title2 title2 title2 title2 title2 title2"
-    "card4 card4 card5 card5 card6 card6"
-  mediaquery:
-    # Mobile
-    "(max-width: 800px)":
-      grid-template-columns: "1fr 1fr"
-      grid-template-areas: |
-        "welcome welcome"
-        "person person"
-        "title1 title1"
-        "card1 card2"
-        "card3 card4"
-        "title2 title2"
-        "card5 card6"
-        "card7 card8"
+    "chip chip chip chip chip chip chip chip chip chip"
+    "text text text weather weather weather weather weather weather weather"
+    "welcome welcome welcome welcome welcome welcome welcome welcome welcome welcome"
+    "title1 title1 title1 title1 title1 title1 title1 title1 title1 title1"
+    "card1 card1 card2 card2 card3 card3 card4 card4 card5 card5"
+    "title2 title2 title2 title2 title2 title2 title2 title2 title2 title2"
+    "card6 card6 card7 card7 card8 card8 card9 card9 card10 card10"
 view_layout:
   grid-area: "main"
 cards:
-  - view_layout:
-      grid-area: "text"
-    type: "custom:button-card"
-    template: "card_title"
-    name: "This is the adaptive <br>dashboard provided by <br> UI Minimalist"
-    label: "Find instructions to add <br> cards on the wiki"
 
   - view_layout:
+      grid-area: "chip"
+    type: horizontal-stack
+    cards:
+      # 显示房间当前开灯总数量
+      - type: conditional
+        conditions:
+          - condition: numeric_state
+            entity: sensor.kai_deng_zong_shu_liang
+            above: -1
+        card:
+          type: "custom:button-card"
+          template: chip_common_icon_state
+          variables:
+            ulm_chip_mdi_icon_state_entity: sensor.kai_deng_zong_shu_liang
+            ulm_chip_mdi_icon_state_icon: mdi:lightbulb-group
+    
+      # 空调，加热器数量
+      - type: conditional
+        conditions:
+          - condition: numeric_state
+            entity: sensor.kong_diao_jia_re_qi_kai_qi_shu_liang
+            above: -1
+        card:
+          type: "custom:button-card"
+          template: chip_common_icon_state
+          variables:
+            ulm_chip_mdi_icon_state_entity: sensor.kong_diao_jia_re_qi_kai_qi_shu_liang
+            ulm_chip_mdi_icon_state_icon: mdi:air-conditioner
+    
+      # 媒体播放器数量
+      - type: conditional
+        conditions:
+          - condition: numeric_state
+            entity: sensor.yin_xiang_dian_shi_zheng_zai_bo_fang_shu_liang
+            above: -1
+        card:
+          type: "custom:button-card"
+          template: chip_common_icon_state
+          variables:
+            ulm_chip_mdi_icon_state_entity: sensor.yin_xiang_dian_shi_zheng_zai_bo_fang_shu_liang
+            ulm_chip_mdi_icon_state_icon: mdi:television-speaker
+    
+      # 洗衣机，烘干机正在工作数量
+      - type: conditional
+        conditions:
+          - condition: numeric_state
+            entity: sensor.xi_yi_ji_hong_gan_ji_gong_zuo_shu_liang
+            above: -1
+        card:
+          type: "custom:button-card"
+          template: chip_common_icon_state
+          variables:
+            ulm_chip_mdi_icon_state_entity: sensor.xi_yi_ji_hong_gan_ji_gong_zuo_shu_liang
+            ulm_chip_mdi_icon_state_icon: mdi:washing-machine
+      # 各种设备门处于打开状态下的数量
+      - type: conditional
+        conditions:
+          - condition: numeric_state
+            entity: sensor.she_bei_men_da_kai_shu_liang
+            above: -1
+        card:
+          type: "custom:button-card"
+          template: chip_common_icon_state
+          variables:
+            ulm_chip_mdi_icon_state_entity: sensor.she_bei_men_da_kai_shu_liang
+            ulm_chip_mdi_icon_state_icon: mdi:door-open
+
+  - view_layout:
+      grid-area: "text"
+    type: vertical-stack
+    cards:
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template: card_person
+            entity: person.mu_er_ba_ba
+            show_last_changed: true
+            variables:
+              ulm_card_person_entity: person.mu_er_ba_ba
+              ulm_card_person_use_entity_picture: true
+              ulm_card_person_icon: mdi:face-woman
+              ulm_card_person_battery: sensor.iphone_86_battery_level
+            styles:
+              custom_fields:
+                notification:
+                  - background-color: >
+                      [[[
+                        return (entity.state !== 'home') ? "rgba(var(--color-red),1)" : "rgba(var(--color-blue),1)";
+                      ]]]
+          - type: "custom:button-card"
+            template: card_person
+            entity: person.mu_er_ma_ma
+            show_last_changed: true
+            variables:
+              ulm_card_person_entity: person.mu_er_ma_ma
+              ulm_card_person_use_entity_picture: true
+              ulm_card_person_icon: mdi:face-woman
+              ulm_address: person.mu_er_ma_ma
+            styles:
+              custom_fields:
+                notification:
+                  - background-color: >
+                      [[[
+                        return (entity.state !== 'home') ? "rgba(var(--color-red),1)" : "rgba(var(--color-blue),1)";
+                      ]]]
+      - type: horizontal-stack
+        cards:
+          - type: "custom:button-card"
+            template: card_person
+            entity: person.mu_er_ye_ye
+            show_last_changed: true
+            variables:
+              ulm_card_person_entity: person.mu_er_ye_ye
+              ulm_card_person_use_entity_picture: true
+              ulm_card_person_icon: mdi:face-woman
+              ulm_address: person.mu_er_ye_ye
+            styles:
+              custom_fields:
+                notification:
+                  - background-color: >
+                      [[[
+                        return (entity.state !== 'home') ? "rgba(var(--color-red),1)" : "rgba(var(--color-blue),1)";
+                      ]]]
+          - type: "custom:button-card"
+            template: card_person
+            entity: person.mu_er_nai_nai
+            show_last_changed: true
+            variables:
+              ulm_card_person_entity: person.mu_er_nai_nai
+              ulm_card_person_use_entity_picture: true
+              ulm_card_person_icon: mdi:face-woman
+              ulm_address: person.mu_er_nai_nai
+            styles:
+              custom_fields:
+                notification:
+                  - background-color: >
+                      [[[
+                        return (entity.state !== 'home') ? "rgba(var(--color-red),1)" : "rgba(var(--color-blue),1)";
+                      ]]]
+
+  # 天气卡片
+  - view_layout:
       grid-area: "weather"
-    type: "custom:button-card"
-    template: "card_title"
-    name: "This could be your <br> weather card"
-    label: "grid-area: weather"
+    type: weather-forecast
+    entity: weather.hangzhou
+    forecast_type: daily
+    show_current: true
+    show_forecast: true
 
   - view_layout:
       grid-area: "welcome"
@@ -47,40 +172,35 @@ cards:
     template: "card_scenes_welcome"
     variables:
       entity_1:
-        entity_id: "<YOUR_ENTITY>"
-        icon: "mdi:YOUR_ICON" #OPTIONAL
-        name: "YOUR_NAME" #OPTIONAL
+        entity_id: "input_select.chang_jing_mo_shi_xuan_ze"
+        icon: "mdi:home" #OPTIONAL
+        name: "在家模式" #OPTIONAL
         color: "blue"
+        state: "在家模式"
       entity_2:
-        entity_id: "<YOUR_ENTITY>"
-        icon: "mdi:YOUR_ICON" #OPTIONAL
-        name: "YOUR_NAME" #OPTIONAL
+        entity_id: "input_select.chang_jing_mo_shi_xuan_ze"
+        icon: "mdi:walk" #OPTIONAL
+        name: "出门模式" #OPTIONAL
         color: "red"
+        state: "出门模式"
       entity_3:
-        entity_id: "<YOUR_ENTITY>"
-        icon: "mdi:YOUR_ICON" #OPTIONAL
-        name: "YOUR_NAME" #OPTIONAL
+        entity_id: "input_select.chang_jing_mo_shi_xuan_ze"
+        icon: "mdi:moon-waning-crescent" #OPTIONAL
+        name: "晚安模式" #OPTIONAL
         color: "green"
+        state: "晚安模式"
       entity_4:
-        entity_id: "<YOUR_ENTITY>"
-        icon: "mdi:YOUR_ICON" #OPTIONAL
-        name: "YOUR_NAME" #OPTIONAL
+        entity_id: "input_select.chang_jing_mo_shi_xuan_ze"
+        icon: "mdi:television-classic" #OPTIONAL
+        name: "观影模式" #OPTIONAL
         color: "purple"
+        state: "观影模式"
       entity_5:
-        entity_id: "<YOUR_ENTITY>"
-        icon: "mdi:YOUR_ICON" #OPTIONAL
-        name: "YOUR_NAME" #OPTIONAL
+        entity_id: "input_select.chang_jing_mo_shi_xuan_ze"
+        icon: "mdi:gamepad-variant" #OPTIONAL
+        name: "游戏模式" #OPTIONAL
         color: "yellow"
-      entity_6:
-        entity_id: "<YOUR_ENTITY>"
-        icon: "mdi:YOUR_ICON" #OPTIONAL
-        name: "YOUR_NAME" #OPTIONAL
-        color: "pink"
-      entity_7:
-        entity_id: "<YOUR_ENTITY>"
-        icon: "mdi:YOUR_ICON" #OPTIONAL
-        name: "YOUR_NAME" #OPTIONAL
-        color: "yellow"
+        state: "游戏模式"
 
 
   - view_layout:
@@ -98,56 +218,253 @@ cards:
 
   - view_layout:
       grid-area: "card1"
-    type: "custom:button-card"
-    template: card_light
-    entity: light.dikair_wy0a01_30ce_light
+    
+    # 洗衣机卡片
+    type: custom:button-card
+    template: card_esh_common
+    entity: sensor.161628213624821_progress
     variables:
-      ulm_card_light_enable_popup_tap: true
-      ulm_card_light_enable_popup: true
-      ulm_card_light_enable_slider: true
-      ulm_card_light_enable_color: false
-      ulm_card_light_force_background_color: false
-      ulm_input_select_option: light 1
-      ulm_input_select: input_select.minimalist_ui_switch
+      device_image: "/local/images/美的洗衣机.png"
+      name: 阳台洗衣机
+      state: |
+        [[[
+            var state = entity.state;
+            if (state == "Weight")
+                return "上水中";
+            else if (state == "Wash")
+                return "清洗中";
+            else if (state == "Rinse")
+                return "脱水中";
+            else if (state == "Spin")
+                return "甩干中";
+            return "空闲中";
+        ]]]
+      entity_1:
+        label: "程序"
+        state: |
+          [[[
+            var program = states['sensor.161628213624821_program'].state;
+            if (program == "water_mixed_wash")
+                return "混合洗";
+            return "快速洗";
+          ]]]"
+      entity_2:
+        label: "剩余时间"
+        state: |
+          [[[
+            var remain_time = states['sensor.161628213624821_time_remaining'].state;
+            if (remain_time == "unknown")
+                remain_time = 0;
+            return remain_time + "min";
+          ]]]
+    card_mod:
+      style: |
+          {% set entity_id = 'sensor.161628213624821_progress' %}
+          {% if states(entity_id) != "Idle" %}
+              ha-card {
+                background-image: linear-gradient(to bottom, #a1c4fd 0%, white 100%);
+              }
+          {% endif %}
+
 
   - view_layout:
       grid-area: "card2"
-    type: "custom:button-card"
-    template: card_thermostat
-    entity: climate.zhimi_ma2_7c5e_heater
+    # 烘干机卡片
+    type: custom:button-card
+    template: card_esh_common
+    entity: sensor.161628213625219_status
     variables:
-      ulm_card_thermostat_enable_collapse: true
-      ulm_card_thermostat_enable_controls: true
-      ulm_card_thermostat_enable_hvac_modes: false
-      ulm_card_thermostat_enable_popup: true
+      device_image: "/local/images/美的烘干机.png"
+      name: 阳台烘干机
+      state: |
+        [[[
+            var state = entity.state;
+            if (state != "idle")
+                return "烘干中";
+            return "空闲中";
+        ]]]
+      entity_1:
+        label: "程序"
+        state: |
+          [[[
+            var program = states['sensor.161628213625219_program'].state;
+            if (program == "mixed_wash")
+                return "混合烘";
+            return program;
+          ]]]"
+      entity_2:
+        label: "剩余时间"
+        state: |
+          [[[
+            var remain_time = states['sensor.161628213625219_time_remaining'].state;
+            if (remain_time == "unknown")
+                remain_time = 0;
+            return remain_time + "min";
+          ]]]
+    card_mod:
+      style: |
+          {% set entity_id = 'sensor.161628213625219_status' %}
+          {% if states(entity_id) != "idle" %}
+              ha-card {
+                background-image: linear-gradient(to bottom, #f68084 0%, white 100%);
+              }
+          {% endif %}
 
   - view_layout:
       grid-area: "card3"
-    type: "custom:button-card"
-    template: "card_title"
-    template: card_media_player
-    entity: media_player.xiaomi_lx06_d022_play_control
+    # 净水器卡片
+    type: custom:button-card
+    template: card_esh_common
+    entity: switch.162727723851771_power
     variables:
-      ulm_card_media_player_name : 客厅小爱音响
-      ulm_card_media_player_enable_controls: true
+      device_image: "/local/images/美的厨下式净水器.png"
+      name: 厨房净水器
+      state: |
+        [[[
+            var state = entity.state;
+            if (state == "on")
+                return "工作中";
+            return "待机中";
+        ]]]
+      entity_1:
+        label: "滤芯"
+        state: |
+          [[[
+            var life1 = states['sensor.162727723851771_life1'].state;
+            var life2 = states['sensor.162727723851771_life2'].state;
+            var life3 = states['sensor.162727723851771_life3'].state;
+            return life1 + "/" + life2 + "/" + life3 + "%";
+          ]]]"
+      entity_2:
+        label: "水质"
+        state: |
+          [[[
+            var in_tds = states['sensor.162727723851771_in_tds'].state
+            var out_tds = states['sensor.162727723851771_out_tds'].state;
+             return `${in_tds}/${out_tds}tds`
+          ]]]
+    card_mod:
+      style: |
+          {% set entity_id = 'switch.162727723851771_power' %}
+          {% if states(entity_id) == "on" %}
+              ha-card {
+                background-image: linear-gradient(to bottom, #e7f0fd 0%, white 100%);
+              }
+          {% endif %}
 
   - view_layout:
       grid-area: "card4"
-    type: "custom:button-card"
-    template: "card_title"
-    name: "Put here your <br> fourth card"
-    label: "grid-area: card4"
+    # 净水器卡片
+    type: custom:button-card
+    template: card_esh_common
+    entity: sensor.160528700996126_progress
+    variables:
+      device_image: "/local/images/美的洗碗机.png"
+      name: 美的洗碗机
+      state: |
+        [[[
+            var state = entity.state;
+            if (state != "Idle")
+                return "工作中";
+            return "空闲";
+        ]]]
+      entity_1:
+        label: "模式"
+        state: |
+          [[[
+            var program = states['sensor.160528700996126_mode'].state;
+            return "标准洗";
+          ]]]"
+      entity_2:
+        label: "剩余时间"
+        state: |
+          [[[
+            var remain_time = states['sensor.160528700996126_time_remaining'].state;
+            if (remain_time == "unknown")
+                remain_time = 0;
+            return remain_time + "min";
+          ]]]
+    card_mod:
+      style: |
+          {% set entity_id = 'sensor.160528700996126_progress' %}
+          {% if states(entity_id) != "Idle" %}
+              ha-card {
+                background-image: linear-gradient(to bottom, #6991c7 0%, white 100%);
+              }
+          {% endif %}
 
   - view_layout:
       grid-area: "card5"
-    type: "custom:button-card"
-    template: "card_title"
-    name: "Put here your <br> fifth card"
-    label: "grid-area: card5"
+    # 微波炉卡片
+    type: custom:button-card
+    template: card_esh_common
+    entity: sensor.164926749854785_status
+    variables:
+      device_image: "/local/images/美的微波炉.png"
+      name: 美的微波炉
+      state: |
+        [[[
+            var state = entity.state;
+            if (state == "Working")
+                return "加热中";
+            else if (state == "Finished")
+                return "已完成";
+            else if (state == "Paused")
+                return "暂停中";
+            return "空闲";
+        ]]]
+      entity_1:
+        label: "门"
+        state: |
+          [[[
+            var door = states['binary_sensor.164926749854785_door'].state;
+            if (door == "on")
+                return "已打开";
+            return "已关闭";
+          ]]]"
+      entity_2:
+        label: "剩余时间"
+        state: |
+          [[[
+            var remain_time = states['sensor.164926749854785_time_remaining'].state;
+            if (remain_time == "unknown")
+                remain_time = 0;
+            return remain_time + "s";
+          ]]]
+    card_mod:
+      style: |
+          {% set entity_id = 'sensor.160528700996126_progress' %}
+          {% if states(entity_id) != "Idle" %}
+              ha-card {
+                background-image: linear-gradient(to bottom, #ed6ea0 0%, white 100%);
+              }
+          {% endif %}
 
   - view_layout:
       grid-area: "card6"
-    type: "custom:button-card"
-    template: "card_title"
-    name: "Put here your <br> sixth card"
-    label: "grid-area: card6"
+    # 冰箱卡片
+    type: custom:button-card
+    template: card_esh_common
+    variables:
+      device_image: "/local/images/海尔冰箱.webp"
+      name: 海尔冰箱
+      state: "工作中"
+      entity_1:
+        label: "冷藏室"
+        state: |
+          [[[
+            var temp = states['sensor.18a7f1d48b52_refrigeratortemperaturec'].state;
+            return temp + "°C";
+          ]]]"
+      entity_2:
+        label: "冷冻室"
+        state: |
+          [[[
+            var temp = states['sensor.18a7f1d48b52_freezertemperaturec'].state;
+            return temp + "°C";
+          ]]]"
+    card_mod:
+      style: |
+          ha-card {
+            background-image: linear-gradient(to bottom, #CBBACC 0%, white 100%);
+          }

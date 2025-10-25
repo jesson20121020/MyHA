@@ -4,9 +4,12 @@ import { UltraVehicleCardConfig } from '../../types';
 import '../../components/entity-picker';
 import '../../components/color-picker';
 import '../../components/gradient-editor';
+import '../../components/navigation-picker';
 export declare class IconsTab extends LitElement {
     hass: HomeAssistant;
     config: UltraVehicleCardConfig;
+    private _dynamicColorService?;
+    private _dynamicIconService?;
     private _expandedIconRow;
     private _expandedIcon;
     private _activeIconTabs;
@@ -36,6 +39,8 @@ export declare class IconsTab extends LitElement {
     private _resetIconStateColor;
     private _resetIconAppearanceColor;
     private _resetIconSize;
+    private _updateIconFormattingToggle;
+    private _renderIconFormattingToggles;
     /**
      * Helper to get the icon defined for an entity in Home Assistant,
      * falling back to domain/device_class defaults.
@@ -61,8 +66,10 @@ export declare class IconsTab extends LitElement {
     private _toggleRowSettings;
     private _toggleStateSettings;
     static styles: import("lit").CSSResult;
-<<<<<<< HEAD
-=======
     private _navigateToCustomizeTab;
->>>>>>> 4a04363 (新增灯的卡片控制相关)
+    connectedCallback(): void;
+    disconnectedCallback(): void;
+    protected updated(changedProperties: Map<string, any>): void;
+    private _renderIconActionsTab;
+    private _getActionSchema;
 }

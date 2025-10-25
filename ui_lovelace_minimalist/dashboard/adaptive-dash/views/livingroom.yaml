@@ -34,10 +34,68 @@ view_layout:
 cards:
   - view_layout:
       grid-area: "title1"
-    type: "custom:button-card"
-    template: "card_title"
-    name: "Some title"
-    label: "grid-area: title1"
+    type: horizontal-stack
+
+    cards:
+      # 显示房间当前开灯总数量
+      - type: "custom:button-card"
+        template: chip_common_icon_state
+        variables:
+          ulm_chip_mdi_icon_state_entity: sensor.kai_deng_zong_shu_liang
+          ulm_chip_mdi_icon_state_icon: mdi:lightbulb-group
+        styles:
+          card:
+            - margin: none
+            - display: >
+                [[[
+                  return states['sensor.kai_deng_zong_shu_liang'].state > 0 ? 'block' : 'none';
+                ]]]
+    
+      # 空调，加热器数量
+      - type: "custom:button-card"
+        template: chip_common_icon_state
+        variables:
+          ulm_chip_mdi_icon_state_entity: sensor.kong_diao_jia_re_qi_kai_qi_shu_liang
+          ulm_chip_mdi_icon_state_icon: mdi:air-conditioner
+        styles:
+          card:
+            - margin: none
+            - display: >
+                [[[
+                  return states['sensor.kong_diao_jia_re_qi_kai_qi_shu_liang'].state > 0 ? 'block' : 'none';
+                ]]]
+    
+      # 媒体播放器数量
+      - type: "custom:button-card"
+        template: chip_common_icon_state
+        variables:
+          ulm_chip_mdi_icon_state_entity: sensor.yin_xiang_dian_shi_zheng_zai_bo_fang_shu_liang
+          ulm_chip_mdi_icon_state_icon: mdi:television-speaker
+    
+      # 洗衣机，烘干机正在工作数量
+      - type: conditional
+        conditions:
+          - condition: numeric_state
+            entity: sensor.xi_yi_ji_hong_gan_ji_gong_zuo_shu_liang
+            above: -1
+        card:
+          type: "custom:button-card"
+          template: chip_common_icon_state
+          variables:
+            ulm_chip_mdi_icon_state_entity: sensor.xi_yi_ji_hong_gan_ji_gong_zuo_shu_liang
+            ulm_chip_mdi_icon_state_icon: mdi:washing-machine
+      # 各种设备门处于打开状态下的数量
+      - type: conditional
+        conditions:
+          - condition: numeric_state
+            entity: sensor.she_bei_men_da_kai_shu_liang
+            above: -1
+        card:
+          type: "custom:button-card"
+          template: chip_common_icon_state
+          variables:
+            ulm_chip_mdi_icon_state_entity: sensor.she_bei_men_da_kai_shu_liang
+            ulm_chip_mdi_icon_state_icon: mdi:door-open
 
   - view_layout:
       grid-area: "title2"

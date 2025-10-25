@@ -59,6 +59,7 @@ cards:
           car_image: "/local/images/neta_car.png"
           car_milegate_rest: "sensor.na_zha_qi_che_neta_remaining_mileage"
           car_elec_usage: "sensor.na_zha_qi_che_neta_battery_percentage"
+          car_update_time: "sensor.na_zha_qi_che_neta_update_time"
           entity_1:
             entity_id: "sensor.na_zha_qi_che_neta_door_status"
             icon_on: "mdi:lock-open-outline"
@@ -79,6 +80,40 @@ cards:
             icon_on: "mdi:ev-station"
             icon_off: "mdi:ev-station"
             on_state: "[[[return states['sensor.na_zha_qi_che_neta_charge_status'].state == '正在充电';]]]"
+      
+      - type: horizontal-stack
+        cards:
+          - type: custom:button-card
+            template: card_esh_common
+            entity: light.shu_fang_xi_ding_deng
+            variables:
+              device_image: "/local/images/美的洗衣机.png"
+            card_mod:
+              style: |
+                  {% set entity_id = 'light.shu_fang_xi_ding_deng'  %}
+                  {% if states(entity_id) == "on" and state_attr(entity_id,
+                    'rgb_color') != None %}
+                      {% set color = state_attr(entity_id, 'rgb_color')  %}
+                      ha-card {
+                        background-image: linear-gradient(to bottom, rgb{{color}} 0%, white 100%);
+                      }
+                  {% endif %}
+
+          - type: custom:button-card
+            template: card_esh_common_light
+            entity: light.shu_fang_xi_ding_deng
+            variables:
+              device_image: "/local/images/循环扇.jpeg"
+            card_mod:
+              style: |
+                  {% set entity_id = 'light.shu_fang_xi_ding_deng'  %}
+                  {% if states(entity_id) == "on" and state_attr(entity_id,
+                    'rgb_color') != None %}
+                      {% set color = state_attr(entity_id, 'rgb_color')  %}
+                      ha-card {
+                        background-image: linear-gradient(to bottom, rgb{{color}} 0%, white 100%);
+                      }
+                  {% endif %}
 
     
   - type: "custom:button-card"

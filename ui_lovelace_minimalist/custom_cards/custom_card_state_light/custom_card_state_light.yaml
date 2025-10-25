@@ -29,7 +29,7 @@ card_state_light:
     ulm_icon_tap_action: "toggle"
     ulm_icon_hold_action: "none"
     ulm_icon_double_tap_action: "none"
-    ulm_name_tap_action: "none"
+    ulm_name_tap_action: "popup"
     ulm_name_hold_action: "none"
     ulm_name_double_tap_action: "none"
     ulm_custom_popup:
@@ -98,6 +98,7 @@ card_state_light:
       - border-radius: "var(--border-radius)"
       - box-shadow: "var(--box-shadow)"
       - padding: "12px"
+      - tap-action: none
     custom_fields:
       item2:
         - display: >
@@ -223,6 +224,8 @@ card_state_light:
                   - cursor: none
                   - --mdc-ripple-press-opacity: 0
                   - padding: 0px
+                  - background: none
+                  - border: none
     item2:
       card:
         type: "custom:my-slider"

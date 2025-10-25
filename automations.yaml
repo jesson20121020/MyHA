@@ -105,114 +105,15 @@
     data:
       message: 有人在门口逗留
       title: 注意⚠️
-  mode: single
-<<<<<<< HEAD
-- id: '1734758592373'
-  alias: 长按阳台门口开关右健晾衣架下降
-  description: ''
-  triggers:
-  - device_id: dff2313aa42a05fddb131f519c8db4d3
-    domain: homekit_controller
-    type: button2
-    subtype: long_press
-    trigger: device
-  - device_id: dff2313aa42a05fddb131f519c8db4d3
-    domain: homekit_controller
-    type: button2
-    subtype: double_press
-    trigger: device
-  conditions: []
-  actions:
-  - device_id: e136cc654bb57186abec1316cc2a1337
-    domain: cover
-    entity_id: 1f6c814c8ee42d656c821f7bbca6138e
-    type: open
-  - delay:
-      hours: 0
-      minutes: 0
-      seconds: 6
-      milliseconds: 0
-  - device_id: e136cc654bb57186abec1316cc2a1337
-    domain: cover
-    entity_id: 1f6c814c8ee42d656c821f7bbca6138e
-    type: stop
-  mode: single
-- id: '1734759050860'
-  alias: 单击阳台门口右键开关灯
-  description: ''
-  triggers:
-  - device_id: dff2313aa42a05fddb131f519c8db4d3
-    domain: homekit_controller
-    type: button2
-    subtype: single_press
-    trigger: device
-  conditions: []
-  actions:
-  - type: toggle
-    device_id: e136cc654bb57186abec1316cc2a1337
-    entity_id: d9843714121e67ce5f852dfbadfbafd9
-    domain: light
-  mode: single
-- id: '1734759167433'
-  alias: 单击阳台门口开关左键暂停晾衣架
-  description: ''
-  triggers:
-  - device_id: dff2313aa42a05fddb131f519c8db4d3
-    domain: homekit_controller
-    type: button1
-    subtype: single_press
-    metadata: {}
-    trigger: device
-  conditions: []
-  actions:
-  - device_id: e136cc654bb57186abec1316cc2a1337
-    domain: cover
-    entity_id: 1f6c814c8ee42d656c821f7bbca6138e
-    type: stop
-  mode: single
-- id: '1734759370981'
-  alias: 长按阳台门口左键晾衣架上升
-  description: ''
-  triggers:
-  - device_id: dff2313aa42a05fddb131f519c8db4d3
-    domain: homekit_controller
-    type: button1
-    subtype: long_press
-    trigger: device
-  - device_id: dff2313aa42a05fddb131f519c8db4d3
-    domain: homekit_controller
-    type: button1
-    subtype: double_press
-    trigger: device
-  conditions: []
-  actions:
-  - device_id: e136cc654bb57186abec1316cc2a1337
-    domain: cover
-    entity_id: 1f6c814c8ee42d656c821f7bbca6138e
-    type: close
-  mode: single
-=======
->>>>>>> 4a04363 (新增灯的卡片控制相关)
-- id: '1737078389950'
-  alias: 国家电网定时查询
-  description: ''
-  triggers:
-  - trigger: time
-    at: '10:00:00'
-  conditions: []
-  actions:
-  - action: hassio.addon_restart
+      data:
+        url: '{{state_attr(''camera.madv_miowlv2_fe51_video_doorbell'',''stream_address'')}}'
+  - action: mqtt.publish
     metadata: {}
     data:
-      addon: ff9b2288_sgcc_electricity
-  - delay:
-      hours: 1
-      minutes: 0
-      seconds: 0
-  - action: hassio.addon_stop
-    metadata: {}
-    data:
-      addon: ff9b2288_sgcc_electricity
+      evaluate_payload: false
+      qos: '2'
+      retain: false
+      topic: ha/mijia/doorbell/state_changed
   mode: single
 - id: '1740894301265'
   alias: 软路由温度高于45度自动打开风扇
@@ -308,4 +209,21 @@
     entity_id: 15677603dbfe1066936cb56b10be92b8
     type: set_value
     value: 净水器水龙头忘记关了
+  mode: single
+- id: '1756808480330'
+  alias: 新建自动化
+  description: ''
+  triggers:
+  - type: changed_states
+    device_id: 85d3ec6226d82be9b40dd0bc25a1c6a4
+    entity_id: 5a02fd47b6f30e5d63309ce4d354b48d
+    domain: media_player
+    trigger: device
+  conditions: []
+  actions:
+  - device_id: 85d3ec6226d82be9b40dd0bc25a1c6a4
+    domain: select
+    entity_id: 0b92916f408f40e24711bcd7a6b071cd
+    type: select_option
+    option: power
   mode: single

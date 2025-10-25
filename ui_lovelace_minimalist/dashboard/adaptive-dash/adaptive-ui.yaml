@@ -1,6 +1,10 @@
 ---
 button_card_templates: !include_dir_merge_named "../../../custom_components/ui_lovelace_minimalist/__ui_minimalist__/ulm_templates/"
 
+
+weather_background:
+  weather_entity: input_select.tian_qi_bei_jing
+  
 title: "UI Lovelace Minimalist"
 theme: "minimalist-desktop"
 background: "var(--background-image)"
@@ -10,14 +14,10 @@ views:
     icon: "mdi:home"
     path: "0"
     layout:
-      grid-template-columns: "1fr 1fr"
+      grid-template-columns: "2fr 1fr"
       grid-template-rows: "min-content"
       grid-template-areas: |
         "main popup"
-      mediaquery:
-        "(max-width: 1100px), (orientation: portrait)":
-          grid-template-columns: "100%"
-          grid-template-areas: "main"
     cards:
       - !include "views/main.yaml"
       - !include "popup/popup.yaml"
@@ -27,14 +27,10 @@ views:
     icon: "mdi:sofa"
     path: "Livingroom"
     layout:
-      grid-template-columns: "1fr 1fr"
+      grid-template-columns: "2fr 1fr"
       grid-template-rows: "min-content"
       grid-template-areas: |
         "livingroom popup"
-      mediaquery:
-        "(max-width: 1100px), (orientation: portrait)":
-          grid-template-columns: "100%"
-          grid-template-areas: "livingroom"
     cards:
       - !include "views/livingroom.yaml"
       - !include "popup/popup.yaml"

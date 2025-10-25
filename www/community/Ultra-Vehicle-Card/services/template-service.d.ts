@@ -17,11 +17,8 @@ export declare class TemplateService {
     private hass;
     private _templateSubscriptions;
     private _templateResults;
-<<<<<<< HEAD
-=======
     private _evaluationCache;
     private readonly CACHE_TTL;
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     constructor(hass: HomeAssistant);
     /**
      * Get a specific template result

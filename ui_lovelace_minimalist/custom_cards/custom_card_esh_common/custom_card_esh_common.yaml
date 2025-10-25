@@ -1,0 +1,117 @@
+card_esh_common:
+  tap_action:
+    action: "more-info"
+  template:
+    - "ulm_translation_engine"
+  triggers_update: all
+  variables:
+    name: "[[[ return entity.attributes.friendly_name ]]]"
+    state: >
+        [[[
+          return entity.state;
+        ]]]
+    device_image: "/local/images/xiaopeng_car.png"
+    entity_1:
+      label: "属性1"
+      state: "属性1值"
+    entity_2:
+      label: "属性2"
+      state: "属性2值"
+
+  show_icon: false
+  show_name: false
+  show_label: false
+  show_state: false
+  show_last_changed: true
+  custom_fields:
+    name: |
+      [[[ return variables.name; ]]]
+    state: |
+      [[[ return variables.state; ]]]
+    entity_1: |
+      [[[
+        return `
+        <div style="display: flex; flex-direction: column;">
+          <span style="color: gray; font-size: 12px;">${variables.entity_1.label}</span>
+          <span style="color: black; font-size: 14px;">${variables.entity_1.state}</span>
+        </div>
+        `;
+      ]]]
+    entity_2: |
+      [[[
+        return `
+        <div style="display: flex; flex-direction: column;">
+          <span style="color: gray; font-size: 12px;">${variables.entity_2.label}</span>
+          <span style="color: black; font-size: 14px;">${variables.entity_2.state}</span>
+        </div>
+        `;
+      ]]]
+    device_img: |
+      [[[
+          return `
+          <div style="
+            width: 100%;
+            height: 100%;
+            background-image: url('${variables.device_image}');
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+          "></div>
+        `;
+        ]]]
+  styles:
+    card:
+      - padding-left: 20px
+      - height: 150px
+      - backdrop-filter: blur(10px)
+      - background: rgba(255, 255, 255, 0.15)
+      - border-radius: 12px
+      - border: 1px solid rgba(255, 255, 255, 0.18)
+      - box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37)
+    grid:
+      - grid-template-areas: |
+          "name         name"
+          "state        state"
+          "entity_2     device_img"
+          "entity_1     device_img"
+      - grid-template-columns: 35% 65%
+      - grid-template-rows: 15% 15% 40% 30%
+      - grid-gap: 0px 0px
+      - font-family: Helvetica, Arial, sans-serif
+      - color: black
+    custom_fields:
+      area:
+        - font-size: 15px
+        - justify-self: start
+        - color: black
+        - text-align: left
+        - margin-top: 8px
+      name:
+        - font-size: 15px
+        - justify-self: start
+        - color: black
+        - text-align: left
+        - margin-top: 8px
+        - font-weight: bold;
+      state:
+        - font-size: 12px
+        - color: gray
+        - justify-self: start
+        - margin-top: 3px
+      entity_1:
+        - font-size: 12px
+        - color: gray
+        - justify-self: start
+        - text-align: left
+        - align-self: end
+      entity_2:
+        - font-size: 12px
+        - color: gray
+        - justify-self: start
+        - text-align: left
+        - align-self: end
+      device_img:
+        - width: 100%
+        - height: 100%
+        - opacity: 0.75
+        - margin-bottom: 8px

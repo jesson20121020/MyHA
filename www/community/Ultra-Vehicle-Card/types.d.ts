@@ -1,8 +1,5 @@
 import { GradientStop } from './components/gradient-editor';
-<<<<<<< HEAD
-=======
 export { GradientStop };
->>>>>>> 4a04363 (新增灯的卡片控制相关)
 export interface SectionCondition {
     type: 'none' | 'show' | 'hide';
     entity: string;
@@ -11,8 +8,6 @@ export interface SectionCondition {
 export interface SectionConditions {
     [sectionId: string]: SectionCondition;
 }
-<<<<<<< HEAD
-=======
 export interface SectionTemplate {
     template_mode?: boolean;
     template?: string;
@@ -20,13 +15,16 @@ export interface SectionTemplate {
 export interface SectionTemplates {
     [sectionId: string]: SectionTemplate;
 }
->>>>>>> 4a04363 (新增灯的卡片控制相关)
 export type UltraVehicleCardConfig = {
     type?: string;
     title?: string;
     title_alignment?: 'left' | 'center' | 'right';
     title_size?: string | number;
     title_color?: string;
+    title_bold?: boolean;
+    title_italic?: boolean;
+    title_uppercase?: boolean;
+    title_strikethrough?: boolean;
     card_background?: string;
     vehicle_image_type?: 'default' | 'upload' | 'url' | 'entity' | 'none';
     vehicle_image?: string;
@@ -37,19 +35,12 @@ export type UltraVehicleCardConfig = {
     status_image?: string;
     status_image_entity?: string;
     status_image_trigger_entity?: string;
-<<<<<<< HEAD
-    layout_type?: 'single' | 'double' | 'dashboard';
-=======
     layout_type?: 'single' | 'double' | 'dashboard' | 'half_full' | 'full_half';
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     column_width?: '50-50' | '30-70' | '70-30' | '40-60' | '60-40';
     formatted_entities?: boolean;
     show_units?: boolean;
     show_action_toasts?: boolean;
-<<<<<<< HEAD
-=======
     help_highlight?: boolean;
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     top_view_side_margin?: number;
     top_view_middle_spacing?: number;
     top_view_vertical_spacing?: number;
@@ -91,38 +82,28 @@ export type UltraVehicleCardConfig = {
     action_images?: ActionImageConfig[];
     action_image_priority?: 'priority' | 'newest';
     icon_rows?: IconRowConfig[];
-<<<<<<< HEAD
-=======
     info_rows?: InfoRowConfig[];
->>>>>>> 4a04363 (新增灯的卡片控制相关)
+    images?: ImageConfig[];
+    image_priority_mode?: 'order' | 'last_triggered' | 'timed';
     vehicle_image_crop?: ImageCropSettings;
     action_image_crop?: ImageCropSettings;
     sections_order?: string[];
     sections_columns?: SectionColumns;
-<<<<<<< HEAD
-    hidden_sections?: string[];
-    section_styles?: SectionStyles;
-    section_conditions?: SectionConditions;
-=======
     bar_row_alignment?: 'flex-start' | 'center' | 'flex-end';
     hidden_sections?: string[];
     section_styles?: SectionStyles;
     section_conditions?: SectionConditions;
     section_templates?: SectionTemplates;
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     global_css?: string;
     section_breaks?: SectionBreakConfig[];
+    card_condition_type?: 'show' | 'hide' | '';
+    card_condition_entity?: string;
+    card_condition_state?: string;
 };
 export type SectionColumns = {
-<<<<<<< HEAD
-    [sectionId: string]: 'right' | 'top' | 'top_middle' | 'left_middle' | 'right_middle' | 'bottom_middle' | 'bottom' | 'middle';
-};
-interface BarConfig {
-=======
     [sectionId: string]: 'right' | 'top' | 'top_middle' | 'left_middle' | 'right_middle' | 'bottom_middle' | 'bottom' | 'middle' | 'half_full_row1_left' | 'half_full_row1_right' | 'half_full_row2_full' | 'full_half_row1_full' | 'full_half_row2_left' | 'full_half_row2_right';
 };
 export interface BarConfig {
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     entity: string;
     limit_entity?: string;
     limit_indicator_color?: string;
@@ -143,12 +124,36 @@ export interface BarConfig {
     right_title_size?: string | number;
     right_text_size?: string | number;
     percentage_text_size?: string | number;
+    left_title_bold?: boolean;
+    left_title_italic?: boolean;
+    left_title_uppercase?: boolean;
+    left_title_strikethrough?: boolean;
+    left_text_bold?: boolean;
+    left_text_italic?: boolean;
+    left_text_uppercase?: boolean;
+    left_text_strikethrough?: boolean;
+    right_title_bold?: boolean;
+    right_title_italic?: boolean;
+    right_title_uppercase?: boolean;
+    right_title_strikethrough?: boolean;
+    right_text_bold?: boolean;
+    right_text_italic?: boolean;
+    right_text_uppercase?: boolean;
+    right_text_strikethrough?: boolean;
+    percentage_text_bold?: boolean;
+    percentage_text_italic?: boolean;
+    percentage_text_uppercase?: boolean;
+    percentage_text_strikethrough?: boolean;
     bar_size?: 'thin' | 'regular' | 'thick' | 'thiccc';
     bar_radius?: 'round' | 'square' | 'rounded-square';
     bar_style?: 'flat' | 'glossy' | 'embossed' | 'inset' | 'gradient' | 'neon' | 'outline' | 'glass' | 'metallic' | 'neumorphic' | 'dashed';
     show_left?: boolean;
     show_right?: boolean;
     show_percentage?: boolean;
+    show_left_title?: boolean;
+    show_left_value?: boolean;
+    show_right_title?: boolean;
+    show_right_value?: boolean;
     alignment?: string;
     width?: string;
     use_gradient?: boolean;
@@ -170,21 +175,13 @@ export interface BarConfig {
     percentage_amount_entity?: string;
     percentage_total_entity?: string;
 }
-<<<<<<< HEAD
-interface CustomCard {
-=======
 export interface CustomCard {
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     type: string;
     name: string;
     description: string;
     draggable?: boolean;
 }
-<<<<<<< HEAD
-interface IconConfig {
-=======
 export interface IconConfig {
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     entity: string;
     name?: string;
     icon_inactive?: string;
@@ -199,11 +196,8 @@ export interface IconConfig {
     active_template?: string;
     active_state_text?: string;
     inactive_state_text?: string;
-<<<<<<< HEAD
-=======
     active_animation?: 'none' | 'pulse' | 'vibrate' | 'rotate-left' | 'rotate-right' | 'hover' | 'fade' | 'scale' | 'bounce' | 'shake' | 'tada';
     inactive_animation?: 'none' | 'pulse' | 'vibrate' | 'rotate-left' | 'rotate-right' | 'hover' | 'fade' | 'scale' | 'bounce' | 'shake' | 'tada';
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     show_state?: boolean;
     show_name?: boolean;
     show_name_active?: boolean;
@@ -218,6 +212,25 @@ export interface IconConfig {
     use_entity_color_for_icon_inactive?: boolean;
     use_entity_color_for_icon_background?: boolean;
     use_entity_color_for_container_background?: boolean;
+    single_click_action?: 'toggle' | 'more-info' | 'navigate' | 'url' | 'call-service' | 'perform-action' | 'show-location-map' | 'location-map' | 'voice-assistant' | 'trigger' | 'no-action' | 'none';
+    single_navigation_path?: string;
+    single_url?: string;
+    single_service?: string;
+    single_service_data?: Record<string, any> | string;
+    single_action?: Record<string, any> | string;
+    double_click_action?: 'toggle' | 'more-info' | 'navigate' | 'url' | 'call-service' | 'perform-action' | 'show-location-map' | 'location-map' | 'voice-assistant' | 'trigger' | 'no-action' | 'none';
+    double_navigation_path?: string;
+    double_url?: string;
+    double_service?: string;
+    double_service_data?: Record<string, any> | string;
+    double_action?: Record<string, any> | string;
+    hold_click_action?: 'toggle' | 'more-info' | 'navigate' | 'url' | 'call-service' | 'perform-action' | 'show-location-map' | 'location-map' | 'voice-assistant' | 'trigger' | 'no-action' | 'none';
+    hold_navigation_path?: string;
+    hold_url?: string;
+    hold_service?: string;
+    hold_service_data?: Record<string, any> | string;
+    hold_action?: Record<string, any> | string;
+    hold_action_data?: Record<string, any> | string;
     on_click_action?: 'toggle' | 'more-info' | 'navigate' | 'url' | 'call-service' | 'perform-action' | 'show-location-map' | 'location-map' | 'voice-assistant' | 'trigger' | 'no-action';
     navigation_path?: string;
     url?: string;
@@ -229,6 +242,15 @@ export interface IconConfig {
     text_alignment?: 'left' | 'center' | 'right';
     icon_size?: string | number;
     text_size?: string | number;
+    name_size?: string | number;
+    name_bold?: boolean;
+    name_italic?: boolean;
+    name_uppercase?: boolean;
+    name_strikethrough?: boolean;
+    text_bold?: boolean;
+    text_italic?: boolean;
+    text_uppercase?: boolean;
+    text_strikethrough?: boolean;
     name_color_active?: string;
     name_color_inactive?: string;
     state_color_active?: string;
@@ -243,12 +265,12 @@ export interface IconConfig {
     inactive_icon_template?: string;
     active_state_template?: string;
     inactive_state_template?: string;
+    dynamic_icon_template_mode?: boolean;
+    dynamic_icon_template?: string;
+    dynamic_color_template_mode?: boolean;
+    dynamic_color_template?: string;
 }
-<<<<<<< HEAD
-interface IconRowConfig {
-=======
 export interface IconRowConfig {
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     id: string;
     width?: string;
     alignment?: string;
@@ -257,11 +279,7 @@ export interface IconRowConfig {
     columns?: number;
     icons: IconConfig[];
 }
-<<<<<<< HEAD
-interface ImageCropSettings {
-=======
 export interface ImageCropSettings {
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     top: number;
     right: number;
     bottom: number;
@@ -271,16 +289,6 @@ export interface ImageCropSettings {
     x?: number;
     y?: number;
 }
-<<<<<<< HEAD
-interface SectionStyleSettings {
-    marginTop?: number;
-    marginBottom?: number;
-}
-interface SectionStyles {
-    [sectionId: string]: SectionStyleSettings;
-}
-interface ActionImageConfig {
-=======
 export interface SectionStyleSettings {
     marginTop?: number;
     marginBottom?: number;
@@ -289,7 +297,6 @@ export interface SectionStyles {
     [sectionId: string]: SectionStyleSettings;
 }
 export interface ActionImageConfig {
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     id: string;
     entity: string;
     state: string;
@@ -302,20 +309,21 @@ export interface ActionImageConfig {
     template_mode?: boolean;
     template?: string;
 }
-<<<<<<< HEAD
-interface SectionBreakConfig {
-=======
 export interface SectionBreakConfig {
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     id: string;
     break_style?: 'blank' | 'line' | 'double_line' | 'dotted' | 'double_dotted' | 'shadow';
     break_thickness?: number;
     break_width_percent?: number;
     break_color?: string;
+    enable_title?: boolean;
+    title_text?: string;
+    title_size?: number;
+    title_color?: string;
+    title_bold?: boolean;
+    title_italic?: boolean;
+    title_uppercase?: boolean;
+    title_strikethrough?: boolean;
 }
-<<<<<<< HEAD
-export { BarConfig, CustomCard, IconConfig, IconRowConfig, ImageCropSettings, SectionStyleSettings, SectionStyles, GradientStop, ActionImageConfig, SectionBreakConfig, };
-=======
 export interface InfoEntityConfig {
     id: string;
     entity: string;
@@ -326,6 +334,14 @@ export interface InfoEntityConfig {
     text_size?: string | number;
     name_size?: string | number;
     icon_size?: string | number;
+    text_bold?: boolean;
+    text_italic?: boolean;
+    text_uppercase?: boolean;
+    text_strikethrough?: boolean;
+    name_bold?: boolean;
+    name_italic?: boolean;
+    name_uppercase?: boolean;
+    name_strikethrough?: boolean;
     icon_color?: string;
     name_color?: string;
     text_color?: string | 'primary' | 'secondary' | 'accent' | 'custom' | '';
@@ -337,6 +353,10 @@ export interface InfoEntityConfig {
     url?: string;
     service?: string;
     service_data?: Record<string, any> | string;
+    dynamic_icon_template_mode?: boolean;
+    dynamic_icon_template?: string;
+    dynamic_color_template_mode?: boolean;
+    dynamic_color_template?: string;
 }
 export interface InfoRowConfig {
     id: string;
@@ -352,4 +372,41 @@ export interface InfoRowConfig {
     row_header_color?: string;
     show_row_header?: boolean;
 }
->>>>>>> 4a04363 (新增灯的卡片控制相关)
+export interface ImageConfig {
+    id: string;
+    name?: string;
+    image_type: 'upload' | 'url' | 'entity' | 'none' | 'default' | 'map';
+    image?: string;
+    image_entity?: string;
+    image_width?: number;
+    image_crop?: ImageCropSettings;
+    conditional_entity?: string;
+    conditional_state?: string;
+    conditional_type?: 'show' | 'hide';
+    template_mode?: boolean;
+    template?: string;
+    priority?: number;
+    single_click_action?: 'toggle' | 'more-info' | 'navigate' | 'url' | 'call-service' | 'perform-action' | 'location-map' | 'assist' | 'trigger' | 'none';
+    single_entity?: string;
+    single_navigation_path?: string;
+    single_url?: string;
+    single_service?: string;
+    single_service_data?: Record<string, any> | string;
+    single_action?: Record<string, any> | string;
+    double_click_action?: 'toggle' | 'more-info' | 'navigate' | 'url' | 'call-service' | 'perform-action' | 'location-map' | 'assist' | 'trigger' | 'none';
+    double_entity?: string;
+    double_navigation_path?: string;
+    double_url?: string;
+    double_service?: string;
+    double_service_data?: Record<string, any> | string;
+    double_action?: Record<string, any> | string;
+    hold_click_action?: 'toggle' | 'more-info' | 'navigate' | 'url' | 'call-service' | 'perform-action' | 'location-map' | 'assist' | 'trigger' | 'none';
+    hold_entity?: string;
+    hold_navigation_path?: string;
+    hold_url?: string;
+    hold_service?: string;
+    hold_service_data?: Record<string, any> | string;
+    hold_action?: Record<string, any> | string;
+    timed_duration?: number;
+    is_fallback?: boolean;
+}

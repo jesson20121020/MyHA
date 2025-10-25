@@ -7,10 +7,7 @@ export declare class CustomizeTab extends LitElement {
     private _draggedSection;
     private _expandedSectionId;
     private _dropTargetSection;
-<<<<<<< HEAD
-=======
     private _layoutDescriptionsExpanded;
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     private _dropTargetColumn;
     private _t;
     private _fireConfigChanged;
@@ -33,14 +30,10 @@ export declare class CustomizeTab extends LitElement {
     private _updateSectionCondition;
     private _updateSectionBreakConfig;
     private _resetSectionBreakColor;
+    private _resetSectionTitleColor;
     private _handleAddSectionBreak;
     private _handleDeleteSectionBreak;
     protected render(): TemplateResult | typeof nothing;
-<<<<<<< HEAD
-    private _renderCustomizeTab;
-    private _renderDraggableSections;
-    private _renderGlobalCssSection;
-=======
     protected updated(changedProperties: Map<string, any>): void;
     private _renderCustomizeTab;
     private _renderDraggableSections;
@@ -53,6 +46,5 @@ export declare class CustomizeTab extends LitElement {
     private _updateStateCondition;
     private _getSectionTemplate;
     private _updateSectionTemplate;
->>>>>>> 4a04363 (新增灯的卡片控制相关)
     static styles: import("lit").CSSResult;
 }
