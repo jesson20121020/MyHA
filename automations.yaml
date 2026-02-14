@@ -96,7 +96,7 @@
   triggers:
   - trigger: state
     entity_id:
-    - button.madv_miowlv2_fe51_info
+    - camera.madv_miowlv2_fe51_video_doorbell
     attribute: motion_video_time
   conditions: []
   actions:
