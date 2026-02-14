@@ -9,3 +9,7 @@ custom_components/
 .timeline
 .vacuum
 *.pyc
+*.cprof
+callgrind.*
+backups
+tts

@@ -4,7 +4,7 @@ type: custom:grid-layout
 layout:
   margin: -0.5vh 0vh 0vh
   grid-template-columns: auto
-  grid-template-rows: 6vh 85vh 9vh
+  grid-template-rows: 6vh 86vh 8vh
   grid-template-areas: |
     "header"
     "main"
@@ -21,57 +21,336 @@ cards:
       grid-area: main
     layout_type: custom:vertical-layout
     layout:
-      height: 100vh
+      height: 86vh
       margin: 0vh 0vh 0vh
       padding: 0vh 0.4vh
     cards:
-      # 设备限制
-      - type: 'custom:button-card'
-        template: card_title
-        name: 设备限制
+      - type: custom:button-card
+        show_icon: false
+        show_state: false
+        show_name: false
         styles:
-          name:
-            - font-size: "1.0rem"
-      - type: 'custom:button-card'
-        template: card_check_box2
-        entity: input_boolean.xiao_mi_dian_shi_shi_chang_xian_zhi_kai_guan
-        variables:
-          ulm_card_check_box_name: 电视使用限制
-      - type: conditional
-        conditions:
-          - condition: state
-            entity: input_boolean.xiao_mi_dian_shi_shi_chang_xian_zhi_kai_guan
-            state: 'on'
-        card:
-          type: 'custom:button-card'
-          template: card_generic_info
-          entity: sensor.dian_shi_lian_xu_guan_kan_shi_chang
-          variables:
-            ulm_card_generic_name: 连续观看时长
-      - type: conditional
-        conditions:
-          - condition: state
-            entity: input_boolean.xiao_mi_dian_shi_shi_chang_xian_zhi_kai_guan
-            state: 'on'
-        card:
-          type: 'custom:button-card'
-          template: card_generic_info
-          entity: sensor.jin_ri_dian_shi_zai_xian_shi_chang
-          variables:
-            ulm_card_generic_name: 当日使用时长
-        
-      - type: conditional
-        conditions:
-          - condition: state
-            entity: input_boolean.xiao_mi_dian_shi_shi_chang_xian_zhi_kai_guan
-            state: 'on'
-        card:
-          type: "custom:button-card"
-          template: card_input_number
-          entity: input_number.xiao_mi_dian_shi_mei_ri_shi_yong_shi_chang_shang_xian
-          variables:
-            ulm_card_input_number_name: "每日时长限制"
-  - type: "custom:button-card"
-    view_layout:
-      grid-area: menu
-    template: "card_layout_navibar"
+          grid:
+            - grid-template-areas: "\"a c\" \"b c\""
+            - grid-template-columns: 1fr fr
+            - grid-template-rows: 1fr auto
+          card:
+            - background: none
+            - border: none
+            - box-shadow: none
+            - padding: 12px
+        custom_fields:
+          a:
+            card:
+              type: custom:mushroom-title-card
+              title: "{{ user }}"
+              subtitle: ""
+              alignment: start
+              title_tap_action:
+                action: navigate
+                navigation_path: /dashboard-phone/home
+              card_mod:
+                style: |
+                  ha-card {
+                    --title-font-size: 25px;
+                    --title-font-weight: bold;
+                  }
+          b:
+            card:
+              type: custom:mushroom-template-card
+              entity: person.mu_er_ba_ba
+              primary: |
+                {{ states('sensor.iphone_86_battery_level') | round(1) }}%
+              secondary: |
+                {% set state = states('person.mu_er_ba_ba') %}
+                {% set chinese_map = {
+                    'home': '在家',
+                    'not_home': '离家'
+                } %}
+                {{ chinese_map[state] if state in chinese_map else state }}
+              icon: |
+                {{ state_attr('sensor.iphone_86_battery_level', 'icon') }}
+              icon_color: >
+                {% set battery_level = states('sensor.iphone_86_battery_level') | int
+                %}
+
+                {% if battery_level < 30 %}
+                  red
+                {% elif battery_level < 60 %}
+                  orange
+                {% else %}
+                  green
+                {% endif %}
+              tap_action:
+                action: more-info
+              card_mod:
+                style: |
+                  :host {
+                    text-align: left;                                 
+                  } 
+                  ha-card {
+                    background: none;
+                    # 设置卡片边框（none 表示无边框）
+                    border: none;
+                    box-shadow: none;                                   
+                  }             
+          c:
+            card:
+              type: custom:mushroom-entity-card
+              no_card: true
+              entity: person.mu_er_ba_ba
+              icon_type: entity-picture
+              secondary_info: none
+              primary_info: none
+              layout: vertical
+              card_mod:
+                style: |
+                  ha-card {
+                    --icon-size: 80px
+                  }
+                  ha-card {
+                    background: none;
+                    # 设置卡片边框（none 表示无边框）
+                    border: none;
+                    box-shadow: none;                                   
+                  } 
+        square: false
+      - type: heading
+        heading_style: title
+        heading: 高级
+        icon: mdi:emoticon-confused
+      - type: custom:mushroom-template-card
+        primary: 通知
+        secondary: 查看系统摘要通知
+        icon: mdi:message-text-fast
+        icon_color: lime
+        tap_action:
+          action: navigate
+          navigation_path: "#message"
+        hold_action:
+          action: none
+        double_tap_action:
+          action: none
+        grid_options:
+          columns: 12
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              background: rgba(255,255,255,0.1);
+              # 设置卡片边框（none 表示无边框）
+              border: none;
+              box-shadow: none; 
+              # 设置卡片圆角大小
+              border-radius: 28px !important;
+              backdrop-filter: blur(10px) !important;
+            }             
+      - type: custom:mushroom-template-card
+        primary: 设备耗材
+        secondary: 跟踪耗材状态
+        icon: mdi:database
+        icon_color: orange
+        badge_icon: >
+          {% if is_state('sensor.she_bei_hao_cai_zhuang_tai_qun_zu_chuan_gan_qi',
+          'on') 
+              %}
+            mdi:
+          {% else %}
+            
+          {% endif %}
+        badge_color: red
+        tap_action:
+          action: navigate
+          navigation_path: "#battery"
+        hold_action:
+          action: none
+        double_tap_action:
+          action: none
+        grid_options:
+          columns: 12
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              background: rgba(255,255,255,0.1);
+              # 设置卡片边框（none 表示无边框）
+              border: none;
+              box-shadow: none; 
+              # 设置卡片圆角大小
+              border-radius: 28px !important;
+              backdrop-filter: blur(10px) !important;
+            }        
+      - type: custom:mushroom-template-card
+        primary: 设备管理
+        secondary: 查看、管理设备状态
+        icon: mdi:server
+        icon_color: blue
+        badge_icon: |
+          {% if is_state('binary_sensor.synology_nas_security_status', 'on') 
+              %}
+            mdi:
+          {% else %}
+            
+          {% endif %}
+        badge_color: red
+        tap_action:
+          action: navigate
+          navigation_path: "#servers"
+        hold_action:
+          action: none
+        double_tap_action:
+          action: none
+        grid_options:
+          columns: 12
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              background: rgba(255,255,255,0.1);
+              # 设置卡片边框（none 表示无边框）
+              border: none;
+              box-shadow: none; 
+              # 设置卡片圆角大小
+              border-radius: 28px !important;
+              backdrop-filter: blur(10px) !important;
+            }    
+      - type: custom:mushroom-template-card
+        primary: 能源管理
+        secondary: 查看、管理能源消耗
+        icon: mdi:transmission-tower
+        icon_color: green
+        tap_action:
+          action: navigate
+          navigation_path: "#energy"
+        hold_action:
+          action: none
+        double_tap_action:
+          action: none
+        grid_options:
+          columns: 12
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              background: rgba(255,255,255,0.1);
+              # 设置卡片边框（none 表示无边框）
+              border: none;
+              box-shadow: none; 
+              # 设置卡片圆角大小
+              border-radius: 28px !important;
+              backdrop-filter: blur(10px) !important;
+            }         
+      - type: custom:mushroom-template-card
+        primary: 用户
+        secondary: 查看、管理当前登入用户
+        icon: mdi:account-outline
+        icon_color: red
+        tap_action:
+          action: navigate
+          navigation_path: /config/person
+        hold_action:
+          action: none
+        double_tap_action:
+          action: none
+        grid_options:
+          columns: 12
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              background: rgba(255,255,255,0.1);
+              # 设置卡片边框（none 表示无边框）
+              border: none;
+              box-shadow: none; 
+              # 设置卡片圆角大小
+              border-radius: 28px !important;
+              backdrop-filter: blur(10px) !important;
+            }        
+      - type: custom:mushroom-template-card
+        primary: 设置
+        secondary: 更多设置
+        icon: mdi:cog
+        icon_color: cyan
+        tap_action:
+          action: navigate
+          navigation_path: /config/dashboard
+        hold_action:
+          action: none
+        double_tap_action:
+          action: none
+        grid_options:
+          columns: 12
+          rows: 1
+        card_mod:
+          style: |
+            ha-card {
+              background: rgba(255,255,255,0.1);
+              # 设置卡片边框（none 表示无边框）
+              border: none;
+              box-shadow: none; 
+              # 设置卡片圆角大小
+              border-radius: 28px !important;
+              backdrop-filter: blur(10px) !important;
+            }        
+  
+  - type: custom:navbar-card
+    mobile:
+      full_width: true
+      mode: floating
+      show_labels: true
+    routes:
+      - icon: mdi:home-outline
+        icon_selected: mdi:home-outline
+        url: /ui-lovelace-minimalist/home
+        label: 首页
+        selected_color: transparent
+        icon_color: null
+      - icon: mdi:devices
+        url: /ui-lovelace-minimalist/devices
+        label: 设备
+        selected_color: transparent
+        icon_selected: mdi:devices
+        icon_color: null
+      - icon: mdi:music-circle-outline
+        icon_selected: mdi:music-circle-outline
+        url: /ui-lovelace-minimalist/music
+        label: 音乐
+        selected_color: transparent
+        icon_color: null
+      - icon: mdi:chart-bar
+        label: 统计
+        url: /ui-lovelace-minimalist/statistic
+        selected_color: transparent
+        icon_selected: mdi:chart-bar
+        icon_color: null
+      - icon: mdi:account
+        label: 我的
+        url: /ui-lovelace-minimalist/account
+        selected_color: transparent
+        icon_color: green
+        icon_selected: mdi:account
+    layout:
+      auto_padding:
+        mobile_px: 0
+        desktop_px: -20
+      reflect_child_state: false
+    desktop:
+      show_labels: true
+    styles: |
+      .navbar {
+        width: 105%;
+        margin-left: -10px;
+      }
+      .route {
+        margin-top: -6px;
+        margin-bottom: -3px;
+      }
+      .button {
+        margin-top: 0px;
+        margin-bottom: -8px;
+      }
+
+  - !include popup/全屋消息.yaml
+  - !include popup/设备耗材.yaml
+  - !include popup/设备管理.yaml
+  - !include popup/能源管理.yaml

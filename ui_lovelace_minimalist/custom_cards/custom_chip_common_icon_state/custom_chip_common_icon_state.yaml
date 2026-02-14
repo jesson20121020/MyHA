@@ -4,6 +4,7 @@ chip_common_icon_state:
   template: "chip_icon_label"
   variables:
     ulm_chip_mdi_icon_state_icon_color: "rgba(var(--color-yellow),1)"
+    ulm_chip_mdi_icon_state_icon_off_color: "rgba(var(--color-gray),1)"
   tap_action:
     action: "none"
   entity: "[[[ return variables.ulm_chip_mdi_icon_state_entity ]]]"
@@ -23,6 +24,6 @@ chip_common_icon_state:
     grid:
       - grid-template-areas: "'i l'"
     icon:
-      - color: "[[[ return variables.ulm_chip_mdi_icon_state_icon_color; ]]]"
+      - color: "[[[ if (states[variables.ulm_chip_mdi_icon_state_entity].state > '0') {return variables.ulm_chip_mdi_icon_state_icon_color;} else {return variables.ulm_chip_mdi_icon_state_icon_off_color;} ]]]"
     label:
       - color: "[[[ return variables.ulm_chip_mdi_icon_state_label_color; ]]]"

@@ -32,6 +32,15 @@ cards:
         styles:
           name:
             - font-size: "1.0rem"
+      
+      - type: custom:xiaoshi-state-grid-info
+        entities:
+          - entity_id: sensor.state_grid_3306120952902
+        width: 100%
+        color_num: "#0fccc3"
+        color_cost: "#804aff"
+        theme: "on"
+        default_show_calendar: ""
 
       - type: horizontal-stack
         cards:
@@ -161,7 +170,62 @@ cards:
     #           }
     #           return data;
 
-  - type: "custom:button-card"
-    view_layout:
-      grid-area: menu
-    template: "card_layout_navibar"
+  - type: custom:navbar-card
+    mobile:
+      full_width: true
+      mode: floating
+      show_labels: true
+    routes:
+      - icon: mdi:home-outline
+        icon_selected: mdi:home-outline
+        url: /ui-lovelace-minimalist/home
+        label: 首页
+        selected_color: transparent
+        icon_color: null
+      - icon: mdi:devices
+        url: /ui-lovelace-minimalist/devices
+        label: 设备
+        selected_color: transparent
+        icon_selected: mdi:devices
+        icon_color: null
+      - icon: mdi:music-circle-outline
+        icon_selected: mdi:music-circle-outline
+        url: /ui-lovelace-minimalist/music
+        label: 音乐
+        selected_color: transparent
+        icon_color: null
+      - icon: mdi:chart-bar
+        label: 统计
+        url: /ui-lovelace-minimalist/statistic
+        selected_color: transparent
+        icon_selected: mdi:chart-bar
+        icon_color: green
+      - icon: mdi:account
+        label: 我的
+        url: /ui-lovelace-minimalist/account
+        selected_color: transparent
+        icon_color: null
+        icon_selected: mdi:account
+    layout:
+      height: 9vh
+      auto_padding:
+        mobile_px: 0
+        desktop_px: -20
+      reflect_child_state: false
+    desktop:
+      show_labels: true
+    styles: |
+      .navbar {
+        width: 105%;
+        margin-left: -10px;
+      }
+      .route {
+        margin-top: -6px;
+        margin-bottom: -3px;
+      }
+      .button {
+        margin-top: 0px;
+        margin-bottom: -8px;
+      }
+      
+     

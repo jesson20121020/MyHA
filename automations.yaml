@@ -107,6 +107,11 @@
       title: 注意⚠️
       data:
         url: '{{state_attr(''camera.madv_miowlv2_fe51_video_doorbell'',''stream_address'')}}'
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 30
+      milliseconds: 0
   - action: mqtt.publish
     metadata: {}
     data:
@@ -226,4 +231,203 @@
     entity_id: 0b92916f408f40e24711bcd7a6b071cd
     type: select_option
     option: power
+  mode: single
+- id: '1761651840426'
+  alias: HA处理器占用过高提示
+  description: ''
+  triggers:
+  - type: value
+    device_id: 9efa4c9a210f6711a1f46dcf264c05e5
+    entity_id: 564a27d79e75a080c93eca089fc13827
+    domain: sensor
+    trigger: device
+    above: 50
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 30
+  conditions: []
+  actions:
+  - action: notify.mobile_app_iphone_86
+    metadata: {}
+    data:
+      message: HA处理器占用过高，需要检查
+      title: 警告
+  - action: profiler.start
+    metadata: {}
+    data:
+      seconds: 60
+  mode: single
+- id: '1768270145156'
+  alias: 在家->出门
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - person.mu_er_ba_ba
+    from:
+    to:
+    - not_home
+  - trigger: state
+    entity_id:
+    - person.mu_er_ma_ma
+    from:
+    to:
+    - not_home
+  - trigger: state
+    entity_id:
+    - person.mu_er_nai_nai
+    from:
+    to:
+    - not_home
+  - trigger: state
+    entity_id:
+    - person.mu_er_ye_ye
+    from:
+    to:
+    - not_home
+  conditions:
+  - condition: and
+    conditions:
+    - condition: state
+      entity_id: person.mu_er_ba_ba
+      state:
+      - not_home
+    - condition: state
+      entity_id: person.mu_er_ma_ma
+      state:
+      - not_home
+    - condition: state
+      entity_id: person.mu_er_nai_nai
+      state:
+      - not_home
+    - condition: state
+      entity_id: person.mu_er_ye_ye
+      state:
+      - not_home
+  actions:
+  - action: input_select.select_option
+    metadata: {}
+    target:
+      entity_id: input_select.chang_jing_mo_shi_xuan_ze
+    data:
+      option: 出门模式
+  mode: single
+- id: '1768280507352'
+  alias: 出门->在家
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - person.mu_er_ba_ba
+    from:
+    to:
+    - home
+  - trigger: state
+    entity_id:
+    - person.mu_er_ma_ma
+    from:
+    to:
+    - home
+  - trigger: state
+    entity_id:
+    - person.mu_er_nai_nai
+    from:
+    to:
+    - home
+  - trigger: state
+    entity_id:
+    - person.mu_er_ye_ye
+    from:
+    to:
+    - home
+  conditions:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: person.mu_er_ba_ba
+      state:
+      - home
+    - condition: state
+      entity_id: person.mu_er_ma_ma
+      state:
+      - home
+    - condition: state
+      entity_id: person.mu_er_nai_nai
+      state:
+      - home
+    - condition: state
+      entity_id: person.mu_er_ye_ye
+      state:
+      - home
+  - condition: state
+    entity_id: input_select.chang_jing_mo_shi_xuan_ze
+    state:
+    - 出门模式
+  actions:
+  - action: input_select.select_option
+    metadata: {}
+    target:
+      entity_id: input_select.chang_jing_mo_shi_xuan_ze
+    data:
+      option: 在家模式
+  mode: single
+- id: '1768281131653'
+  alias: 在家->晚安
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.zhu_wo_kai_deng_shu_liang
+    below: 1
+  - trigger: numeric_state
+    entity_id:
+    - sensor.ci_wo_kai_deng_shu_liang
+    below: 1
+  - trigger: time
+    at: '22:35:00'
+  conditions:
+  - condition: and
+    conditions:
+    - condition: time
+      after: '22:30:00'
+    - condition: numeric_state
+      entity_id: sensor.zhu_wo_kai_deng_shu_liang
+      below: 1
+    - condition: numeric_state
+      entity_id: sensor.ci_wo_kai_deng_shu_liang
+      below: 1
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: input_select.chang_jing_mo_shi_xuan_ze
+      state:
+      - 出门模式
+  actions:
+  - action: input_select.select_option
+    metadata: {}
+    target:
+      entity_id: input_select.chang_jing_mo_shi_xuan_ze
+    data:
+      option: 晚安模式
+  mode: single
+- id: '1768323484390'
+  alias: 晚安->在家
+  description: ''
+  triggers:
+  - trigger: sun
+    event: sunrise
+    offset: 0
+  conditions:
+  - condition: state
+    entity_id: input_select.chang_jing_mo_shi_xuan_ze
+    state:
+    - 晚安模式
+  actions:
+  - action: input_select.select_option
+    metadata: {}
+    target:
+      entity_id: input_select.chang_jing_mo_shi_xuan_ze
+    data:
+      option: 在家模式
   mode: single

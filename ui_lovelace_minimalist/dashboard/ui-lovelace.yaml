@@ -14,7 +14,7 @@ swipe_nav:
   swipe_amount: 0
 
 title: "Minimalist"
-background: "var(--background-image)"
+# background: "var(--background-image)"
 views:
   # 移动平台页
   - !include views/主页.yaml

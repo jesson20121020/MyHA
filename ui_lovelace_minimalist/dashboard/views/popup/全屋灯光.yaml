@@ -1,0 +1,537 @@
+type: vertical-stack
+cards:
+  - type: custom:bubble-card
+    card_type: pop-up
+    hash: "#light"
+    show_header: false
+    bg_color: rgb(255.255.255)
+    bg_blur: "0"
+    bg_opacity: "80"
+    button_type: name
+    card_layout: large
+    backdrop_blur: "0"
+    hide_backdrop: false
+    width_desktop: 80%
+    shadow_opacity: "0"
+    margin: 7px
+    margin_top_mobile: 0px
+    margin_top_desktop: "-15vh"
+    styles: |-
+      .bubble-pop-up {
+          height: 80vh !important;
+      }  
+  - type: custom:bubble-card
+    card_type: empty-column
+    card_layout: normal
+  - type: custom:button-card
+    name: 全屋灯光
+    icon: []
+    entity: light.quan_wu_deng_zu
+    show_state: false
+    state:
+      - value: "on"
+        styles:
+          name:
+            - color: black
+    styles:
+      grid:
+        - grid-template-areas: "\"i n switch\""
+        - grid-template-columns: 60px 1fr 50px;
+      card:
+        - border-radius: 25px
+        - padding: 12px 14px 12px 8px
+        - border: none;
+        - background: |
+            [[[
+              if (entity.state == "off") {
+                return "rgba(255, 255, 255, 0.1)"; 
+              }else {
+                return "rgba(255, 255, 255, 1)";
+              }
+            ]]]
+        - transition: background 0.5s ease
+        - backdrop-filter: |
+            [[[ return entity.state == "off" ? 'blur(10px)' : 'none'; ]]]     
+      img_cell:
+        - background: "#EEE8CD"
+        - border-radius: 200px
+        - width: 50px
+        - height: 50px
+      icon:
+        - width: 33px
+        - background-image: url('/local/icon/灯光.png')
+        - background-size: contain
+        - background-repeat: no-repeat
+        - background-position: center center
+      name:
+        - justify-self: start
+        - font-size: 20px
+        - font-weight: bold
+        - color: null
+        - padding-left: 9px
+      state:
+        - justify-self: start
+        - font-size: 20px
+        - color: var(--secondary-text-color)
+        - opacity: "1"
+        - padding-left: 0px
+    custom_fields:
+      switch:
+        card:
+          type: custom:button-card
+          icon: mdi:power
+          entity: light.quan_wu_deng_zu
+          show_name: false
+          styles:
+            card:
+              - background: none
+              - border: none
+              - box-shadow: none
+            icon:
+              - width: 28px
+          state:
+            - value: "on"
+              styles:
+                icon:
+                  - color: "#FF8C00"
+            - value: "off"
+              styles:
+                icon:
+                  - color: black
+          tap_action:
+            action: toggle
+  - type: custom:bubble-card
+    card_type: empty-column
+    card_layout: normal
+  - type: custom:bubble-card
+    card_type: separator
+    name: 书房丨Light
+    icon: phu:rooms-hallway
+    sub_button:
+      - entity: light.dikair_cn_392944107_wy0a01_s_2_2
+        icon: mdi:power
+        tap_action:
+          action: toggle
+        show_background: true
+        light_background: true
+        show_state: false
+        show_last_changed: false
+        show_attribute: false
+        state_background: false
+    styles: |
+      .bubble-sub-button-1 {
+        background-color: ${hass.states['light.dikair_cn_392944107_wy0a01_s_2_2'].state === 'on' ? '#FF8C00' : 'white'} !important;
+      }
+      .bubble-line {
+          margin-right: 14px;
+          # 背景透明度（0-100）
+          opacity: 0.1;
+          height: 4px;      
+          background-color: gray;
+      }      
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: light.dikair_cn_392944107_wy0a01_s_2_2
+        variables:
+          ulm_card_light_name: "书房灯"
+          ulm_custom_popup:
+            entity: light.dikair_cn_392944107_wy0a01_s_2_2
+
+  - type: custom:bubble-card
+    card_type: empty-column
+    card_layout: normal
+  - type: custom:bubble-card
+    card_type: separator
+    name: 客厅丨Light
+    icon: phu:rooms-living
+    sub_button:
+      - entity: light.ke_ting_deng_zu
+        icon: mdi:power
+        tap_action:
+          action: toggle
+        show_background: true
+        light_background: true
+        show_state: false
+        show_last_changed: false
+        show_attribute: false
+        state_background: false
+    styles: |
+      .bubble-sub-button-1 {
+        background-color: ${hass.states['light.ke_ting_deng_zu'].state === 'on' ? '#FF8C00' : 'white'} !important;
+      }
+      .bubble-line {
+          margin-right: 14px;
+          # 背景透明度（0-100）
+          opacity: 0.1;
+          height: 4px;      
+          background-color: gray;
+      }       
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.switch_2efe_switch_1
+        variables:
+          ulm_card_light_name: "餐厅灯"
+          ulm_custom_popup:
+            entity: light.can_ting_diao_deng
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.switch_2efe_switch_2
+        variables:
+          ulm_card_light_name: "吸顶灯"
+          ulm_custom_popup:
+            entity: light.ke_ting_xi_ding_deng
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.switch_2efe_switch_3
+        variables:
+          ulm_card_light_name: "灯带"
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.switch_58d9_switch_2
+        variables:
+          ulm_card_light_name: "筒灯"
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.switch_58d9_switch_1
+        variables:
+          ulm_card_light_name: "走廊灯"
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.dwdz_sw0a01_fc1b_switch
+        variables:
+          ulm_card_light_name: "电视柜灯"
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: light.cuco_sl4_1ad9_light
+        variables:
+          ulm_card_light_name: "电视背景灯带"
+          ulm_custom_popup:
+            entity: light.cuco_sl4_1ad9_light
+      
+  - type: custom:bubble-card
+    card_type: empty-column
+    card_layout: normal
+  - type: custom:bubble-card
+    card_type: separator
+    name: 厨房丨Light
+    icon: mdi:fridge
+    sub_button:
+      - entity: light.chu_fang_deng_zu
+        icon: mdi:power
+        tap_action:
+          action: toggle
+        show_background: true
+        light_background: true
+        show_state: false
+        show_last_changed: false
+        show_attribute: false
+        state_background: false
+    styles: |
+      .bubble-sub-button-1 {
+        background-color: ${hass.states['light.chu_fang_deng_zu'].state === 'on' ? '#FF8C00' : 'white'} !important;
+      }
+      .bubble-line {
+          margin-right: 14px;
+          # 背景透明度（0-100）
+          opacity: 0.1;
+          height: 4px;      
+          background-color: gray;
+      }       
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.xiaomi_cn_2042103469_w2_on_p_3_1
+        variables:
+          ulm_card_light_name: "厨房筒灯"
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.xiaomi_cn_2042103469_w2_on_p_2_1
+        variables:
+          ulm_card_light_name: "厨房大灯"
+
+  - type: custom:bubble-card
+    card_type: empty-column
+    card_layout: normal
+  - type: custom:bubble-card
+    card_type: separator
+    name: 阳台丨Light
+    icon: mdi:balcony
+    sub_button:
+      - entity: light.viomi_ich108_091d_light
+        icon: mdi:power
+        tap_action:
+          action: toggle
+        show_background: true
+        light_background: true
+        show_state: false
+        show_last_changed: false
+        show_attribute: false
+        state_background: false
+    styles: |
+      .bubble-sub-button-1 {
+        background-color: ${hass.states['light.viomi_ich108_091d_light'].state === 'on' ? '#FF8C00' : 'white'} !important;
+      }
+      .bubble-line {
+          margin-right: 14px;
+          # 背景透明度（0-100）
+          opacity: 0.1;
+          height: 4px;      
+          background-color: gray;
+      }       
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: "custom:button-card"
+        template: card_light
+        entity: light.viomi_ich108_091d_light
+        variables:
+          ulm_card_light_name: "阳台灯"
+
+
+  - type: custom:bubble-card
+    card_type: empty-column
+    card_layout: normal
+  - type: custom:bubble-card
+    card_type: separator
+    name: 次卫丨Light
+    icon: mdi:paper-roll
+    sub_button:
+      - entity: light.ci_wei_deng_zu
+        icon: mdi:power
+        tap_action:
+          action: toggle
+        show_background: true
+        light_background: true
+        show_state: false
+        show_last_changed: false
+        show_attribute: false
+        state_background: false
+    styles: |
+      .bubble-sub-button-1 {
+        background-color: ${hass.states['light.ci_wei_deng_zu'].state === 'on' ? '#FF8C00' : 'white'} !important;
+      }
+      .bubble-line {
+          margin-right: 14px;
+          # 背景透明度（0-100）
+          opacity: 0.1;
+          height: 4px;      
+          background-color: gray;
+      }       
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.xiaomi_cn_2042785672_w2_on_p_2_1
+        variables:
+          ulm_card_light_name: "次卫主灯"
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.xiaomi_cn_2042785672_w2_on_p_3_1
+        variables:
+          ulm_card_light_name: "次卫筒灯"
+  - type: custom:bubble-card
+    card_type: empty-column
+    card_layout: normal
+  - type: custom:bubble-card
+    card_type: separator
+    name: 主卧丨Light
+    icon: phu:rooms-bedroom
+    sub_button:
+      - entity: light.zhu_wo_deng_zu
+        icon: mdi:power
+        tap_action:
+          action: toggle
+        show_background: true
+        light_background: true
+        show_state: false
+        show_last_changed: false
+        show_attribute: false
+        state_background: false
+    styles: |
+      .bubble-sub-button-1 {
+        background-color: ${hass.states['light.zhu_wo_deng_zu'].state === 'on' ? '#FF8C00' : 'white'} !important;
+      }
+      .bubble-line {
+          margin-right: 14px;
+          # 背景透明度（0-100）
+          opacity: 0.1;
+          height: 4px;      
+          background-color: gray;
+      }       
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.switch_c208_switch_2
+        variables:
+          ulm_card_light_icon: mdi:lightbulb
+          ulm_card_light_name: 床头灯
+          ulm_custom_popup:
+            entity: light.zhu_wo_chuang_tou_deng
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.switch_c208_switch_1
+        variables:
+          ulm_card_light_name: 吸顶灯
+          ulm_custom_popup:
+            entity: light.zhu_wo_xi_ding_deng
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.switch_181c_switch_1
+        variables:
+          ulm_card_light_name: 衣帽间灯
+          #  ulm_card_tap_action: "more-info"
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.switch_181c_switch_2
+        variables:
+          ulm_card_light_name: 床尾灯
+          ulm_custom_popup:
+            entity: light.zhu_wo_chuang_wei_deng
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: light.yeelink_light3_d886_light
+        variables:
+          ulm_card_light_name: 飘窗灯
+          ulm_custom_popup:
+            entity: light.yeelink_light3_d886_light
+  - type: custom:bubble-card
+    card_type: empty-column
+    card_layout: normal
+  - type: custom:bubble-card
+    card_type: separator
+    name: 主卫丨Light
+    icon: mdi:paper-roll
+    sub_button:
+      - entity: light.zhu_wei_deng_zu
+        icon: mdi:power
+        tap_action:
+          action: toggle
+        show_background: true
+        light_background: true
+        show_state: false
+        show_last_changed: false
+        show_attribute: false
+        state_background: false
+    styles: |
+      .bubble-sub-button-1 {
+        background-color: ${hass.states['light.zhu_wei_deng_zu'].state === 'on' ? '#FF8C00' : 'white'} !important;
+      }
+      .bubble-line {
+          margin-right: 14px;
+          # 背景透明度（0-100）
+          opacity: 0.1;
+          height: 4px;      
+          background-color: gray;
+      }       
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.xiaomi_cn_2042785698_w2_on_p_3_1
+        variables:
+          ulm_card_light_name: 主卫大灯
+          #  ulm_card_tap_action: "more-info"
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.xiaomi_cn_2042785698_w2_on_p_2_1
+        variables:
+          ulm_card_light_name: 主卫筒灯
+  - type: custom:bubble-card
+    card_type: empty-column
+    card_layout: normal
+  - type: custom:bubble-card
+    card_type: separator
+    name: 次卧丨Light
+    icon: phu:rooms-kids-bedroom
+    sub_button:
+      - entity: light.ci_wo_xi_ding_deng
+        icon: mdi:power
+        tap_action:
+          action: toggle
+        show_background: true
+        light_background: true
+        show_state: false
+        show_last_changed: false
+        show_attribute: false
+        state_background: false
+    styles: |
+      .bubble-sub-button-1 {
+        background-color: ${hass.states['light.ci_wo_xi_ding_deng'].state === 'on' ? '#FF8C00' : 'white'} !important;
+      }
+      .bubble-line {
+          margin-right: 14px;
+          # 背景透明度（0-100）
+          opacity: 0.1;
+          height: 4px;      
+          background-color: gray;
+      }       
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.switch_af79
+        variables:
+          ulm_card_light_name: "次卧灯"
+          ulm_custom_popup:
+            entity: light.ci_wo_xi_ding_deng
+  - type: custom:bubble-card
+    card_type: empty-column
+    card_layout: normal
+  - type: custom:bubble-card
+    card_type: separator
+    name: 儿童房丨Light
+    icon: phu:rooms-kids-bedroom
+    sub_button:
+      - entity: light.er_tong_fang_xi_deng_deng
+        icon: mdi:power
+        tap_action:
+          action: toggle
+        show_background: true
+        light_background: true
+        show_state: false
+        show_last_changed: false
+        show_attribute: false
+        state_background: false
+    styles: |
+      .bubble-sub-button-1 {
+        background-color: ${hass.states['light.er_tong_fang_xi_deng_deng'].state === 'on' ? '#FF8C00' : 'white'} !important;
+      }
+      .bubble-line {
+          margin-right: 14px;
+          # 背景透明度（0-100）
+          opacity: 0.1;
+          height: 4px;      
+          background-color: gray;
+      }       
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: "custom:button-card"
+        template: card_state_light
+        entity: switch.switch_8769
+        variables:
+          ulm_card_light_name: "儿童房灯"
+          ulm_custom_popup:
+            entity: light.er_tong_fang_xi_deng_deng

@@ -1,0 +1,157 @@
+---
+serenity-mobile:
+  # Journal
+  state-icon-color: "rgb(var(--color-theme))"
+  border-radius: "20px"
+  ha-card-border-radius: "var(--border-radius)"
+  error-color: "var(--google-red)"
+  warning-color: "var(--google-yellow)"
+  success-color: "var(--google-green)"
+  info-color: "var(--google-violet)"
+  divider-color: "rgba(var(--color-theme),.12)"
+  accent-color: "var(--google-yellow)"
+  ha-dialog-border-radius: "10px"
+  # fix added border-lines in 2022.11
+  ha-card-border-width: "0px"
+  card-mod-theme: "serenity-mobile"
+  card-mod-root: |
+    .header {
+      display: none;
+    }
+    #view {
+      padding: 0 !important;
+      height: 100vh !important;
+    }
+
+
+  card-mod-view-yaml: |
+    "*:first-child$": |
+      #columns .column > * {
+        padding-left: 5px;
+        padding-right: 5px;
+        padding-bottom: 5px;
+      }
+  modes:
+    light:
+      # text
+      primary-text-color: "#DDDDDD"
+      # main interface colors
+      primary-color: "#DD8432"
+      google-red: "#F18B82"
+      google-green: "#00ff6f"
+      google-yellow: "#DD8432"
+      google-orange: "#DD8432"
+      google-violet: "#BB86FC"
+      google-grey: "#BBBBBB"
+      color-red: "241, 139, 130"
+      color-green: "76, 176, 80"
+      color-yellow: "221, 132, 50"
+      color-orange: "221, 132, 50"
+      color-theme: "221,221,221"
+      color-purple: "102, 31, 255"
+      color-grey: "187, 187, 187"
+      color-pink: "233, 30, 99"
+      color-bar-top: "121,102,88"
+      color-bar-bottom: "255,255,255"
+      color-background-yellow: "var(--color-yellow)"
+      color-background-orange: "var(--color-orange)"
+      color-background-green: "var(--color-green)"
+      color-background-red: "var(--color-red)"
+      color-background-pink: "var(--color-pink)"
+      color-background-purple: "var(--color-purple)"
+      color-yellow-text: "var(--color-yellow)"
+      color-orange-text: "var(--color-orange)"
+      color-green-text: "var(--color-green)"
+      color-red-text: "var(--color-red)"
+      color-pink-text: "var(--color-pink)"
+      color-purple-text: "var(--color-purple)"
+
+      opacity-bg: "0.1"
+      # floating button text color
+      mdc-theme-on-secondary: "var(--card-background-color)"
+      # background and sidebar
+      card-background-color: "#1D1D1D"
+      primary-background-color: "#121212"
+      secondary-background-color: "#121212"
+      # header
+      app-header-text-color: "var(--primary-text-color)"
+
+      app-header-background-color: "#796658"
+      paper-tabs-selection-bar-color: "var(--primary-text-color)"
+      # Sidebar
+      sidebar-selected-text-color: "rgb(var(--color-orange))"
+      sidebar-selected-icon-color: "rgb(var(--color-orange))"
+      # Slider
+      slider-color: "rgb(var(--color-green))"
+      slider-bar-color: "rgba(var(--color-green),0.38)"
+      # card
+      box-shadow: "none"
+      # switch
+      switch-checked-color: "var(--google-green)"      
+      # media player
+      mini-media-player-accent-color: "var(--google-orange)"
+      # Journal
+      state-icon-color: "rgb(var(--color-theme))"
+      #自定义卡片mushroom-cover
+      mush-rgb-state-cover-open: "rgb(var(--color-green))"
+    dark:
+      # text
+      primary-text-color: "#DDDDDD"
+      # main interface colors
+      primary-color: "#DD8432"
+      google-red: "#F18B82"
+      google-green: "#00ff6f"
+      google-yellow: "#DD8432"
+      google-orange: "#DD8432"
+      google-violet: "#BB86FC"
+      google-grey: "#BBBBBB"
+      color-red: "241, 139, 130"
+      color-green: "76, 176, 80"
+      color-yellow: "221, 132, 50"
+      color-orange: "221, 132, 50"
+      color-theme: "221,221,221"
+      color-purple: "102, 31, 255"
+      color-grey: "187, 187, 187"
+      color-pink: "233, 30, 99"
+      color-bar-top: "47,32,75"
+      color-bar-bottom: "136,113,105"     
+      color-background-yellow: "var(--color-yellow)"
+      color-background-orange: "var(--color-orange)"
+      color-background-green: "var(--color-green)"
+      color-background-red: "var(--color-red)"
+      color-background-pink: "var(--color-pink)"
+      color-background-purple: "var(--color-purple)"
+      color-yellow-text: "var(--color-yellow)"
+      color-orange-text: "var(--color-orange)"
+      color-green-text: "var(--color-green)"
+      color-red-text: "var(--color-red)"
+      color-pink-text: "var(--color-pink)"
+      color-purple-text: "var(--color-purple)"
+      opacity-bg: "0.1"
+      # floating button text color
+      mdc-theme-on-secondary: "var(--card-background-color)"
+      # background and sidebar
+      card-background-color: "#1D1D1D"
+      primary-background-color: "#121212"
+      secondary-background-color: "#121212"
+      # header
+      app-header-text-color: "var(--primary-text-color)"
+
+      app-header-background-color: "#2f204b"
+      paper-tabs-selection-bar-color: "var(--primary-text-color)"
+      # Sidebar
+      sidebar-selected-text-color: "rgb(var(--color-orange))"
+      sidebar-selected-icon-color: "rgb(var(--color-orange))"
+      # Slider
+      slider-color: "rgb(var(--color-green))"
+      slider-bar-color: "rgba(var(--color-green),0.38)"
+      # card
+      box-shadow: "none"
+      # switch
+      switch-checked-color: "var(--google-green)"      
+      # media player
+      mini-media-player-accent-color: "var(--google-orange)"
+      # Journal
+      state-icon-color: "rgb(var(--color-theme))"
+      #自定义卡片mushroom-cover
+      mush-rgb-state-cover-open: "rgb(var(--color-green))"

@@ -1076,3 +1076,346 @@ c2_8e_8e_5d_8d_bb:
   icon:
   picture:
   track: true
+
+e4_fe_43_4c_8b_5a:
+  name: e4_fe_43_4c_8b_5a
+  mac: E4:FE:43:4C:8B:5A
+  icon:
+  picture:
+  track: true
+
+02_42_ac_11_00_09:
+  name: 02_42_ac_11_00_09
+  mac: 02:42:AC:11:00:09
+  icon:
+  picture:
+  track: true
+
+02_42_ac_15_00_0a:
+  name: 02_42_ac_15_00_0a
+  mac: 02:42:AC:15:00:0A
+  icon:
+  picture:
+  track: true
+
+02_42_ac_15_00_06:
+  name: 02_42_ac_15_00_06
+  mac: 02:42:AC:15:00:06
+  icon:
+  picture:
+  track: true
+
+02_42_ac_18_00_07:
+  name: 02_42_ac_18_00_07
+  mac: 02:42:AC:18:00:07
+  icon:
+  picture:
+  track: true
+
+02_42_ac_18_00_0b:
+  name: 02_42_ac_18_00_0b
+  mac: 02:42:AC:18:00:0B
+  icon:
+  picture:
+  track: true
+
+02_42_ac_18_00_06:
+  name: 02_42_ac_18_00_06
+  mac: 02:42:AC:18:00:06
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1a_00_08:
+  name: 02_42_ac_1a_00_08
+  mac: 02:42:AC:1A:00:08
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1a_00_0b:
+  name: 02_42_ac_1a_00_0b
+  mac: 02:42:AC:1A:00:0B
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1c_00_03:
+  name: 02_42_ac_1c_00_03
+  mac: 02:42:AC:1C:00:03
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1c_00_08:
+  name: 02_42_ac_1c_00_08
+  mac: 02:42:AC:1C:00:08
+  icon:
+  picture:
+  track: true
+
+50_ec_50_80_7c_5e:
+  name: 50_ec_50_80_7c_5e
+  mac: 50:EC:50:80:7C:5E
+  icon:
+  picture:
+  track: true
+
+54_48_e6_78_2e_2e:
+  name: 54_48_e6_78_2e_2e
+  mac: 54:48:E6:78:2E:2E
+  icon:
+  picture:
+  track: true
+
+2a_fe_d3_44_da_ee:
+  name: 2a_fe_d3_44_da_ee
+  mac: 2A:FE:D3:44:DA:EE
+  icon:
+  picture:
+  track: true
+
+02_42_ac_17_00_03:
+  name: 02_42_ac_17_00_03
+  mac: 02:42:AC:17:00:03
+  icon:
+  picture:
+  track: true
+
+02_42_ac_18_00_09:
+  name: 02_42_ac_18_00_09
+  mac: 02:42:AC:18:00:09
+  icon:
+  picture:
+  track: true
+
+02_42_ac_18_00_02:
+  name: 02_42_ac_18_00_02
+  mac: 02:42:AC:18:00:02
+  icon:
+  picture:
+  track: true
+
+02_42_ac_18_00_05:
+  name: 02_42_ac_18_00_05
+  mac: 02:42:AC:18:00:05
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1a_00_05:
+  name: 02_42_ac_1a_00_05
+  mac: 02:42:AC:1A:00:05
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1a_00_0a:
+  name: 02_42_ac_1a_00_0a
+  mac: 02:42:AC:1A:00:0A
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1a_00_07:
+  name: 02_42_ac_1a_00_07
+  mac: 02:42:AC:1A:00:07
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1f_00_02:
+  name: 02_42_ac_1f_00_02
+  mac: 02:42:AC:1F:00:02
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1f_00_0b:
+  name: 02_42_ac_1f_00_0b
+  mac: 02:42:AC:1F:00:0B
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1f_00_06:
+  name: 02_42_ac_1f_00_06
+  mac: 02:42:AC:1F:00:06
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1f_00_0a:
+  name: 02_42_ac_1f_00_0a
+  mac: 02:42:AC:1F:00:0A
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1f_00_09:
+  name: 02_42_ac_1f_00_09
+  mac: 02:42:AC:1F:00:09
+  icon:
+  picture:
+  track: true
+
+02_42_ac_11_00_0a:
+  name: 02_42_ac_11_00_0a
+  mac: 02:42:AC:11:00:0A
+  icon:
+  picture:
+  track: true
+
+02_42_ac_11_00_0b:
+  name: 02_42_ac_11_00_0b
+  mac: 02:42:AC:11:00:0B
+  icon:
+  picture:
+  track: true
+
+02_42_ac_11_00_0c:
+  name: 02_42_ac_11_00_0c
+  mac: 02:42:AC:11:00:0C
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_00_06:
+  name: 02_42_c0_a8_00_06
+  mac: 02:42:C0:A8:00:06
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_00_05:
+  name: 02_42_c0_a8_00_05
+  mac: 02:42:C0:A8:00:05
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_00_04:
+  name: 02_42_c0_a8_00_04
+  mac: 02:42:C0:A8:00:04
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_00_02:
+  name: 02_42_c0_a8_00_02
+  mac: 02:42:C0:A8:00:02
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_00_03:
+  name: 02_42_c0_a8_00_03
+  mac: 02:42:C0:A8:00:03
+  icon:
+  picture:
+  track: true
+
+02_42_ac_1f_00_07:
+  name: 02_42_ac_1f_00_07
+  mac: 02:42:AC:1F:00:07
+  icon:
+  picture:
+  track: true
+
+e0_8c_fe_93_33_d8:
+  name: e0_8c_fe_93_33_d8
+  mac: E0:8C:FE:93:33:D8
+  icon:
+  picture:
+  track: true
+
+b4_60_ed_24_65_6b:
+  name: b4_60_ed_24_65_6b
+  mac: B4:60:ED:24:65:6B
+  icon:
+  picture:
+  track: true
+
+02_42_ac_16_de_04:
+  name: 02_42_ac_16_de_04
+  mac: 02:42:AC:16:DE:04
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_30_03:
+  name: 02_42_c0_a8_30_03
+  mac: 02:42:C0:A8:30:03
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_30_02:
+  name: 02_42_c0_a8_30_02
+  mac: 02:42:C0:A8:30:02
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_30_06:
+  name: 02_42_c0_a8_30_06
+  mac: 02:42:C0:A8:30:06
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_30_0b:
+  name: 02_42_c0_a8_30_0b
+  mac: 02:42:C0:A8:30:0B
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_30_08:
+  name: 02_42_c0_a8_30_08
+  mac: 02:42:C0:A8:30:08
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_40_08:
+  name: 02_42_c0_a8_40_08
+  mac: 02:42:C0:A8:40:08
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_40_02:
+  name: 02_42_c0_a8_40_02
+  mac: 02:42:C0:A8:40:02
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_40_04:
+  name: 02_42_c0_a8_40_04
+  mac: 02:42:C0:A8:40:04
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_40_03:
+  name: 02_42_c0_a8_40_03
+  mac: 02:42:C0:A8:40:03
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_40_0b:
+  name: 02_42_c0_a8_40_0b
+  mac: 02:42:C0:A8:40:0B
+  icon:
+  picture:
+  track: true
+
+02_42_c0_a8_40_07:
+  name: 02_42_c0_a8_40_07
+  mac: 02:42:C0:A8:40:07
+  icon:
+  picture:
+  track: true

@@ -1,0 +1,515 @@
+type: vertical-stack
+cards:
+  - type: custom:bubble-card
+    card_type: pop-up
+    hash: "#battery"
+    show_header: false
+    bg_color: rgb(255.255.255)
+    bg_blur: "0"
+    bg_opacity: "80"
+    button_type: name
+    card_layout: large
+    backdrop_blur: "0"
+    hide_backdrop: false
+    width_desktop: 80%
+    shadow_opacity: "0"
+    margin: 7px
+    margin_top_mobile: 0px
+    margin_top_desktop: "-15vh"
+    styles: |-
+
+      .bubble-pop-up {
+          height: 80vh !important;
+
+      }    
+  - type: heading
+    heading_style: title
+    heading: 设备耗材
+    icon: mdi:database
+  - type: heading
+    icon: ""
+    heading_style: subtitle
+    heading: 电池类耗材
+  - type: custom:stack-in-card
+    card_mod:
+      style: |
+        ha-card {
+          background: rgba(255,255,255,0.1);
+          # 设置卡片边框（none 表示无边框）
+          border: none;
+          box-shadow: none;  
+          # 设置卡片顶部外边距
+          margin-top: 0px;
+          
+        }    
+    cards:
+      - type: entities
+        entities:
+          - sensor.lumi_bmgl01_dfb8_battery_level
+          - sensor.miaomiaoce_t2_9c44_battery_level
+  - type: heading
+    heading_style: subtitle
+    heading: 滤芯类耗材
+  - type: custom:stack-in-card
+    card_mod:
+      style: |
+        ha-card {
+          background: rgba(255,255,255,0.1);
+          # 设置卡片边框（none 表示无边框）
+          border: none;
+          box-shadow: none;  
+          # 设置卡片顶部外边距
+          margin-top: 0px;
+          
+        }    
+    cards:
+      - type: custom:button-card
+        styles:
+          card:
+            - padding: 5px
+            - border-radius: 15px
+            - box-shadow: none
+            - background: rgba(255,255,255,0)
+            - border: none
+          grid:
+            - grid-template-areas: |
+                "title"
+                "pool1"
+                "pool2"
+                "pool3"
+            - grid-template-rows: 40px 65px 65px 65px
+        custom_fields:
+          title:
+            card:
+              type: custom:button-card
+              name: 中央净水 ：
+              styles:
+                card:
+                  - box-shadow: none
+                  - background: rgba(0,0,0,0)
+                  - margin-left: 5px
+                  - margin-top: "-10px"
+                  - border: none
+                name:
+                  - color: dimgray
+                  - font-size: 16px
+                  - font-weight: bold
+                  - justify-self: start
+          pool1:
+            card:
+              type: custom:button-card
+              entity: sensor.162727723851771_filter1
+              name: 一级FPC前置滤芯
+              show_entity_picture: true
+              entity_picture: /local/icon/FPC滤芯.png
+              show_state: false
+              styles:
+                card:
+                  - box-shadow: none
+                  - background: rgba(0,0,0,0)
+                  - border: none
+                  - margin-top: "-20px"
+                grid:
+                  - grid-template-areas: |
+                      "i status n"
+                      "i line line"
+                      "i rom rom"
+                  - grid-template-columns: 1.1fr 3fr 3fr
+                  - grid-template-rows: 15px 8px 18px
+                icon:
+                  - height: 40px
+                  - width: 40px
+                name:
+                  - margin-top: "-3px"
+                  - justify-self: start
+                  - font-size: 14px
+                  - font-weight: bold
+                  - margin-left: 8px
+                  - color: dimgray
+                state:
+                  - justify-self: start
+              custom_fields:
+                status:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: 0px
+                        - padding: 5px
+                        - border-radius: 5px
+                        - background: rgba(0,0,0,0)
+                        - box-shadow: none
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "raid line temp"
+                        - grid-template-columns: 70px 3px 85px
+                    custom_fields:
+                      raid:
+                        card:
+                          type: custom:button-card
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                              var days = parseInt(states['sensor.162727723851771_filter1'].state);
+                              var status = "";
+                              if (isNaN(days)) {
+                                status = "未知";
+                              } else if (days > 60) {
+                                status = "健康";
+                              } else if (days > 20) {
+                                status = "降级";
+                              } else if (days > 0) {
+                                status = "警告";
+                              } else {
+                                status = "污染";
+                              }
+                              return `状态 • ` + status;
+                            ]]]
+                          styles:
+                            card:
+                              - height: 21px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - border: none
+                              - background: |
+                                  [[[
+                                    var days = parseInt(states['sensor.162727723851771_filter1'].state);
+                                    var color = 'gray';
+                                    if (isNaN(days)) {
+                                      color = 'gray';
+                                    } else if (days > 60) {
+                                      color = 'rgb(76,176,80)';  // 绿色
+                                    } else if (days > 20) {
+                                      color = 'orange';  // 橙色
+                                    } else if (days > 0) {
+                                      color = 'Tomato';  // 番茄色
+                                    } else {
+                                      color = 'red';  // 红色
+                                    }
+                                    return color;
+                                  ]]]
+                            state:
+                              - font-size: 12px
+                              - color: white
+                rom:
+                  card:
+                    type: custom:button-card
+                    show_state: true
+                    state_display: |
+                      [[[
+                        var usedSpace = parseFloat(states['sensor.162727723851771_filter1'].state);
+                        usedSpace = Math.round(usedSpace);  // 四舍五入取 0 位小数
+                        return usedSpace + " 天";
+                      ]]]
+                    styles:
+                      card:
+                        - padding: 5px
+                        - border-radius: 5px
+                        - margin-left: 5px
+                        - height: 21px
+                        - width: 293px
+                        - border: none
+                        - background: |
+                            [[[
+                              var daysLeft = parseFloat(states['sensor.162727723851771_filter1'].state);
+                              var max = 180;
+                              var percentage = Math.max(0, Math.min(100, (daysLeft / max) * 100));
+                              var color;
+
+                              if (daysLeft > 60) {
+                                color = 'rgb(76,176,80)';  // 健康：绿色
+                              } else if (daysLeft > 20) {
+                                color = 'orange';          // 降级：橙色
+                              } else if (daysLeft > 0) {
+                                color = 'OrangeRed';       // 警告：橘红
+                              } else {
+                                color = 'red';             // 污染：红色
+                              }
+
+                              return `linear-gradient(to right, ${color} ${percentage}%, FloralWhite ${percentage}%)`;
+                            ]]]
+                      state:
+                        - color: DarkSlateGray
+                        - font-size: 14px
+                        - justify-self: center
+          pool2:
+            card:
+              type: custom:button-card
+              entity: sensor.162727723851771_filter3
+              name: 二级RO反渗透滤芯
+              show_entity_picture: true
+              entity_picture: /local/icon/RO滤芯.png
+              show_state: false
+              styles:
+                card:
+                  - box-shadow: none
+                  - background: rgba(0,0,0,0)
+                  - border: none
+                  - margin-top: "-20px"
+                grid:
+                  - grid-template-areas: |
+                      "i status n"
+                      "i line line"
+                      "i rom rom"
+                  - grid-template-columns: 1.1fr 3fr 3fr
+                  - grid-template-rows: 15px 8px 18px
+                icon:
+                  - height: 40px
+                  - width: 40px
+                name:
+                  - margin-top: "-3px"
+                  - justify-self: start
+                  - font-size: 14px
+                  - font-weight: bold
+                  - margin-left: 8px
+                  - color: dimgray
+                state:
+                  - justify-self: start
+              custom_fields:
+                status:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: 0px
+                        - padding: 5px
+                        - border-radius: 5px
+                        - background: rgba(0,0,0,0)
+                        - box-shadow: none
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "raid line temp"
+                        - grid-template-columns: 70px 3px 85px
+                    custom_fields:
+                      raid:
+                        card:
+                          type: custom:button-card
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                              var days = parseInt(states['sensor.162727723851771_filter3'].state);
+                              var status = "";
+                              if (isNaN(days)) {
+                                status = "未知";
+                              } else if (days > 60) {
+                                status = "健康";
+                              } else if (days > 20) {
+                                status = "降级";
+                              } else if (days > 0) {
+                                status = "警告";
+                              } else {
+                                status = "污染";
+                              }
+                              return `状态 • ` + status;
+                            ]]]
+                          styles:
+                            card:
+                              - height: 21px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - border: none
+                              - background: |
+                                  [[[
+                                    var days = parseInt(states['sensor.162727723851771_filter3'].state);
+                                    var color = 'gray';
+                                    if (isNaN(days)) {
+                                      color = 'gray';
+                                    } else if (days > 60) {
+                                      color = 'rgb(76,176,80)';  // 绿色
+                                    } else if (days > 20) {
+                                      color = 'orange';  // 橙色
+                                    } else if (days > 0) {
+                                      color = 'Tomato';  // 番茄色
+                                    } else {
+                                      color = 'red';  // 红色
+                                    }
+                                    return color;
+                                  ]]]
+                            state:
+                              - font-size: 12px
+                              - color: white
+                rom:
+                  card:
+                    type: custom:button-card
+                    show_state: true
+                    state_display: |
+                      [[[
+                        var usedSpace = parseFloat(states['sensor.162727723851771_filter3'].state);
+                        usedSpace = Math.round(usedSpace);  // 四舍五入取 0 位小数
+                        return usedSpace + " 天";
+                      ]]]
+                    styles:
+                      card:
+                        - padding: 5px
+                        - border-radius: 5px
+                        - margin-left: 5px
+                        - height: 21px
+                        - width: 293px
+                        - border: none
+                        - background: |
+                            [[[
+                              var daysLeft = parseFloat(states['sensor.162727723851771_filter3'].state);
+                              var max = 365;
+                              var percentage = Math.max(0, Math.min(100, (daysLeft / max) * 100));
+                              var color;
+
+                              if (daysLeft > 60) {
+                                color = 'rgb(76,176,80)';  // 健康：绿色
+                              } else if (daysLeft > 20) {
+                                color = 'orange';          // 降级：橙色
+                              } else if (daysLeft > 0) {
+                                color = 'OrangeRed';       // 警告：橘红
+                              } else {
+                                color = 'red';             // 污染：红色
+                              }
+
+                              return `linear-gradient(to right, ${color} ${percentage}%, FloralWhite ${percentage}%)`;
+                            ]]]
+                      state:
+                        - color: DarkSlateGray
+                        - font-size: 14px
+                        - justify-self: center
+          pool3:
+            card:
+              type: custom:button-card
+              entity: sensor.162727723851771_filter2
+              name: 三级T33口感滤芯
+              show_entity_picture: true
+              entity_picture: /local/icon/T33滤芯.png
+              show_state: false
+              styles:
+                card:
+                  - box-shadow: none
+                  - background: rgba(0,0,0,0)
+                  - border: none
+                  - margin-top: "-20px"
+                grid:
+                  - grid-template-areas: |
+                      "i status n"
+                      "i line line"
+                      "i rom rom"
+                  - grid-template-columns: 1.1fr 3fr 3fr
+                  - grid-template-rows: 15px 8px 18px
+                icon:
+                  - height: 40px
+                  - width: 40px
+                name:
+                  - margin-top: "-3px"
+                  - justify-self: start
+                  - font-size: 14px
+                  - font-weight: bold
+                  - margin-left: 8px
+                  - color: dimgray
+                state:
+                  - justify-self: start
+              custom_fields:
+                status:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: 0px
+                        - padding: 5px
+                        - border-radius: 5px
+                        - background: rgba(0,0,0,0)
+                        - box-shadow: none
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "raid line temp"
+                        - grid-template-columns: 70px 3px 85px
+                    custom_fields:
+                      raid:
+                        card:
+                          type: custom:button-card
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                              var days = parseInt(states['sensor.162727723851771_filter2'].state);
+                              var status = "";
+                              if (isNaN(days)) {
+                                status = "未知";
+                              } else if (days > 60) {
+                                status = "健康";
+                              } else if (days > 20) {
+                                status = "降级";
+                              } else if (days > 0) {
+                                status = "警告";
+                              } else {
+                                status = "污染";
+                              }
+                              return `状态 • ` + status;
+                            ]]]
+                          styles:
+                            card:
+                              - height: 21px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - border: none
+                              - background: |
+                                  [[[
+                                    var days = parseInt(states['sensor.162727723851771_filter2'].state);
+                                    var color = 'gray';
+                                    if (isNaN(days)) {
+                                      color = 'gray';
+                                    } else if (days > 60) {
+                                      color = 'rgb(76,176,80)';  // 绿色
+                                    } else if (days > 20) {
+                                      color = 'orange';  // 橙色
+                                    } else if (days > 0) {
+                                      color = 'Tomato';  // 番茄色
+                                    } else {
+                                      color = 'red';  // 红色
+                                    }
+                                    return color;
+                                  ]]]
+                            state:
+                              - font-size: 12px
+                              - color: white
+                rom:
+                  card:
+                    type: custom:button-card
+                    show_state: true
+                    state_display: |
+                      [[[
+                        var usedSpace = parseFloat(states['sensor.162727723851771_filter2'].state);
+                        usedSpace = Math.round(usedSpace);  // 四舍五入取 0 位小数
+                        return usedSpace + " 天";
+                      ]]]
+                    styles:
+                      card:
+                        - padding: 5px
+                        - border-radius: 5px
+                        - margin-left: 5px
+                        - height: 21px
+                        - width: 293px
+                        - border: none
+                        - background: |
+                            [[[
+                              var daysLeft = parseFloat(states['sensor.162727723851771_filter2'].state);
+                              var max = 180;
+                              var percentage = Math.max(0, Math.min(100, (daysLeft / max) * 100));
+                              var color;
+
+                              if (daysLeft > 60) {
+                                color = 'rgb(76,176,80)';  // 健康：绿色
+                              } else if (daysLeft > 20) {
+                                color = 'orange';          // 降级：橙色
+                              } else if (daysLeft > 0) {
+                                color = 'OrangeRed';       // 警告：橘红
+                              } else {
+                                color = 'red';             // 污染：红色
+                              }
+
+                              return `linear-gradient(to right, ${color} ${percentage}%, FloralWhite ${percentage}%)`;
+                            ]]]
+                      state:
+                        - color: DarkSlateGray
+                        - font-size: 14px
+                        - justify-self: center
+     

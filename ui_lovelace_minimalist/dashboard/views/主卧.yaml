@@ -76,6 +76,19 @@ cards:
             ulm_card_light_name: 床尾灯
             ulm_custom_popup:
               entity: light.zhu_wo_chuang_wei_deng
+      - type: horizontal-stack
+        cards:
+        - type: "custom:button-card"
+          template: card_state_light
+          entity: switch.xiaomi_cn_2042785698_w2_on_p_3_1
+          variables:
+            ulm_card_light_name: 主卫大灯
+            #  ulm_card_tap_action: "more-info"
+        - type: "custom:button-card"
+          template: card_state_light
+          entity: switch.xiaomi_cn_2042785698_w2_on_p_2_1
+          variables:
+            ulm_card_light_name: 主卫筒灯
       - type: "custom:button-card"
         template: card_state_light
         entity: light.yeelink_light3_d886_light

@@ -2,7 +2,7 @@ title: "设备"
 path: "devices"
 type: custom:grid-layout
 layout:
-  margin: -0.5vh 0vh 0vh
+  margin: 0vh 0vh 0vh 0vh
   grid-template-columns: auto
   grid-template-rows: 6vh 85vh 9vh
   grid-template-areas: |
@@ -10,113 +10,294 @@ layout:
     "main"
     "menu"
 cards:
-  - type: custom:button-card # HEADER
-    view_layout:
-      grid-area: header
-    template: card_layout_header
-    variables:
-      view_name: 设备
-  - type: custom:layout-card # MAIN
-    view_layout:
-      grid-area: main
-    layout_type: custom:vertical-layout
-    layout:
-      height: 100vh
-      margin: 0vh 0vh 0vh
-      padding: 0vh 0.4vh
+  - type: grid
+    columns: 1
     cards:
-      - type: custom:button-card
-        template: card_esh_car
-        variables:
-          car_plate: "浙ADX9561"
-          car_image: "/local/images/xiaopeng_car.png"
-          car_milegate_rest: "sensor.xiao_peng_qi_che_xiaopeng_remaining_mileage"
-          car_elec_usage: "sensor.xiao_peng_qi_che_xiaopeng_battery_percentage"
-          entity_1:
-            entity_id: "sensor.xiao_peng_qi_che_xiaopeng_door_status"
-            icon_on: "mdi:lock-open-outline"
-            icon_off: "mdi:lock-outline"
-            on_state: "[[[return states['sensor.xiao_peng_qi_che_xiaopeng_door_status'].state == '车门未锁';]]]"
-          entity_2:
-            entity_id: "sensor.xiao_peng_qi_che_xiaopeng_window_status"
-            icon_on: "mdi:car-door-lock-open"
-            icon_off: "mdi:car-door-lock"
-            on_state: "[[[return states['sensor.xiao_peng_qi_che_xiaopeng_window_status'].state == '车窗未锁';]]]"
-          entity_3:
-            entity_id: "sensor.xiao_peng_qi_che_xiaopeng_vehicle_status"
-            icon_on: "mdi:car"
-            icon_off: "mdi:car"
-            on_state: "[[[return states['sensor.xiao_peng_qi_che_xiaopeng_vehicle_status'].state == '行驶中';]]]"
-          entity_4:
-            entity_id: "sensor.sensor.xiao_peng_qi_che_xiaopeng_charge_status"
-            icon_on: "mdi:ev-station"
-            icon_off: "mdi:ev-station"
-            on_state: "[[[return states['sensor.xiao_peng_qi_che_xiaopeng_charge_status'].state == '正在充电';]]]"
-      - type: custom:button-card
-        template: card_esh_car
-        variables:
-          car_plate: "浙ADM6515"
-          car_image: "/local/images/neta_car.png"
-          car_milegate_rest: "sensor.na_zha_qi_che_neta_remaining_mileage"
-          car_elec_usage: "sensor.na_zha_qi_che_neta_battery_percentage"
-          car_update_time: "sensor.na_zha_qi_che_neta_update_time"
-          entity_1:
-            entity_id: "sensor.na_zha_qi_che_neta_door_status"
-            icon_on: "mdi:lock-open-outline"
-            icon_off: "mdi:lock-outline"
-            on_state: "[[[return states['sensor.na_zha_qi_che_neta_door_status'].state == '车门未锁';]]]"
-          entity_2:
-            entity_id: "sensor.na_zha_qi_che_neta_window_status"
-            icon_on: "mdi:car-door-lock-open"
-            icon_off: "mdi:car-door-lock"
-            on_state: "[[[return states['sensor.na_zha_qi_che_neta_window_status'].state == '车窗未锁';]]]"
-          entity_3:
-            entity_id: "sensor.na_zha_qi_che_neta_vehicle_status"
-            icon_on: "mdi:car"
-            icon_off: "mdi:car"
-            on_state: "[[[return states['sensor.na_zha_qi_che_neta_vehicle_status'].state == '行驶中';]]]"
-          entity_4:
-            entity_id: "sensor.na_zha_qi_che_neta_charge_status"
-            icon_on: "mdi:ev-station"
-            icon_off: "mdi:ev-station"
-            on_state: "[[[return states['sensor.na_zha_qi_che_neta_charge_status'].state == '正在充电';]]]"
-      
-      - type: horizontal-stack
-        cards:
-          - type: custom:button-card
-            template: card_esh_common
-            entity: light.shu_fang_xi_ding_deng
-            variables:
-              device_image: "/local/images/美的洗衣机.png"
-            card_mod:
-              style: |
-                  {% set entity_id = 'light.shu_fang_xi_ding_deng'  %}
-                  {% if states(entity_id) == "on" and state_attr(entity_id,
-                    'rgb_color') != None %}
-                      {% set color = state_attr(entity_id, 'rgb_color')  %}
-                      ha-card {
-                        background-image: linear-gradient(to bottom, rgb{{color}} 0%, white 100%);
-                      }
-                  {% endif %}
+      - type: custom:tabbed-card
+        styles:
+          "--mdc-theme-primary": green
+          "--mdc-tab-text-label-color-default": black
+          "--mdc-tab-height": 35px
+          "--mdc-tab-horizontal-padding": 0px
+          # 背景色相关
+          "--mdc-tab-background-color": transparent
+          "--mdc-tab-background-color-active": transparent
+          "--mdc-tab-background-color-hover": transparent
+          "--mdc-tab-background-color-selected": transparent
+          # 涟漪效果
+          "--mdc-ripple-color": transparent
+          "--mdc-ripple-color-hover": transparent
+          "--mdc-ripple-color-focus": transparent
+          "--mdc-ripple-color-press": transparent
+          "padding-bottom": 10px;
 
-          - type: custom:button-card
-            template: card_esh_common_light
-            entity: light.shu_fang_xi_ding_deng
-            variables:
-              device_image: "/local/images/循环扇.jpeg"
-            card_mod:
-              style: |
-                  {% set entity_id = 'light.shu_fang_xi_ding_deng'  %}
-                  {% if states(entity_id) == "on" and state_attr(entity_id,
-                    'rgb_color') != None %}
-                      {% set color = state_attr(entity_id, 'rgb_color')  %}
-                      ha-card {
-                        background-image: linear-gradient(to bottom, rgb{{color}} 0%, white 100%);
-                      }
-                  {% endif %}
+        tabs:
+          - attributes:
+              label: 常用
+            card:
+              type: horizontal-stack
+              cards:
+                - type: custom:button-card
+                  template: card_esh_common
+                  entity: light.shu_fang_xi_ding_deng
+                  variables:
+                    device_image: "/local/images/美的洗衣机.png"
+                  card_mod:
+                    style: |
+                        {% set entity_id = 'light.shu_fang_xi_ding_deng'  %}
+                        {% if states(entity_id) == "on" and state_attr(entity_id,
+                          'rgb_color') != None %}
+                            {% set color = state_attr(entity_id, 'rgb_color')  %}
+                            ha-card {
+                              background-image: linear-gradient(to bottom, rgb{{color}} 0%, white 100%);
+                            }
+                        {% endif %}
 
-    
-  - type: "custom:button-card"
-    view_layout:
-      grid-area: menu
-    template: "card_layout_navibar"
+                - type: custom:button-card
+                  template: card_esh_common_light
+                  entity: light.shu_fang_xi_ding_deng
+                  variables:
+                    device_image: "/local/images/循环扇.jpeg"
+                  card_mod:
+                    style: |
+                        {% set entity_id = 'light.shu_fang_xi_ding_deng'  %}
+                        {% if states(entity_id) == "on" and state_attr(entity_id,
+                          'rgb_color') != None %}
+                            {% set color = state_attr(entity_id, 'rgb_color')  %}
+                            ha-card {
+                              background-image: linear-gradient(to bottom, rgb{{color}} 0%, white 100%);
+                            }
+                        {% endif %}
+          - attributes:
+              label: 汽车
+            card:
+              type: custom:layout-card # MAIN
+              view_layout:
+                grid-area: main
+              layout_type: custom:vertical-layout
+              layout:
+                height: 100vh
+                margin: 0vh 0vh 0vh
+                padding: 0vh 0vh
+              cards:
+                - type: custom:button-card
+                  template: card_esh_car
+                  variables:
+                    car_plate: "浙ADX9561"
+                    car_image: "/local/images/xiaopeng_car.png"
+                    car_milegate_rest: "sensor.xiao_peng_qi_che_xiaopeng_remaining_mileage"
+                    car_elec_usage: "sensor.xiao_peng_qi_che_xiaopeng_battery_percentage"
+                    entity_1:
+                      entity_id: "sensor.xiao_peng_qi_che_xiaopeng_door_status"
+                      icon_on: "mdi:lock-open-outline"
+                      icon_off: "mdi:lock-outline"
+                      on_state: "[[[return states['sensor.xiao_peng_qi_che_xiaopeng_door_status'].state == '车门未锁';]]]"
+                    entity_2:
+                      entity_id: "sensor.xiao_peng_qi_che_xiaopeng_window_status"
+                      icon_on: "mdi:car-door-lock-open"
+                      icon_off: "mdi:car-door-lock"
+                      on_state: "[[[return states['sensor.xiao_peng_qi_che_xiaopeng_window_status'].state == '车窗未锁';]]]"
+                    entity_3:
+                      entity_id: "sensor.xiao_peng_qi_che_xiaopeng_vehicle_status"
+                      icon_on: "mdi:car"
+                      icon_off: "mdi:car"
+                      on_state: "[[[return states['sensor.xiao_peng_qi_che_xiaopeng_vehicle_status'].state == '行驶中';]]]"
+                    entity_4:
+                      entity_id: "sensor.sensor.xiao_peng_qi_che_xiaopeng_charge_status"
+                      icon_on: "mdi:ev-station"
+                      icon_off: "mdi:ev-station"
+                      on_state: "[[[return states['sensor.xiao_peng_qi_che_xiaopeng_charge_status'].state == '正在充电';]]]"
+                - type: custom:button-card
+                  template: card_esh_car
+                  variables:
+                    car_plate: "浙ADM6515"
+                    car_image: "/local/images/neta_car.png"
+                    car_milegate_rest: "sensor.na_zha_qi_che_neta_remaining_mileage"
+                    car_elec_usage: "sensor.na_zha_qi_che_neta_battery_percentage"
+                    car_update_time: "sensor.na_zha_qi_che_neta_update_time"
+                    entity_1:
+                      entity_id: "sensor.na_zha_qi_che_neta_door_status"
+                      icon_on: "mdi:lock-open-outline"
+                      icon_off: "mdi:lock-outline"
+                      on_state: "[[[return states['sensor.na_zha_qi_che_neta_door_status'].state == '车门未锁';]]]"
+                    entity_2:
+                      entity_id: "sensor.na_zha_qi_che_neta_window_status"
+                      icon_on: "mdi:car-door-lock-open"
+                      icon_off: "mdi:car-door-lock"
+                      on_state: "[[[return states['sensor.na_zha_qi_che_neta_window_status'].state == '车窗未锁';]]]"
+                    entity_3:
+                      entity_id: "sensor.na_zha_qi_che_neta_vehicle_status"
+                      icon_on: "mdi:car"
+                      icon_off: "mdi:car"
+                      on_state: "[[[return states['sensor.na_zha_qi_che_neta_vehicle_status'].state == '行驶中';]]]"
+                    entity_4:
+                      entity_id: "sensor.na_zha_qi_che_neta_charge_status"
+                      icon_on: "mdi:ev-station"
+                      icon_off: "mdi:ev-station"
+                      on_state: "[[[return states['sensor.na_zha_qi_che_neta_charge_status'].state == '正在充电';]]]"
+          - attributes:
+              label: NAS
+            card:
+              type: horizontal-stack
+              cards:
+                - type: custom:button-card
+                  template: card_esh_common
+                  entity: light.shu_fang_xi_ding_deng
+                  variables:
+                    device_image: "/local/images/美的洗衣机.png"
+                  card_mod:
+                    style: |
+                        {% set entity_id = 'light.shu_fang_xi_ding_deng'  %}
+                        {% if states(entity_id) == "on" and state_attr(entity_id,
+                          'rgb_color') != None %}
+                            {% set color = state_attr(entity_id, 'rgb_color')  %}
+                            ha-card {
+                              background-image: linear-gradient(to bottom, rgb{{color}} 0%, white 100%);
+                            }
+                        {% endif %}
+
+                - type: custom:button-card
+                  template: card_esh_common_light
+                  entity: light.shu_fang_xi_ding_deng
+                  variables:
+                    device_image: "/local/images/循环扇.jpeg"
+                  card_mod:
+                    style: |
+                        {% set entity_id = 'light.shu_fang_xi_ding_deng'  %}
+                        {% if states(entity_id) == "on" and state_attr(entity_id,
+                          'rgb_color') != None %}
+                            {% set color = state_attr(entity_id, 'rgb_color')  %}
+                            ha-card {
+                              background-image: linear-gradient(to bottom, rgb{{color}} 0%, white 100%);
+                            }
+                        {% endif %}           
+              
+          - attributes:
+              label: 环境
+            card:
+              type: horizontal-stack
+              cards:
+                - type: custom:button-card
+                  template: card_esh_common
+                  entity: light.shu_fang_xi_ding_deng
+                  variables:
+                    device_image: "/local/images/美的洗衣机.png"
+                  card_mod:
+                    style: |
+                        {% set entity_id = 'light.shu_fang_xi_ding_deng'  %}
+                        {% if states(entity_id) == "on" and state_attr(entity_id,
+                          'rgb_color') != None %}
+                            {% set color = state_attr(entity_id, 'rgb_color')  %}
+                            ha-card {
+                              background-image: linear-gradient(to bottom, rgb{{color}} 0%, white 100%);
+                            }
+                        {% endif %}
+
+                - type: custom:button-card
+                  template: card_esh_common_light
+                  entity: light.shu_fang_xi_ding_deng
+                  variables:
+                    device_image: "/local/images/循环扇.jpeg"
+                  card_mod:
+                    style: |
+                        {% set entity_id = 'light.shu_fang_xi_ding_deng'  %}
+                        {% if states(entity_id) == "on" and state_attr(entity_id,
+                          'rgb_color') != None %}
+                            {% set color = state_attr(entity_id, 'rgb_color')  %}
+                            ha-card {
+                              background-image: linear-gradient(to bottom, rgb{{color}} 0%, white 100%);
+                            }
+                        {% endif %}
+          - attributes:
+              label: 灯光
+            card:
+              type: horizontal-stack
+              cards:
+                - type: custom:button-card
+                  template: card_esh_common
+                  entity: light.shu_fang_xi_ding_deng
+                  variables:
+                    device_image: "/local/images/美的洗衣机.png"
+                  card_mod:
+                    style: |
+                        {% set entity_id = 'light.shu_fang_xi_ding_deng'  %}
+                        {% if states(entity_id) == "on" and state_attr(entity_id,
+                          'rgb_color') != None %}
+                            {% set color = state_attr(entity_id, 'rgb_color')  %}
+                            ha-card {
+                              background-image: linear-gradient(to bottom, rgb{{color}} 0%, white 100%);
+                            }
+                        {% endif %}
+
+                - type: custom:button-card
+                  template: card_esh_common_light
+                  entity: light.shu_fang_xi_ding_deng
+                  variables:
+                    device_image: "/local/images/循环扇.jpeg"
+                  card_mod:
+                    style: |
+                        {% set entity_id = 'light.shu_fang_xi_ding_deng'  %}
+                        {% if states(entity_id) == "on" and state_attr(entity_id,
+                          'rgb_color') != None %}
+                            {% set color = state_attr(entity_id, 'rgb_color')  %}
+                            ha-card {
+                              background-image: linear-gradient(to bottom, rgb{{color}} 0%, white 100%);
+                            }
+                        {% endif %}    
+  - type: custom:navbar-card
+    mobile:
+      full_width: true
+      mode: floating
+      show_labels: true
+    routes:
+      - icon: mdi:home-outline
+        icon_selected: mdi:home-outline
+        url: /ui-lovelace-minimalist/home
+        label: 首页
+        selected_color: transparent
+        icon_color: null
+      - icon: mdi:devices
+        url: /ui-lovelace-minimalist/devices
+        label: 设备
+        selected_color: transparent
+        icon_selected: mdi:devices
+        icon_color: green
+      - icon: mdi:music-circle-outline
+        icon_selected: mdi:music-circle-outline
+        url: /ui-lovelace-minimalist/music
+        label: 音乐
+        selected_color: transparent
+        icon_color: null
+      - icon: mdi:chart-bar
+        label: 统计
+        url: /ui-lovelace-minimalist/statistic
+        selected_color: transparent
+        icon_selected: mdi:chart-bar
+        icon_color: null
+      - icon: mdi:account
+        label: 我的
+        url: /ui-lovelace-minimalist/account
+        selected_color: transparent
+        icon_color: null
+        icon_selected: mdi:account
+    layout:
+      height: 9vh
+      auto_padding:
+        mobile_px: 0
+        desktop_px: -20
+      reflect_child_state: false
+    desktop:
+      show_labels: true
+    styles: |
+      .navbar {
+        width: 105%;
+        margin-left: -10px;
+      }
+      .route {
+        margin-top: -6px;
+        margin-bottom: -3px;
+      }
+      .button {
+        margin-top: 0px;
+        margin-bottom: -8px;
+      }

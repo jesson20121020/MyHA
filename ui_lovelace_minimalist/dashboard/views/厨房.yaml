@@ -2,20 +2,20 @@ title: "厨房"
 path: "厨房"
 type: custom:grid-layout
 layout:
-  margin: -0.5vh 1vh 0vh
+  margin: -0.5vh 0vh 0vh
   grid-template-columns: auto
-  grid-template-rows: 9vh 82vh 9vh
+  grid-template-rows: 6vh 94vh
   grid-template-areas: |
     "header"
     "main"
-    "menu"
 cards:
   - type: custom:button-card # HEADER
     view_layout:
       grid-area: header
     template: card_layout_header
     variables:
-      view: home
+      view_name: "厨房"
+      back_path: "/ui-lovelace-minimalist/home"
   - type: custom:layout-card # MAIN
     view_layout:
       grid-area: main
@@ -25,3 +25,43 @@ cards:
       margin: 0vh 0vh 0vh
       padding: 0vh 0.4vh
     cards:
+      - type: custom:mod-card
+        style:
+          hui-horizontal-stack-card$: |
+            hui-conditional-card {
+              flex: 0 0 auto;
+              max-width: fit-content;
+            }
+        card:
+          type: horizontal-stack
+          cards:
+          # 显示厨房当前打开的灯的数量
+          - type: conditional
+            conditions:
+              - condition: numeric_state
+                entity: sensor.chu_fang_kai_deng_shu_liang
+                above: 0
+            card:
+              type: 'custom:button-card'
+              template: chip_common_icon_state
+              variables:
+                ulm_chip_mdi_icon_state_entity: sensor.chu_fang_kai_deng_shu_liang
+                ulm_chip_mdi_icon_state_icon: mdi:lightbulb-group
+  
+      # 灯光卡片
+      - type: 'custom:button-card'
+        template: card_title
+        name: Lights
+        
+      - type: horizontal-stack
+        cards:
+        - type: "custom:button-card"
+          template: card_state_light
+          entity: switch.xiaomi_cn_2042103469_w2_on_p_3_1
+          variables:
+            ulm_card_light_name: "厨房筒灯"
+        - type: "custom:button-card"
+          template: card_state_light
+          entity: switch.xiaomi_cn_2042103469_w2_on_p_2_1
+          variables:
+            ulm_card_light_name: "厨房大灯"

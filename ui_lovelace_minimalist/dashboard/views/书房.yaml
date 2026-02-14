@@ -57,11 +57,11 @@ cards:
         cards:
           - type: "custom:button-card"
             template: card_state_light
-            entity: switch.switch_c035
+            entity: light.dikair_cn_392944107_wy0a01_s_2_2
             variables:
               ulm_card_light_name: "书房灯"
               ulm_custom_popup:
-                entity: light.shu_fang_xi_ding_deng
+                entity: light.dikair_cn_392944107_wy0a01_s_2_2
         
       # 书房温度
       - type: "custom:button-card"

@@ -1,0 +1,1858 @@
+type: vertical-stack
+cards:
+  - type: custom:bubble-card
+    card_type: pop-up
+    hash: "#servers"
+    show_header: false
+    bg_color: rgb(255.255.255)
+    bg_blur: "0"
+    bg_opacity: "80"
+    button_type: name
+    card_layout: large
+    backdrop_blur: "0"
+    hide_backdrop: false
+    width_desktop: 80%
+    shadow_opacity: "0"
+    margin: 7px
+    margin_top_mobile: 0px
+    margin_top_desktop: "-15vh"
+    styles: |-
+      .bubble-pop-up {
+          height: 80vh !important;
+
+      }  
+  - type: custom:tabbed-card
+    options: {}
+    tabs:
+      - card:
+          type: vertical-stack
+          cards:
+            - type: custom:bubble-card
+              card_type: empty-column
+              card_layout: large-2-rows
+            - type: custom:button-card
+              name: iStoreOS
+              show_entity_picture: true
+              entity_picture: /local/icon/openwrt.svg
+              entity: sensor.bei_kong_j4125_istoreos_uptime
+              show_state: true
+              state_display: |
+                [[[ 
+                  // 直接读取传感器状态
+                  var uptime_seconds = states['sensor.bei_kong_j4125_istoreos_uptime'].state;
+                  return "运行时间: " + uptime_seconds;
+                ]]]
+              styles:
+                card:
+                  - height: 90px
+                  - background: rgba(0,0,0,0)
+                  - box-shadow: none
+                  - border: none
+                grid:
+                  - grid-template-areas: |
+                      "i n shutdown"
+                      "i s s"
+                      "i s2 no"
+                  - grid-template-columns: 2.5fr 7fr 1.5fr
+                  - grid-template-rows: 30px 10px 30px
+                icon:
+                  - height: 75px
+                  - width: 75px
+                  - justify-self: start
+                  - margin-left: "-15px"
+                name:
+                  - justify-self: start
+                  - font-size: 20px
+                  - color: DimGray
+                  - margin-left: "-4px"
+                state:
+                  - justify-self: start
+                  - margin-left: "-4px"
+                  - color: DimGray
+                  - font-size: 15px
+              custom_fields:
+                s2:
+                  card:
+                    type: custom:button-card
+                    show_state: true
+                    state_display: |
+                      [[[
+                        var status = states[`binary_sensor.bei_kong_j4125_istoreos_uptime`].state;
+                        if (status === "on"){
+                          status = "已联网";
+                        } else {
+                          status = "断线中";
+                        }
+                        return `系统状态：` + status
+                      ]]] 
+                    styles:
+                      card:
+                        - height: 20px
+                        - background: rgba(0,0,0,0)
+                        - box-shadow: none
+                        - margin-left: "-9px"
+                        - border: none
+                      state:
+                        - justify-self: start
+                        - margin-left: 5px
+                        - color: DimGray
+                        - font-size: 16px
+            - type: custom:bubble-card
+              card_type: empty-column
+              card_layout: large-2-rows
+            - type: custom:button-card
+              show_entity_picture: true
+              entity_picture: /local/icon/CPU.png
+              styles:
+                card:
+                  - padding: 5px
+                  - border-radius: 15px
+                  - box-shadow: none
+                  - background: rgba(255,255,255,0)
+                  - border: none
+                grid:
+                  - grid-template-areas: |
+                      "i cpu"
+                      "i M"
+                  - grid-template-rows: 25px 25px
+                  - grid-template-columns: 55px auto
+                icon:
+                  - height: 37px
+                  - width: 37px
+                  - margin-left: "-3px"
+              custom_fields:
+                cpu:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type line2 usage" 
+                        - grid-template-columns: 45px 3px auto
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: CPU
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 45px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: center
+                      usage:
+                        card:
+                          type: custom:button-card
+                          entity: sensor.system_monitor_processor_use
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                              var usage = parseFloat(states['sensor.system_monitor_processor_use'].state); 
+                              return usage + `%`
+                            ]]]
+                          styles:
+                            card:
+                              - padding: 5px
+                              - border-radius: 5px
+                              - height: 21px
+                              - width: 230px
+                              - border: none
+                              - background: |
+                                  [[[
+                                          var percentage = parseFloat(states['sensor.system_monitor_processor_use'].state); 
+                                          var color;
+                                          if (percentage <= 30) {
+                                            color = 'rgb(76,176,80)'; // 0-50% 绿色
+                                          } else if (percentage > 30 && percentage <= 70) {
+                                            color = 'orange'; // 50-80% 黄色
+                                          } else {
+                                            color = 'OrangeRed'; // >80% 红色
+                                          }
+                                          return `linear-gradient(to right, ${color} ${percentage}%, FloralWhite ${percentage}%)`;
+                                  ]]]
+                            state:
+                              - color: DarkSlateGray
+                              - font-size: 14px
+                              - justify-self: center
+                              - margin-top: "-3px"
+                M:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type line2 usage" 
+                        - grid-template-columns: 45px 3px auto
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: 内存
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 45px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: center
+                      usage:
+                        card:
+                          type: custom:button-card
+                          entity: sensor.serenitynet_memory
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                              var usage = parseFloat(states['sensor.serenitynet_memory'].state); 
+                              return usage + `%`
+                            ]]]
+                          styles:
+                            card:
+                              - padding: 5px
+                              - border-radius: 5px
+                              - height: 21px
+                              - border: none
+                              - width: 230px
+                              - background: |
+                                  [[[
+                                          var percentage = parseFloat(states['sensor.serenitynet_memory'].state); 
+                                          var color;
+                                          if (percentage <= 30) {
+                                            color = 'rgb(76,176,80)'; // 0-50% 绿色
+                                          } else if (percentage > 30 && percentage <= 70) {
+                                            color = 'orange'; // 50-80% 黄色
+                                          } else {
+                                            color = 'OrangeRed'; // >80% 红色
+                                          }
+                                          return `linear-gradient(to right, ${color} ${percentage}%, FloralWhite ${percentage}%)`;
+                                  ]]]
+                            state:
+                              - color: DarkSlateGray
+                              - font-size: 14px
+                              - justify-self: center
+                              - margin-top: "-3px"
+            - type: custom:bubble-card
+              card_type: empty-column
+              card_layout: large-2-rows
+            - type: custom:button-card
+              show_entity_picture: true
+              entity_picture: /local/icon/网络.png
+              styles:
+                card:
+                  - padding: 5px
+                  - border-radius: 15px
+                  - box-shadow: none
+                  - background: rgba(255,255,255,0)
+                  - border: none
+                grid:
+                  - grid-template-areas: |
+                      "i net"
+                      "i status"
+                  - grid-template-rows: 25px 25px
+                  - grid-template-columns: 55px auto
+                icon:
+                  - height: 40px
+                  - width: 40px
+                  - margin-left: "-1px"
+              custom_fields:
+                net:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type speed" 
+                        - grid-template-columns: 50px 100px
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: 接口
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 100px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: 3px
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: start
+                      speed:
+                        card:
+                          type: custom:button-card
+                          entity: null
+                          show_name: false
+                          show_state: true
+                          state_display: Wan 2.5Gb/s
+                          styles:
+                            card:
+                              - height: 21px
+                              - padding: 5px
+                              - margin-left: "-2px"
+                              - border-radius: 5px
+                              - background: rgb(76,176,80)
+                              - border: none
+                            state:
+                              - font-size: 13px
+                              - color: white
+                              - justify-self: center
+                              - margin-top: 0px
+                status:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type speed" 
+                        - grid-template-columns: 50px 240px
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: 流量
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 100px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: 3px
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: start
+                      speed:
+                        card:
+                          type: custom:button-card
+                          styles:
+                            card:
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: "-6px"
+                              - border: none
+                            grid:
+                              - grid-template-areas: |
+                                  "up line down"
+                              - grid-template-columns: 1fr 5px 1fr
+                          custom_fields:
+                            up:
+                              card:
+                                type: custom:button-card
+                                entity: sensor.openwrt_router_upload_speed
+                                show_name: false
+                                show_state: true
+                                state_display: |
+                                  [[[
+                                    const upload = parseFloat(states['sensor.openwrt_router_upload_speed']?.state);
+                                    if (isNaN(upload)) {
+                                      return '上传 • 无数据';
+                                    }
+                                    return `上传 • ${upload.toFixed(2)} MB/S`;
+                                  ]]]
+                                styles:
+                                  card:
+                                    - height: 21px
+                                    - padding: 5px
+                                    - border-radius: 5px
+                                    - background: rgb(76,176,80)
+                                    - border: none
+                                  state:
+                                    - font-size: 13px
+                                    - color: white
+                                    - justify-self: center
+                                    - margin-top: "-5px"
+                            down:
+                              card:
+                                type: custom:button-card
+                                entity: sensor.openwrt_router_download_speed
+                                show_name: false
+                                show_state: true
+                                state_display: |
+                                  [[[
+                                    const upload = parseFloat(states['sensor.openwrt_router_download_speed']?.state);
+                                    if (isNaN(upload)) {
+                                      return '下载 • 无数据';
+                                    }
+                                    return `下载 • ${upload.toFixed(2)} MB/S`;
+                                  ]]]                    
+                                styles:
+                                  card:
+                                    - height: 21px
+                                    - padding: 5px
+                                    - border-radius: 5px
+                                    - background: rgb(76,176,80)
+                                    - border: none
+                                  state:
+                                    - font-size: 13px
+                                    - color: white
+                                    - justify-self: center
+                                    - margin-top: "-5px"
+            - type: custom:bubble-card
+              card_type: empty-column
+              card_layout: large-2-rows
+            - type: custom:button-card
+              show_entity_picture: true
+              entity_picture: /local/icon/连接.png
+              styles:
+                card:
+                  - padding: 5px
+                  - border-radius: 15px
+                  - box-shadow: none
+                  - background: rgba(255,255,255,0)
+                  - border: none
+                grid:
+                  - grid-template-areas: |
+                      "i users"
+                      "i status"
+                  - grid-template-rows: 25px 25px
+                  - grid-template-columns: 55px auto
+                icon:
+                  - height: 35px
+                  - width: 35px
+                  - margin-left: "-1px"
+              custom_fields:
+                users:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type user" 
+                        - grid-template-columns: 50px 110px
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: ARP
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 100px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: 3px
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: start
+                      user:
+                        card:
+                          type: custom:button-card
+                          entity: sensor.serenitynet_user_online
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                                return `在线用户数 • `+states['sensor.serenitynet_user_online'].state;
+                            ]]]
+                          styles:
+                            card:
+                              - height: 21px
+                              - padding: 5px
+                              - margin-left: "-2px"
+                              - border-radius: 5px
+                              - background: rgb(76,176,80)
+                              - border: none
+                            state:
+                              - font-size: 13px
+                              - color: white
+                              - justify-self: center
+                              - margin-top: "-4px"
+                status:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type connect" 
+                        - grid-template-columns: 50px 240px
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: 连接
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 100px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: 3px
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: start
+                      connect:
+                        card:
+                          type: custom:button-card
+                          entity: sensor.serenitynet_connect_count
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                              var usedSpace = parseFloat(states['sensor.serenitynet_connect_count'].state);
+                              usedSpace = Math.round(usedSpace);  // 四舍五入取 0 位小数
+                              return usedSpace + "  / 65535";
+                            ]]]
+                          styles:
+                            card:
+                              - padding: 5px
+                              - border-radius: 5px
+                              - height: 21px
+                              - width: 230px
+                              - border: none
+                              - background: |
+                                  [[[
+                                          var usedSpace = parseFloat(states['sensor.serenitynet_connect_count'].state);
+                                          usedSpace = Math.round(usedSpace);  // 四舍五入取 0 位小数
+                                          var percentage = Math.min(100, (usedSpace / 65535) * 100);
+                                          var color;
+                                          if (percentage <= 5) {
+                                            color = 'rgb(76,176,80)'; // 0-5% 绿色
+                                          } else if (percentage > 5 && percentage <= 50) {
+                                            color = 'orange'; // 5-50% 黄色
+                                          } else {
+                                            color = 'OrangeRed'; // >50% 红色
+                                          }
+                                          return `linear-gradient(to right, ${color} ${percentage}%, FloralWhite ${percentage}%)`;
+                                  ]]]
+                            state:
+                              - color: DarkSlateGray
+                              - font-size: 14px
+                              - justify-self: center
+                              - margin-top: "-3px"
+            - type: custom:bubble-card
+              card_type: empty-column
+              card_layout: large-2-rows
+            - type: custom:button-card
+              show_entity_picture: true
+              entity_picture: /local/icon/IP.png
+              styles:
+                card:
+                  - padding: 5px
+                  - border-radius: 15px
+                  - box-shadow: none
+                  - background: rgba(255,255,255,0)
+                  - border: none
+                grid:
+                  - grid-template-areas: |
+                      "i ipv4"
+                      "i ipv6"
+                  - grid-template-rows: 25px 25px
+                  - grid-template-columns: 55px auto
+                icon:
+                  - height: 30px
+                  - width: 30px
+                  - margin-left: "-1px"
+              custom_fields:
+                ipv4:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type ip" 
+                        - grid-template-columns: 50px auto
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: IPV4
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 100px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: 3px
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: start
+                      ip:
+                        card:
+                          type: custom:button-card
+                          entity: sensor.serenitynet_wan_ip
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                                return `公网IP • `+states['sensor.serenitynet_wan_ip'].state;
+                            ]]]
+                          styles:
+                            card:
+                              - height: 21px
+                              - padding: 5px
+                              - margin-left: "-2px"
+                              - border-radius: 5px
+                              - background: rgb(76,176,80)
+                              - border: none
+                            state:
+                              - font-size: 13px
+                              - color: white
+                              - justify-self: center
+                              - margin-top: "-4px"
+                ipv6:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type ip" 
+                        - grid-template-columns: 50px auto
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: IPV6
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 100px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: 3px
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: start
+                      ip:
+                        card:
+                          type: custom:button-card
+                          entity: sensor.serenitynet_wan6_ip
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                                return `公网IP • `+states['sensor.serenitynet_wan6_ip'].state;
+                            ]]]
+                          styles:
+                            card:
+                              - height: 21px
+                              - padding: 5px
+                              - margin-left: "-2px"
+                              - border-radius: 5px
+                              - background: rgb(76,176,80)
+                              - border: none
+                            state:
+                              - font-size: 13px
+                              - color: white
+                              - justify-self: center
+                              - margin-top: "-4px"
+        attributes:
+          label: iStoreOS
+      - card:
+          type: vertical-stack
+          cards:
+            - type: custom:bubble-card
+              card_type: empty-column
+              card_layout: large-2-rows
+            - type: custom:button-card
+              name: Synology
+              show_entity_picture: true
+              entity_picture: /local/icon/NAS1.png
+              entity: binary_sensor.synology_nas_security_status
+              show_state: true
+              state_display: |
+                [[[
+                  const boot_time_str = states['sensor.system_monitor_last_boot'].state;
+                  if (boot_time_str === 'unknown' || boot_time_str === 'unavailable') {
+                    return "运行时间：未知";
+                  }
+
+                  // 转换为日期对象
+                  const boot_time = new Date(boot_time_str);
+                  const now = new Date();
+
+                  // 计算差值（毫秒）
+                  const diff_ms = now - boot_time;
+
+                  // 计算天、小时、分钟
+                  const days = Math.floor(diff_ms / (1000 * 60 * 60 * 24));
+                  const hours = Math.floor((diff_ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                  const minutes = Math.floor((diff_ms % (1000 * 60 * 60)) / (1000 * 60));
+
+                  return `运行时间:${days}天${hours}小时${minutes}分钟`;
+                ]]]
+              styles:
+                card:
+                  - height: 90px
+                  - background: rgba(0,0,0,0)
+                  - box-shadow: none
+                  - border: none
+                grid:
+                  - grid-template-areas: |
+                      "i n shutdown"
+                      "i s reboot"
+                      "i s2 no"
+                  - grid-template-columns: 2.5fr 7fr 1.5fr
+                  - grid-template-rows: 30px 10px 30px
+                icon:
+                  - height: 72px
+                  - width: 77px
+                  - justify-self: start
+                  - margin-left: "-15px"
+                name:
+                  - justify-self: start
+                  - font-size: 20px
+                  - color: DimGray
+                  - margin-left: "-4px"
+                state:
+                  - justify-self: start
+                  - margin-left: "-4px"
+                  - color: DimGray
+                  - font-size: 15px
+              custom_fields:
+                shutdown:
+                  card:
+                    type: custom:button-card
+                    show_state: false
+                    show_name: false
+                    icon: mdi:power
+                    tap_action:
+                      action: navigate
+                      navigation_path: "#nas_shutdown"
+                    styles:
+                      card:
+                        - height: 30px
+                        - background: red
+                        - box-shadow: none
+                        - margin-left: "-10px"
+                        - border: none
+                        - margin-top: 0px
+                      grid:
+                        - grid-template-areas: |
+                            "i"
+                      icon:
+                        - height: 20px
+                        - width: 20px
+                        - color: white
+                reboot:
+                  card:
+                    type: custom:button-card
+                    show_state: false
+                    show_name: false
+                    icon: mdi:restart
+                    tap_action:
+                      action: navigate
+                      navigation_path: "#nas_restart"
+                    styles:
+                      card:
+                        - height: 30px
+                        - background: orange
+                        - box-shadow: none
+                        - margin-left: "-10px"
+                        - border: none
+                        - margin-top: 30px
+                      grid:
+                        - grid-template-areas: |
+                            "i"
+                      icon:
+                        - height: 20px
+                        - width: 20px
+                        - color: white
+                s2:
+                  card:
+                    type: custom:button-card
+                    show_state: true
+                    state_display: |
+                      [[[
+                        var status = states['binary_sensor.synology_nas_security_status'].state;
+                        if (status === "off"){
+                          status = "安全";
+                        } else {
+                          status = "异常";
+                        }
+                        return `系统状态：` + status
+                      ]]] 
+                    styles:
+                      card:
+                        - height: 20px
+                        - background: rgba(0,0,0,0)
+                        - box-shadow: none
+                        - margin-left: "-9px"
+                        - border: none
+                      state:
+                        - justify-self: start
+                        - margin-left: 5px
+                        - color: DimGray
+                        - font-size: 16px
+            - type: custom:bubble-card
+              card_type: empty-column
+              card_layout: large-2-rows
+            - type: custom:button-card
+              show_entity_picture: true
+              entity_picture: /local/icon/CPU.png
+              styles:
+                card:
+                  - padding: 5px
+                  - border-radius: 15px
+                  - box-shadow: none
+                  - background: rgba(255,255,255,0)
+                  - border: none
+                grid:
+                  - grid-template-areas: |
+                      "i cpu"
+                      "i M"
+                  - grid-template-rows: 25px 25px
+                  - grid-template-columns: 55px auto
+                icon:
+                  - height: 37px
+                  - width: 37px
+                  - margin-left: "-3px"
+              custom_fields:
+                cpu:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type line2 usage" 
+                        - grid-template-columns: 45px 3px auto
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: CPU
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 45px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: center
+                      usage:
+                        card:
+                          type: custom:button-card
+                          entity: sensor.system_monitor_processor_use
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                              var usage = parseFloat(states['sensor.system_monitor_processor_use'].state); 
+                              return usage + `%`
+                            ]]]
+                          styles:
+                            card:
+                              - padding: 5px
+                              - border-radius: 5px
+                              - height: 21px
+                              - width: 230px
+                              - border: none
+                              - background: |
+                                  [[[
+                                          var percentage = parseFloat(states['sensor.system_monitor_processor_use'].state); 
+                                          var color;
+                                          if (percentage <= 50) {
+                                            color = 'rgb(76,176,80)'; // 0-50% 绿色
+                                          } else if (percentage > 50 && percentage <= 80) {
+                                            color = 'orange'; // 50-80% 黄色
+                                          } else {
+                                            color = 'OrangeRed'; // >80% 红色
+                                          }
+                                          return `linear-gradient(to right, ${color} ${percentage}%, FloralWhite ${percentage}%)`;
+                                  ]]]
+                            state:
+                              - color: DarkSlateGray
+                              - font-size: 14px
+                              - justify-self: center
+                              - margin-top: "-3px"
+                M:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type line2 usage" 
+                        - grid-template-columns: 45px 3px auto
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: 内存
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 45px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: center
+                      usage:
+                        card:
+                          type: custom:button-card
+                          entity: sensor.synology_nas_memory_usage_real
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                              var usage = parseFloat(states['sensor.synology_nas_memory_usage_real'].state); 
+                              return usage + `%`
+                            ]]]
+                          styles:
+                            card:
+                              - padding: 5px
+                              - border-radius: 5px
+                              - height: 21px
+                              - border: none
+                              - width: 230px
+                              - background: |
+                                  [[[
+                                          var percentage = parseFloat(states['sensor.synology_nas_memory_usage_real'].state); 
+                                          var color;
+                                          if (percentage <= 50) {
+                                            color = 'rgb(76,176,80)'; // 0-50% 绿色
+                                          } else if (percentage > 50 && percentage <= 80) {
+                                            color = 'orange'; // 50-80% 黄色
+                                          } else {
+                                            color = 'OrangeRed'; // >80% 红色
+                                          }
+                                          return `linear-gradient(to right, ${color} ${percentage}%, FloralWhite ${percentage}%)`;
+                                  ]]]
+                            state:
+                              - color: DarkSlateGray
+                              - font-size: 14px
+                              - justify-self: center
+                              - margin-top: "-3px"
+            - type: custom:bubble-card
+              card_type: empty-column
+              card_layout: large-2-rows
+            - type: custom:button-card
+              show_entity_picture: true
+              entity_picture: /local/icon/网络.png
+              styles:
+                card:
+                  - padding: 5px
+                  - border-radius: 15px
+                  - box-shadow: none
+                  - background: rgba(255,255,255,0)
+                  - border: none
+                grid:
+                  - grid-template-areas: |
+                      "i net"
+                      "i status"
+                  - grid-template-rows: 25px 25px
+                  - grid-template-columns: 55px auto
+                icon:
+                  - height: 40px
+                  - width: 40px
+                  - margin-left: "-1px"
+              custom_fields:
+                net:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type speed" 
+                        - grid-template-columns: 50px auto
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: 接口
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 100px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: 3px
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: start
+                      speed:
+                        card:
+                          type: custom:button-card
+                          entity: sensor.system_monitor_ipv4_address_eth0
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                                return `ETH0_1Gb/s • `+states['sensor.system_monitor_ipv4_address_eth0'].state;
+                            ]]]
+                          styles:
+                            card:
+                              - height: 21px
+                              - padding: 5px
+                              - margin-left: "-2px"
+                              - border-radius: 5px
+                              - background: rgb(76,176,80)
+                              - border: none
+                            state:
+                              - font-size: 13px
+                              - color: white
+                              - justify-self: center
+                              - margin-top: "-4px"
+                status:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type speed" 
+                        - grid-template-columns: 50px 240px
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: 流量
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 100px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: 3px
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: start
+                      speed:
+                        card:
+                          type: custom:button-card
+                          styles:
+                            card:
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: "-6px"
+                              - border: none
+                            grid:
+                              - grid-template-areas: |
+                                  "up line down"
+                              - grid-template-columns: 1fr 5px 1fr
+                          custom_fields:
+                            up:
+                              card:
+                                type: custom:button-card
+                                entity: >-
+                                  sensor.system_monitor_network_throughput_out_eth0
+                                show_name: false
+                                show_state: true
+                                state_display: |
+                                  [[[
+                                    const upload = parseFloat(states['sensor.system_monitor_network_throughput_out_eth0']?.state);
+                                    if (isNaN(upload)) {
+                                      return '上传 • 无数据';
+                                    }
+                                    return `上传 • ${upload.toFixed(2)} MB/S`;
+                                  ]]]
+                                styles:
+                                  card:
+                                    - height: 21px
+                                    - padding: 5px
+                                    - border-radius: 5px
+                                    - background: rgb(76,176,80)
+                                    - border: none
+                                  state:
+                                    - font-size: 13px
+                                    - color: white
+                                    - justify-self: center
+                                    - margin-top: "-5px"
+                            down:
+                              card:
+                                type: custom:button-card
+                                entity: >-
+                                  sensor.system_monitor_network_throughput_in_eth0
+                                show_name: false
+                                show_state: true
+                                state_display: |
+                                  [[[
+                                    const upload = parseFloat(states['sensor.system_monitor_network_throughput_in_eth0']?.state);
+                                    if (isNaN(upload)) {
+                                      return '下载 • 无数据';
+                                    }
+                                    return `下载 • ${upload.toFixed(2)} MB/S`;
+                                  ]]]                    
+                                styles:
+                                  card:
+                                    - height: 21px
+                                    - padding: 5px
+                                    - border-radius: 5px
+                                    - background: rgb(76,176,80)
+                                    - border: none
+                                  state:
+                                    - font-size: 13px
+                                    - color: white
+                                    - justify-self: center
+                                    - margin-top: "-5px"
+            - type: custom:bubble-card
+              card_type: empty-column
+              card_layout: large-2-rows
+            - type: custom:button-card
+              show_entity_picture: true
+              entity_picture: /local/icon/网络.png
+              styles:
+                card:
+                  - padding: 5px
+                  - border-radius: 15px
+                  - box-shadow: none
+                  - background: rgba(255,255,255,0)
+                  - border: none
+                grid:
+                  - grid-template-areas: |
+                      "i net"
+                      "i status"
+                  - grid-template-rows: 25px 25px
+                  - grid-template-columns: 55px auto
+                icon:
+                  - height: 40px
+                  - width: 40px
+                  - margin-left: "-1px"
+              custom_fields:
+                net:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type speed" 
+                        - grid-template-columns: 50px auto
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: 接口
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 100px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: 3px
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: start
+                      speed:
+                        card:
+                          type: custom:button-card
+                          entity: sensor.system_monitor_ipv4_address_eth1
+                          show_name: false
+                          show_state: true
+                          state_display: |
+                            [[[
+                                return `ETH1_2.5Gb/s • `+states['sensor.system_monitor_ipv4_address_eth1'].state;
+                            ]]]
+                          styles:
+                            card:
+                              - height: 21px
+                              - padding: 5px
+                              - margin-left: "-2px"
+                              - border-radius: 5px
+                              - background: rgb(76,176,80)
+                              - border: none
+                            state:
+                              - font-size: 13px
+                              - color: white
+                              - justify-self: center
+                              - margin-top: "-4px"
+                status:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type speed" 
+                        - grid-template-columns: 50px 240px
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: 流量
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 100px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: 3px
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: start
+                      speed:
+                        card:
+                          type: custom:button-card
+                          styles:
+                            card:
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: "-6px"
+                              - border: none
+                            grid:
+                              - grid-template-areas: |
+                                  "up line down"
+                              - grid-template-columns: 1fr 5px 1fr
+                          custom_fields:
+                            up:
+                              card:
+                                type: custom:button-card
+                                entity: >-
+                                  sensor.system_monitor_network_throughput_out_eth1
+                                show_name: false
+                                show_state: true
+                                state_display: |
+                                  [[[
+                                    const upload = parseFloat(states['sensor.system_monitor_network_throughput_out_eth1']?.state);
+                                    if (isNaN(upload)) {
+                                      return '上传 • 无数据';
+                                    }
+                                    return `上传 • ${upload.toFixed(2)} MB/S`;
+                                  ]]]
+                                styles:
+                                  card:
+                                    - height: 21px
+                                    - padding: 5px
+                                    - border-radius: 5px
+                                    - background: rgb(76,176,80)
+                                    - border: none
+                                  state:
+                                    - font-size: 13px
+                                    - color: white
+                                    - justify-self: center
+                                    - margin-top: "-5px"
+                            down:
+                              card:
+                                type: custom:button-card
+                                entity: >-
+                                  sensor.system_monitor_network_throughput_in_eth1
+                                show_name: false
+                                show_state: true
+                                state_display: |
+                                  [[[
+                                    const upload = parseFloat(states['sensor.system_monitor_network_throughput_in_eth1']?.state);
+                                    if (isNaN(upload)) {
+                                      return '下载 • 无数据';
+                                    }
+                                    return `下载 • ${upload.toFixed(2)} MB/S`;
+                                  ]]]                    
+                                styles:
+                                  card:
+                                    - height: 21px
+                                    - padding: 5px
+                                    - border-radius: 5px
+                                    - background: rgb(76,176,80)
+                                    - border: none
+                                  state:
+                                    - font-size: 13px
+                                    - color: white
+                                    - justify-self: center
+                                    - margin-top: "-5px"
+            - type: custom:bubble-card
+              card_type: empty-column
+              card_layout: large-2-rows
+            - type: custom:button-card
+              show_entity_picture: true
+              entity_picture: /local/icon/数据.png
+              styles:
+                card:
+                  - padding: 5px
+                  - border-radius: 15px
+                  - box-shadow: none
+                  - background: rgba(255,255,255,0)
+                  - border: none
+                grid:
+                  - grid-template-areas: |
+                      "i eth0"
+                      "i eth1"
+                  - grid-template-rows: 25px 25px
+                  - grid-template-columns: 55px auto
+                icon:
+                  - height: 42px
+                  - width: 42px
+                  - margin-left: "-1px"
+              custom_fields:
+                eth0:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type digital" 
+                        - grid-template-columns: 50px 240px
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: eth0
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 100px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: 3px
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: start
+                      digital:
+                        card:
+                          type: custom:button-card
+                          styles:
+                            card:
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: "-6px"
+                              - border: none
+                            grid:
+                              - grid-template-areas: |
+                                  "up line down"
+                              - grid-template-columns: 1fr 5px 1fr
+                          custom_fields:
+                            up:
+                              card:
+                                type: custom:button-card
+                                entity: sensor.system_monitor_network_out_eth0
+                                show_name: false
+                                show_state: true
+                                state_display: |
+                                  [[[
+                                    const upload = parseFloat(states['sensor.system_monitor_network_out_eth0']?.state);
+                                    if (isNaN(upload)) {
+                                      return '发送 • 无数据';
+                                    }
+                                    return `发送 • ${upload.toFixed(2)} TB`;
+                                  ]]]
+                                styles:
+                                  card:
+                                    - height: 21px
+                                    - padding: 5px
+                                    - border-radius: 5px
+                                    - background: rgb(76,176,80)
+                                    - border: none
+                                  state:
+                                    - font-size: 13px
+                                    - color: white
+                                    - justify-self: center
+                                    - margin-top: "-5px"
+                            down:
+                              card:
+                                type: custom:button-card
+                                entity: sensor.system_monitor_network_in_eth0
+                                show_name: false
+                                show_state: true
+                                state_display: |
+                                  [[[
+                                    const upload = parseFloat(states['sensor.system_monitor_network_in_eth0']?.state);
+                                    if (isNaN(upload)) {
+                                      return '接收 • 无数据';
+                                    }
+                                    return `接收 • ${upload.toFixed(2)} TB`;
+                                  ]]]                    
+                                styles:
+                                  card:
+                                    - height: 21px
+                                    - padding: 5px
+                                    - border-radius: 5px
+                                    - background: rgb(76,176,80)
+                                    - border: none
+                                  state:
+                                    - font-size: 13px
+                                    - color: white
+                                    - justify-self: center
+                                    - margin-top: "-5px"
+                eth1:
+                  card:
+                    type: custom:button-card
+                    styles:
+                      card:
+                        - margin-left: "-10px"
+                        - margin-top: "-3px"
+                        - padding: 5px
+                        - border-radius: 5px
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "type digital" 
+                        - grid-template-columns: 50px 240px
+                    custom_fields:
+                      type:
+                        card:
+                          type: custom:button-card
+                          name: eth1
+                          styles:
+                            card:
+                              - height: 21px
+                              - width: 100px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: 3px
+                              - border: none
+                            name:
+                              - font-size: 15px
+                              - font-weight: bold
+                              - color: dimgray
+                              - justify-self: start
+                      digital:
+                        card:
+                          type: custom:button-card
+                          styles:
+                            card:
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - margin-left: "-6px"
+                              - border: none
+                            grid:
+                              - grid-template-areas: |
+                                  "up line down"
+                              - grid-template-columns: 1fr 5px 1fr
+                          custom_fields:
+                            up:
+                              card:
+                                type: custom:button-card
+                                entity: sensor.system_monitor_network_out_eth1
+                                show_name: false
+                                show_state: true
+                                state_display: |
+                                  [[[
+                                    const upload = parseFloat(states['sensor.system_monitor_network_out_eth1']?.state);
+                                    if (isNaN(upload)) {
+                                      return '发送 • 无数据';
+                                    }
+                                    return `发送 • ${upload.toFixed(2)} GB`;
+                                  ]]]
+                                styles:
+                                  card:
+                                    - height: 21px
+                                    - padding: 5px
+                                    - border-radius: 5px
+                                    - background: rgb(76,176,80)
+                                    - border: none
+                                  state:
+                                    - font-size: 13px
+                                    - color: white
+                                    - justify-self: center
+                                    - margin-top: "-5px"
+                            down:
+                              card:
+                                type: custom:button-card
+                                entity: sensor.system_monitor_network_in_eth1
+                                show_name: false
+                                show_state: true
+                                state_display: |
+                                  [[[
+                                    const upload = parseFloat(states['sensor.system_monitor_network_in_eth1']?.state);
+                                    if (isNaN(upload)) {
+                                      return '接收 • 无数据';
+                                    }
+                                    return `接收 • ${upload.toFixed(2)} GB`;
+                                  ]]]                    
+                                styles:
+                                  card:
+                                    - height: 21px
+                                    - padding: 5px
+                                    - border-radius: 5px
+                                    - background: rgb(76,176,80)
+                                    - border: none
+                                  state:
+                                    - font-size: 13px
+                                    - color: white
+                                    - justify-self: center
+                                    - margin-top: "-5px"
+            - type: custom:bubble-card
+              card_type: empty-column
+              card_layout: large-2-rows
+            - type: custom:button-card
+              styles:
+                card:
+                  - padding: 5px
+                  - border-radius: 15px
+                  - box-shadow: none
+                  - background: rgba(255,255,255,0)
+                  - border: none
+                grid:
+                  - grid-template-areas: |
+
+                      "pool1"
+                  - grid-template-rows: 45px
+              custom_fields:
+                pool1:
+                  card:
+                    type: custom:button-card
+                    entity: sensor.synology_nas_volume_1_used_space
+                    name: 储存池 • Synology
+                    show_entity_picture: true
+                    entity_picture: |
+                      [[[
+                        var health = states['sensor.synology_nas_volume_1_status'].state;
+                        if(health === "normal"){
+                            return `/local/icon/磁盘健康.png`;
+                          } else if (status === "degrade"){
+                            return `/local/icon/磁盘降级.png`;
+                          } else if (status === "attention"){
+                            return `/local/icon/磁盘警告.png`; 
+                          } else {
+                            return `/local/icon/磁盘损毁.png`;
+                          }
+                      ]]]
+                          
+                    show_state: false
+                    styles:
+                      card:
+                        - box-shadow: none
+                        - background: rgba(0,0,0,0)
+                        - border: none
+                      grid:
+                        - grid-template-areas: |
+                            "i status n"
+                            "i line line"
+                            "i rom rom"
+                        - grid-template-columns: 1.1fr 3fr 3fr
+                        - grid-template-rows: 15px 8px 18px
+                      icon:
+                        - height: 31px
+                        - width: 33px
+                      name:
+                        - margin-top: "-3px"
+                        - justify-self: start
+                        - font-size: 14px
+                        - font-weight: bold
+                        - margin-left: 8px
+                        - color: dimgray
+                      state:
+                        - justify-self: start
+                    custom_fields:
+                      status:
+                        card:
+                          type: custom:button-card
+                          styles:
+                            card:
+                              - margin-left: 0px
+                              - padding: 5px
+                              - border-radius: 5px
+                              - background: rgba(0,0,0,0)
+                              - box-shadow: none
+                              - border: none
+                            grid:
+                              - grid-template-areas: |
+                                  "raid line temp"
+                              - grid-template-columns: 70px 3px 85px
+                          custom_fields:
+                            raid:
+                              card:
+                                type: custom:button-card
+                                show_name: false
+                                show_state: true
+                                state_display: |
+                                  [[[
+                                    var health = states['sensor.synology_nas_volume_1_status'].state;
+                                    if(health === "normal"){
+                                        health = "健康";
+                                      } else if (status === "degrade"){
+                                        health = "降级";
+                                      } else if (status === "attention"){
+                                        health = "警告"; 
+                                      } else {
+                                        health = "损毁";
+                                      }
+                                    return `SHR • ` + health;
+                                  ]]]
+                                styles:
+                                  card:
+                                    - height: 21px
+                                    - padding: 5px
+                                    - border-radius: 5px
+                                    - border: none
+                                    - background: |
+                                        [[[
+                                           var health = states['sensor.synology_nas_volume_1_status'].state;
+                                           if(health === "normal"){
+                                               return `rgb(76,176,80)`;
+                                             } else if (status === "degrade"){
+                                               return `Tomato`;
+                                             } else if (status === "attention"){
+                                               return `Orange`; 
+                                             } else {
+                                               return `Red`;
+                                             }
+                                         ]]]
+                                  name:
+                                    - font-size: 13px
+                                    - color: white
+                                  state:
+                                    - font-size: 12px
+                                    - color: white
+                            temp:
+                              card:
+                                type: custom:button-card
+                                show_name: false
+                                show_state: true
+                                state_display: |
+                                  [[[
+                                    var temp = states['sensor.synology_nas_volume_1_average_disk_temp'].state;
+                                    return `均温 `+temp+ `°C`;
+                                  ]]]
+                                styles:
+                                  card:
+                                    - height: 21px
+                                    - padding: 5px
+                                    - border-radius: 5px
+                                    - border: none
+                                    - background: |
+                                        [[[
+                                           var temp = states['sensor.synology_nas_volume_1_average_disk_temp'].state;
+                                           if(temp < 40){
+                                               return `rgb(76,176,80)`;
+                                             } else if (temp < 45){
+                                               return `Orange`;
+                                             } else {
+                                               return `Tomato`; 
+                                             }
+                                         ]]]
+                                  name:
+                                    - font-size: 13px
+                                    - color: white
+                                  state:
+                                    - font-size: 12px
+                                    - color: white
+                      rom:
+                        card:
+                          type: custom:button-card
+                          show_state: true
+                          state_display: |
+                            [[[
+                              var usedSpace = parseFloat(states['sensor.synology_nas_volume_1_used_space'].state);
+                              usedSpace = Math.round(usedSpace);  // 四舍五入取 0 位小数
+                              return usedSpace + " TB / 4TB";
+                            ]]]
+                          styles:
+                            card:
+                              - padding: 5px
+                              - border-radius: 5px
+                              - margin-left: 5px
+                              - height: 21px
+                              - width: 293px
+                              - border: none
+                              - background: |
+                                  [[[
+                                          var usedSpace = parseFloat(states['sensor.synology_nas_volume_1_used_space'].state);
+                                          usedSpace = Math.round(usedSpace);  // 四舍五入取 0 位小数
+                                          var percentage = Math.min(100, (usedSpace / 4) * 100);
+                                          var color;
+                                          if (percentage <= 50) {
+                                            color = 'rgb(76,176,80)'; // 0-50% 绿色
+                                          } else if (percentage > 50 && percentage <= 80) {
+                                            color = 'orange'; // 50-80% 黄色
+                                          } else {
+                                            color = 'OrangeRed'; // >80% 红色
+                                          }
+                                          return `linear-gradient(to right, ${color} ${percentage}%, FloralWhite ${percentage}%)`;
+                                  ]]]
+                            state:
+                              - color: DarkSlateGray
+                              - font-size: 14px
+                              - justify-self: center
+        attributes:
+          label: NAS

@@ -2,9 +2,9 @@ title: "主页"
 path: "home"
 type: custom:grid-layout
 layout:
-  margin: -0.5vh 0vh 0vh
+  margin: 0vh 0vh 0vh 0vh
   grid-template-columns: auto
-  grid-template-rows: 6vh 85vh 9vh
+  grid-template-rows: 6vh 86vh 8vh
   grid-template-areas: |
     "header"
     "main"
@@ -21,9 +21,9 @@ cards:
       grid-area: main
     layout_type: custom:vertical-layout
     layout:
-      height: 100vh
-      margin: 0vh 0vh 0vh
-      padding: 0vh 0.4vh
+      height: 86vh
+      margin: 0vh 0vh 0vh 0vh
+      padding: 0vh 0vh 0vh 0vh
     cards:
       # chips
       # 1. 天气、室外温度、室内温度
@@ -89,17 +89,14 @@ cards:
                 ]]]
 
             # 显示房间当前开灯总数量
-            - type: conditional
-              conditions:
-                - condition: numeric_state
-                  entity: sensor.kai_deng_zong_shu_liang
-                  above: 0
-              card:
-                type: "custom:button-card"
-                template: chip_common_icon_state
-                variables:
-                  ulm_chip_mdi_icon_state_entity: sensor.kai_deng_zong_shu_liang
-                  ulm_chip_mdi_icon_state_icon: mdi:lightbulb-group
+            - type: "custom:button-card"
+              template: chip_common_icon_state
+              variables:
+                ulm_chip_mdi_icon_state_entity: sensor.kai_deng_zong_shu_liang
+                ulm_chip_mdi_icon_state_icon: mdi:lightbulb-group
+              tap_action:
+                action: "navigate"
+                navigation_path: "#light"
 
             # 空调，加热器数量
             - type: conditional
@@ -115,17 +112,14 @@ cards:
                   ulm_chip_mdi_icon_state_icon: mdi:air-conditioner
 
             # 媒体播放器数量
-            - type: conditional
-              conditions:
-                - condition: numeric_state
-                  entity: sensor.yin_xiang_dian_shi_zheng_zai_bo_fang_shu_liang
-                  above: 0
-              card:
-                type: "custom:button-card"
-                template: chip_common_icon_state
-                variables:
-                  ulm_chip_mdi_icon_state_entity: sensor.yin_xiang_dian_shi_zheng_zai_bo_fang_shu_liang
-                  ulm_chip_mdi_icon_state_icon: mdi:television-speaker
+            - type: "custom:button-card"
+              template: chip_common_icon_state
+              variables:
+                ulm_chip_mdi_icon_state_entity: sensor.yin_xiang_dian_shi_zheng_zai_bo_fang_shu_liang
+                ulm_chip_mdi_icon_state_icon: mdi:television-speaker
+              tap_action:
+                action: "navigate"
+                navigation_path: "#media"
 
             # 洗衣机，烘干机正在工作数量
             - type: conditional
@@ -291,10 +285,10 @@ cards:
                 color: var(--color-green)
                 on_state: "[[[ return states['fan.dmaker_p9_e103_fan'].state == 'on'; ]]]"
               entity_2:
-                entity_id: device_tracker.bei_kong_j4125_device_5448e6dea30e
+                entity_id: media_player.xiaomi_v1_1dd9_play_control
                 icon_on: mdi:television-pause
                 icon_off: mdi:television-play
-                on_state: "[[[return states['device_tracker.bei_kong_j4125_device_5448e6dea30e'].state == 'home';]]]"
+                on_state: "[[[return states['media_player.xiaomi_v1_1dd9_play_control'].state == 'on';]]]"
               entity_3:
                 entity_id: media_player.xiaomi_lx06_d022_play_control
                 icon_on: mdi:speaker-pause
@@ -312,6 +306,8 @@ cards:
                 - switch.switch_58d9_switch_2
                 - switch.switch_58d9_switch_1
                 - switch.dwdz_sw0a01_fc1b_switch
+                - switch.xiaomi_cn_2042785672_w2_on_p_2_1
+                - switch.xiaomi_cn_2042785672_w2_on_p_3_1
                 - light.cuco_sl4_1ad9_light
             label: >
               [[[
@@ -328,7 +324,7 @@ cards:
               navigation_path: "书房"
             variables:
               ulm_custom_card_esh_room_light_entity:
-                - switch.switch_c035
+                - light.dikair_cn_392944107_wy0a01_s_2_2
               entity_1:
                 entity_id: climate.xiaomi_mt6_dcc3_air_conditioner
                 icon_on: phu:air-conditioner
@@ -374,6 +370,8 @@ cards:
                 - switch.switch_c208_switch_1
                 - switch.switch_181c_switch_1
                 - switch.switch_181c_switch_2
+                - switch.xiaomi_cn_2042785698_w2_on_p_3_1
+                - switch.xiaomi_cn_2042785698_w2_on_p_2_1
                 - light.yeelink_light3_d886_light
               entity_1:
                 entity_id: fan.dmaker_p28_7dda_fan
@@ -392,6 +390,11 @@ cards:
                 icon_on: mdi:speaker-pause
                 icon_off: mdi:speaker-play
                 on_state: "[[[return states['media_player.xiaomi_l7a_fc90_play_control'].state == 'playing';]]]"
+              entity_3:
+                entity_id: climate.zhimi_cn_270195918_ma2
+                icon_on: mdi:radiator
+                icon_off: mdi:radiator-off
+                on_state: "[[[return states['climate.zhimi_cn_270195918_ma2'].state == 'on';]]]"   
 
             label: '[[[ return states["sensor.xiaomi_mt6_dcc3_temperature"].state + "°C" ]]]'
           - type: "custom:button-card"
@@ -430,21 +433,37 @@ cards:
             template:
               - card_esh_room
               - yellow_on
-            name: 儿童房
-            entity: switch.switch_8769
-            icon: mdi:human-child
+            name: 厨房
+            entity: switch.xiaomi_cn_2042103469_w2_on_p_2_1
+            icon: fas:utensils
             tap_action:
               action: navigate
-              navigation_path: "儿童房"
+              navigation_path: "#cooker"
+            label: '[[[ return states["sensor.xiaomi_mt6_dcc3_temperature"].state + "°C" ]]]'
             variables:
               ulm_custom_card_esh_room_light_entity:
-                - switch.switch_8769
+                - switch.xiaomi_cn_2042103469_w2_on_p_2_1
+                - switch.xiaomi_cn_2042103469_w2_on_p_3_1
+              entity_1:
+                entity_id: sensor.160528700996126_status
+                icon_on: cil:dishwasher-silverware
+                icon_off: cil:dishwasher-silverware
+                on_state: "[[[return states['sensor.160528700996126_status'].state != 'Power Off';]]]"
+                color: var(--color-green)
               entity_2:
-                entity_id: media_player.jiqid_pro_656b_play_control
-                icon_on: mdi:rabbit-variant
-                icon_off: mdi:rabbit-variant
-                on_state: "[[[states['media_player.jiqid_pro_656b_play_control'].state == 'playing';]]]"
-            label: '[[[ return states["sensor.xiaomi_mt6_dcc3_temperature"].state + "°C" ]]]'
+                entity_id: sensor.164926749854785_status
+                icon_on: mdi:microwave
+                icon_off: mdi:microwave-off
+                on_state: "[[[return states['sensor.164926749854785_status'].state != 'Idle';]]]"
+              entity_3:
+                entity_id: sensor.chunmi_cn_475417943_normalcd2_status_p_2_1
+                icon_on: hue:sync-box
+                icon_off: hue:sync-box-off
+                on_state: "[[[return states['sensor.chunmi_cn_475417943_normalcd2_status_p_2_1'].state != '待机中' && states['sensor.chunmi_cn_475417943_normalcd2_status_p_2_1'].state != 'unavailable';]]]"
+              entity_4:
+                entity_id: switch.2c37c556a98b_onoffstatus
+                icon_on: cil:cooker-hood-trapezoid
+                icon_off: cil:cooker-hood-trapezoid
           - type: "custom:button-card"
             template:
               - card_esh_room
@@ -464,8 +483,78 @@ cards:
                 icon_off: phu:air-conditioner
                 color: var(--color-green)
                 on_state: "[[[ return states['climate.lumi_mcn02_f7e6_air_conditioner'].state != 'off' && states['climate.lumi_mcn02_f7e6_air_conditioner'].state != 'unavailable'; ]]]"
+              entity_4:
+                entity_id: fan.dmaker_cn_247302787_p9_s_2_fan
+                icon_on: phu:tower-fan
+                icon_off: phu:tower-fan
+                color: var(--color-green)
+                on_state: "[[[ return states['fan.dmaker_cn_247302787_p9_s_2_fan'].state == 'on'; ]]]"
 
-  - type: "custom:button-card"
+
+  - type: custom:navbar-card
     view_layout:
       grid-area: menu
-    template: "card_layout_navibar"
+    mobile:
+      full_width: true
+      mode: floating
+      show_labels: true
+    routes:
+      - icon: mdi:home-outline
+        icon_selected: mdi:home-outline
+        url: /ui-lovelace-minimalist/home
+        label: 首页
+        selected_color: transparent
+        icon_color: green
+        label_color: green
+      - icon: mdi:devices
+        url: /ui-lovelace-minimalist/devices
+        label: 设备
+        selected_color: transparent
+        icon_selected: mdi:devices
+        icon_color: null
+      - icon: mdi:music-circle-outline
+        icon_selected: mdi:music-circle-outline
+        url: /ui-lovelace-minimalist/music
+        label: 音乐
+        selected_color: transparent
+        icon_color: null
+      - icon: mdi:chart-bar
+        label: 统计
+        url: /ui-lovelace-minimalist/statistic
+        selected_color: transparent
+        icon_selected: mdi:chart-bar
+        icon_color: null
+      - icon: mdi:account
+        label: 我的
+        url: /ui-lovelace-minimalist/account
+        selected_color: transparent
+        icon_color: null
+        icon_selected: mdi:account
+    layout:
+      auto_padding:
+        mobile_px: 0
+        desktop_px: -20
+      reflect_child_state: false
+    desktop:
+      show_labels: true
+    styles: |
+      .navbar {
+        width: 105%;
+        margin-left: -10px;
+      }
+      .route {
+        margin-top: -6px;
+        margin-bottom: -3px;
+      }
+      .button {
+        margin-top: 0px;
+        margin-bottom: -8px;
+      }
+
+
+  - !include popup/全屋消息.yaml
+  - !include popup/全屋灯光.yaml
+  - !include popup/音乐播放.yaml
+  - !include popup/电饭煲.yaml
+
+

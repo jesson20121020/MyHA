@@ -94,6 +94,18 @@ cards:
           entity: switch.dwdz_sw0a01_fc1b_switch
           variables:
             ulm_card_light_name: "电视柜灯"
+      - type: horizontal-stack
+        cards:
+        - type: "custom:button-card"
+          template: card_state_light
+          entity: switch.xiaomi_cn_2042785672_w2_on_p_2_1
+          variables:
+            ulm_card_light_name: "次卫主灯"
+        - type: "custom:button-card"
+          template: card_state_light
+          entity: switch.xiaomi_cn_2042785672_w2_on_p_3_1
+          variables:
+            ulm_card_light_name: "次卫筒灯"
       - type: "custom:button-card"
         template: card_state_light
         entity: light.cuco_sl4_1ad9_light

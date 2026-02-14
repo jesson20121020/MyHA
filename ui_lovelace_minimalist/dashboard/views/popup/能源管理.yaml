@@ -1,0 +1,155 @@
+type: vertical-stack
+cards:
+  - type: custom:bubble-card
+    card_type: pop-up
+    hash: "#energy"
+    show_header: false
+    bg_color: rgb(255.255.255)
+    bg_blur: "0"
+    bg_opacity: "80"
+    button_type: name
+    card_layout: large
+    backdrop_blur: "0"
+    hide_backdrop: false
+    width_desktop: 80%
+    shadow_opacity: "0"
+    margin: 7px
+    margin_top_mobile: 0px
+    margin_top_desktop: "-15vh"
+    styles: |-
+      .bubble-pop-up {
+          height: 80vh !important;
+      }  
+  - type: heading
+    heading_style: title
+    heading: 能源管理
+    icon: mdi:database
+  - type: heading
+    icon: ""
+    heading_style: subtitle
+    heading: 电网实时功率
+  - type: custom:apexcharts-card
+    card_mod:
+      style: |
+        ha-card {
+          background: none;
+          # 设置卡片边框（none 表示无边框）
+          border: none;
+          box-shadow: none;  
+          # 设置卡片顶部外边距
+          margin-top: -20px;
+          height: 300px;
+        }               
+    experimental:
+      color_threshold: true
+    graph_span: 12h
+    apex_config:
+      chart:
+        height: 300
+    show:
+      last_updated: false
+    header:
+      standard_format: false
+      show: false
+      show_states: true
+      colorize_states: true
+      title: 电网实时功率
+    now:
+      show: true
+      color: red
+      label: Now
+    span:
+      end: hour
+    series:
+      - entity: sensor.esp_meter_power
+        name: 总功率
+        type: line
+        group_by:
+          func: avg
+          duration: 5m
+        stroke_width: 2
+        show:
+          extremas: true
+          header_color_threshold: true
+        color_threshold:
+          - value: 100
+            color: steelblue
+          - value: 800
+            color: midnightblue
+          - value: 1500
+            color: orange
+          - value: 2000
+            color: orangered
+          - value: 3000
+            color: red
+      - entity: sensor.6_ch_monitor_2_0_c013c0_ch_1_power
+        name: 照明功率
+        stroke_width: 2
+        group_by:
+          func: avg
+          duration: 5m
+      - entity: sensor.6_ch_monitor_2_0_c013c0_ch_2_power
+        name: 客厅空调
+        stroke_width: 2
+        group_by:
+          func: avg
+          duration: 5m
+      - entity: sensor.6_ch_monitor_2_0_c013c0_ch_3_power
+        name: 主卧空调
+        stroke_width: 2
+        group_by:
+          func: avg
+          duration: 5m
+      - entity: sensor.6_ch_monitor_2_0_c013c0_ch_2_power
+        name: 次卧空调
+        stroke_width: 2
+        group_by:
+          func: avg
+          duration: 5m
+      - entity: sensor.chu_fang_shi_shi_zong_yong_dian_gong_lu
+        name: 厨房
+        stroke_width: 2
+        group_by:
+          func: avg
+          duration: 5m
+      - entity: sensor.yang_tai_shi_shi_yong_dian_gong_lu
+        name: 阳台
+        stroke_width: 2
+        group_by:
+          func: avg
+          duration: 5m
+      - entity: sensor.6_ch_monitor_2_0_c013c0_ch_6_power
+        name: 卫生间
+        stroke_width: 2
+        group_by:
+          func: avg
+          duration: 5m
+      - entity: sensor.6_ch_monitor_2_0_c013c0_ch_5_power
+        name: 卧室插座
+        stroke_width: 2
+        group_by:
+          func: avg
+          duration: 5m
+      - entity: sensor.zimi_zncz01_29ed_electric_power
+        name: 机柜
+        stroke_width: 2
+        group_by:
+          func: avg
+          duration: 5m
+  - type: heading
+    icon: ""
+    heading_style: subtitle
+    heading: 能源总览
+  - title: null
+    type: energy-distribution
+    link_dashboard: true
+    card_mod:
+      style: |
+        ha-card {
+          background: none;
+          # 设置卡片边框（none 表示无边框）
+          border: none;
+          box-shadow: none;  
+                    # 设置卡片顶部外边距
+          margin-top: -20px;          
+        }   

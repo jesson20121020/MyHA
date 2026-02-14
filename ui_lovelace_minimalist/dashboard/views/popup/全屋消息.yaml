@@ -1,0 +1,163 @@
+type: vertical-stack
+cards:
+  - type: custom:bubble-card
+    card_type: pop-up
+    hash: "#message"
+    show_header: false
+    bg_color: rgb(255.255.255)
+    bg_blur: "0"
+    bg_opacity: "80"
+    button_type: name
+    card_layout: large
+    backdrop_blur: "0"
+    hide_backdrop: false
+    width_desktop: 80%
+    shadow_opacity: "0"
+    margin: 7px
+    margin_top_mobile: 0px
+    margin_top_desktop: "-15vh"
+    styles: |-
+
+      .bubble-pop-up {
+          height: 80vh !important;
+
+      }  
+  - type: heading
+    icon: mdi:message-text-fast
+    heading_style: title
+    heading: 通知
+  - type: heading
+    icon: ""
+    heading_style: subtitle
+    heading: 全屋信息概览
+  - type: markdown
+    content: |-
+      {# --- 设备门状态 --- #}
+      {%- set door_sensors = [
+          'binary_sensor.160528700996126_door',
+          'binary_sensor.164926749854785_door',
+      ] -%}
+      {%- set ns = namespace(open_doors=[]) -%}
+      {%- for sensor in door_sensors -%}
+          {%- if is_state(sensor, 'on') -%}
+              {%- set ns.open_doors = ns.open_doors + [sensor] -%}
+          {%- endif -%}
+      {%- endfor -%}
+      {% if ns.open_doors | count >= 1 %}
+        <ha-alert alert-type="error">{{ ns.open_doors | count }}个设备门未关闭，请检查
+          {%- for door in ns.open_doors -%}
+            {%- set message = "\n - *" + state_attr(door, 'friendly_name') + "*" -%}
+            {{ message }}
+          {%- endfor -%}
+      {% else %}
+        <ha-alert alert-type="success">所有门窗已关闭</ha-alert>
+      {% endif %}
+
+
+      {# --- 设备电池状态 --- #}
+      {%- set battery_entities = [
+          'sensor.miaomiaoce_t2_9c44_battery_level',
+          'sensor.button_7185_battery_sensor',
+          'sensor.button_018b_battery_sensor',
+          'sensor.button_7185_battery_sensor',
+          'sensor.button_c542_battery_sensor',
+          'sensor.button_ca90_battery_sensor',
+          'sensor.button_cd70_battery_sensor',
+          'sensor.dengchangde_ipad_battery_level',
+          'sensor.g20s_battery',
+          'sensor.iphone_86_battery_level',
+          'sensor.lumi_bmgl01_dfb8_battery_level',
+          'sensor.xiaomi_sw776_fc93_battery_level_2',
+          'sensor.yuemee_mhfd1_ab43_battery_level',
+      ] -%}
+
+      {%- set ns = namespace(low_batteries=[]) -%}
+
+      {%- for entity_id in battery_entities -%}
+        {%- set entity = states[entity_id] -%}
+          {%- set battery_level = (
+              entity.attributes.battery_level
+              if 'battery_level' in entity.attributes
+              else (
+                  entity.attributes.battery
+                  if 'battery' in entity.attributes
+                  else entity.state | float(0)
+              )
+          ) -%}
+          {%- if battery_level <= 30 -%}
+              {%- set ns.low_batteries = ns.low_batteries + [entity] -%}
+          {%- endif -%}
+      {%- endfor -%}
+
+      {% if ns.low_batteries | count >= 1 %}
+        <ha-alert alert-type="error">{{ ns.low_batteries | count }}个设备电量低：
+          {%- for battery in ns.low_batteries -%}
+            {%- set battery_level = (
+                battery.attributes.battery_level
+                if 'battery_level' in battery.attributes
+                else (
+                    battery.attributes.battery
+                    if 'battery' in battery.attributes
+                    else battery.state | float(0)
+                )
+            ) -%}
+            {%- set message = "\n - *" + battery.name + " (" + (battery_level | round(0) | string) + "%)*" -%}
+            {{ message }}
+          {%- endfor -%}
+        </ha-alert>
+      {% else %}
+        <ha-alert alert-type="success">所有设备电量正常</ha-alert>
+      {% endif %}
+
+
+      {# --- NAS状态 --- #}
+      {%- set nas_temperature = states('sensor.cpuwen_du') | float(0) -%}
+      {%- set drive_1_status = states('sensor.synology_nas_drive_1_status') -%}
+      {%- set drive_2_status = states('sensor.synology_nas_drive_2_status') -%}
+
+      {% if nas_temperature < 55 %}
+        <ha-alert alert-type="success">NAS状态：设备安全</ha-alert>
+      {% else %}
+        <ha-alert alert-type="error">NAS状态：设备异常，温度过高: {{ nas_temperature }}°C</ha-alert>
+      {% endif %}
+
+      {# --- 扫地机状态 --- #}
+      {%- set vacuum_message = "" -%}
+      {% if is_state('vacuum.g20s', 'docked') %}
+        {%- set vacuum_message = '<ha-alert alert-type="success">扫地机状态：已停靠</ha-alert>' -%}
+      {% else %}
+        {%- set vacuum_message = '<ha-alert alert-type="error">扫地机状态：未停靠</ha-alert>' -%}
+      {% endif %}
+      {{ vacuum_message }}
+    text_only: true
+  - type: heading
+    icon: ""
+    heading_style: subtitle
+    heading: 自动化执行状态
+  - type: markdown
+    content: |-
+      <table>
+      {% for state in (states.automation
+        | selectattr('attributes.last_triggered', 'defined')
+        | rejectattr('attributes.last_triggered', 'in', ['None', 'none', 'unknown'])
+        | selectattr('attributes.last_triggered')
+        | selectattr('state', 'ne', 'unavailable')
+        | sort(attribute='attributes.last_triggered', reverse=true)) [0:6] -%}
+        {%- set time = state.attributes.last_triggered.timestamp() |timestamp_custom('%H:%M')  -%}
+        {%- if state.attributes.last_triggered > today_at("00:00") -%}
+          {%- set t = (as_timestamp(state.attributes.last_triggered) | timestamp_custom('%H:%M', true)) -%}
+          <tr align=left>
+            <th>{{time}}</th>
+            <td> 已执行 {{state.name}} </td>
+          </tr>
+          {% endif -%}
+        {% endfor %}
+      </table>
+    card_mod:
+      style: |
+        ha-card {
+          background: rgba(255,255,255,0.1);
+          # 设置卡片边框（none 表示无边框）
+          border: none;
+          box-shadow: none;                                   
+        }   

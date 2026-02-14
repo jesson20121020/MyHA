@@ -1,0 +1,32 @@
+type: vertical-stack
+card_mod:
+  style: |
+    ha-card {
+      height: 100vh;
+      overflow: hidden !important; /* 禁用弹窗滚动 */
+    }
+cards:
+  - type: custom:bubble-card
+    card_type: pop-up
+    hash: "#media"
+    show_header: false
+    bg_color: rgb(255.255.255)
+    bg_blur: "0"
+    bg_opacity: "80"
+    button_type: name
+    card_layout: large
+    backdrop_blur: "0"
+    hide_backdrop: false
+    width_desktop: 80%
+    shadow_opacity: "0"
+    margin: 7px
+    margin_top_mobile: 0px
+    margin_top_desktop: "-15vh"
+    styles: |-
+      .bubble-pop-up {
+          height: 80vh !important;
+      }  
+  - type: iframe
+    url: https://ma.netmy.top:8888/#/home
+    aspect_ratio: 160%
+

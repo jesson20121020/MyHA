@@ -16,7 +16,7 @@ unknown:
         entity_id: 8348bc89ad5c700a060cad3afd253b47
         domain: switch
       - delay:
-          hours: 3
+          hours: 4
           minutes: 30
           seconds: 0
           milliseconds: 0

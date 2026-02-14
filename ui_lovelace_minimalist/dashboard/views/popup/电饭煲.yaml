@@ -1,0 +1,237 @@
+type: vertical-stack
+cards:
+  - type: custom:bubble-card
+    card_type: pop-up
+    hash: "#cooker"
+    show_header: false
+    bg_color: rgb(255.255.255)
+    bg_blur: "0"
+    bg_opacity: "80"
+    button_type: name
+    card_layout: large
+    backdrop_blur: "0"
+    hide_backdrop: false
+    width_desktop: 80%
+    shadow_opacity: "0"
+    margin: 7px
+    margin_top_mobile: 0px
+    margin_top_desktop: "-15vh"
+    styles: |-
+      .bubble-pop-up {
+          height: 60vh !important;
+      }  
+  - type: custom:button-card
+    entity: sensor.chunmi_cn_475417943_normalcd2_status_p_2_1
+    show_icon: false
+    show_entity_picture: true
+    entity_picture: /local/icon/米家电饭煲/小米电饭煲.png
+    tap_action:
+      action: none
+    hold_action:
+      action: none
+    double_tap_action:
+      action: none
+    card_mod:
+      style: |
+        ha-card {
+          background: transparent !important;
+        }
+    show_state: true
+    show_label: true
+    name: "电饭煲"
+    state_display: |
+      [[[
+        let state = states['sensor.chunmi_cn_475417943_normalcd2_status_p_2_1'].state;
+        return (state !== 'unavailable') 
+          ? state 
+          : '关机中';
+      ]]]
+    label: |
+      [[[
+        let state = states['sensor.chunmi_cn_475417943_normalcd2_status_p_2_1'].state;
+        let last_changed_time = states['sensor.chunmi_cn_475417943_normalcd2_status_p_2_1'].last_changed;
+        
+        // 计算时间差（毫秒）
+        let now = new Date();
+        let lastChanged = new Date(last_changed_time);
+        let diffMs = now - lastChanged;
+        
+        // 转换为分钟（向下取整）
+        let diffMinutes = Math.floor(diffMs / 60000);
+        
+        if (state === '烹饪中' || state === '保温中') {
+          // 显示已运行时间（分钟）
+          return "时间：" + diffMinutes + " 分钟";
+        } else {
+          // 格式化时间差为易读形式
+          let format_time = '';
+          if (diffMinutes < 1) {
+            format_time = "刚刚";
+          } else if (diffMinutes < 60) {
+            format_time = diffMinutes + "分钟";
+          } else if (diffMinutes < 1440) { // 1440分钟=24小时
+            let hours = Math.floor(diffMinutes / 60);
+            format_time = hours + "小时";
+          } else {
+            let days = Math.floor(diffMinutes / 1440);
+            format_time = days + "天";
+          }
+          return format_time + "前";
+        }
+      ]]]
+    styles:
+      card:
+        - padding: 12px
+        - display: flex
+        - flex-direction: column
+        - align-items: center
+        - justify-content: center
+        - border: none
+        - box-shadow: none
+        - background: none
+      grid:
+        - grid-template-areas: |
+            "i n"
+            "i s"
+            "i l"
+        - grid-template-columns: 1fr 1fr
+        - row-gap: 4px
+        - align-items: center
+      name:
+        - font-size: 16px
+        - color: black
+        - font-weight: bold
+        - min-height: 14px
+      state:
+        - font-size: 36px
+        - color: black
+        - font-weight: bold
+        - margin-top: "-20px"
+      label:
+        - font-size: 14px
+        - color: black
+      entity_picture:
+        - width: 120px       # 设置宽度
+        - height: 120px      # 设置高度
+        - overflow: hidden 
+        - object-fit: cover # 保持比例填充容器
+        - transform: scale(1.7) # 整体缩放容器
+        - transform-origin: center
+  - type: horizontal-stack
+    cards:
+      - type: custom:mushroom-template-card
+        card_mod:
+          style: |
+            ha-card {
+
+              # 设置卡片边框（none 表示无边框）
+              border: none;
+            }          
+        primary: null
+        secondary: 精煮饭
+        icon: ""
+        layout: vertical
+        picture: /local/icon/米家电饭煲/精煮饭.png
+        tap_action:
+          action: call-service
+          service: select.select_option
+          data:
+            option: 精煮饭
+          target:
+            entity_id: select.chunmi_wy3_e667_start_cook
+      - type: custom:mushroom-template-card
+        card_mod:
+          style: |
+            ha-card {
+              # 设置卡片边框（none 表示无边框）
+              border: none;
+            }                
+        primary: null
+        secondary: 快煮饭
+        icon: ""
+        layout: vertical
+        picture: /local/icon/米家电饭煲/快煮饭.png
+        tap_action:
+          action: call-service
+          service: select.select_option
+          data:
+            option: 快煮饭
+          target:
+            entity_id: select.chunmi_wy3_e667_start_cook
+      - type: custom:mushroom-template-card
+        card_mod:
+          style: |
+            ha-card {
+
+              # 设置卡片边框（none 表示无边框）
+              border: none;
+            }                
+        primary: null
+        secondary: 煮粥
+        icon: ""
+        layout: vertical
+        picture: /local/icon/米家电饭煲/煮粥.png
+        tap_action:
+          action: call-service
+          service: select.select_option
+          data:
+            option: 煮粥
+          target:
+            entity_id: select.chunmi_wy3_e667_start_cook
+  - type: horizontal-stack
+    cards:
+      - type: custom:mushroom-template-card
+        card_mod:
+          style: |
+            ha-card {
+
+              # 设置卡片边框（none 表示无边框）
+              border: none;
+            }                
+        primary: null
+        secondary: 保温
+        icon: ""
+        layout: vertical
+        picture: /local/icon/米家电饭煲/保温.png
+        tap_action:
+          action: call-service
+          service: select.select_option
+          data:
+            option: 保温
+          target:
+            entity_id: select.chunmi_wy3_e667_start_cook
+      - type: custom:mushroom-template-card
+        card_mod:
+          style: |
+            ha-card {
+
+              # 设置卡片边框（none 表示无边框）
+              border: none;
+            }                
+        primary: null
+        secondary: 自定义
+        icon: ""
+        layout: vertical
+        picture: /local/icon/米家电饭煲/自选.png
+        tap_action:
+          action: call-service
+          service: select.select_option
+          data:
+            option: 自定义
+          target:
+            entity_id: select.chunmi_wy3_e667_start_cook
+      - type: custom:mushroom-template-card
+        primary: null
+        secondary: 停止烹饪
+        icon: ""
+        layout: vertical
+        picture: /local/icon/米家电饭煲/停止烹饪.png
+        tap_action:
+          action: toggle
+        entity: button.chunmi_cn_475417943_normalcd2_cancel_cooking_a_2_2
+        card_mod:
+          style: |
+            ha-card {
+              # 设置卡片边框（none 表示无边框）
+              border: none;
+            }

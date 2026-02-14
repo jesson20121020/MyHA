@@ -1,0 +1,54 @@
+- id: '1769335831501'
+  name: 出门场景
+  entities:
+    light.quan_wu_deng_zu:
+      min_color_temp_kelvin: 2700
+      max_color_temp_kelvin: 6500
+      min_mireds: 153
+      max_mireds: 370
+      effect_list:
+      - 会客模式
+      - 场景
+      - 夜晚助眠
+      - 娱乐模式
+      - 彩光
+      - 无
+      - 日光
+      - 月光
+      - 清晨唤醒
+      - 温馨
+      - 电脑模式
+      - 电视模式
+      - 电视模式（影院模式）
+      - 色温模式
+      - 阅读模式
+      - 音乐
+      - 黄昏明亮
+      supported_color_modes:
+      - color_temp
+      - rgb
+      effect:
+      color_mode:
+      brightness:
+      color_temp_kelvin:
+      color_temp:
+      hs_color:
+      rgb_color:
+      xy_color:
+      entity_id:
+      - light.er_tong_fang_xi_deng_deng
+      - light.ci_wo_xi_ding_deng
+      - light.viomi_ich108_091d_light
+      - light.chu_fang_deng_zu
+      - light.ci_wei_deng_zu
+      - light.ke_ting_deng_zu
+      - light.zhu_wei_deng_zu
+      - light.zhu_wo_deng_zu
+      - light.dikair_cn_392944107_wy0a01_s_2_2
+      icon: mdi:lightbulb-group
+      friendly_name: 全屋灯组
+      supported_features: 4
+      state: 'off'
+  metadata:
+    light.quan_wu_deng_zu:
+      entity_only: true
